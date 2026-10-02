@@ -1,0 +1,71 @@
+# julit
+
+Empty Solana dApp starter: Next.js + `@solana/kit` frontend with wallet connection ready, no demo program. Create your Anchor program in `anchor/programs/` and build the app on top.
+
+## Stack
+
+| Layer          | Technology                       |
+| -------------- | -------------------------------- |
+| Frontend       | Next.js 16, React 19, TypeScript |
+| Styling        | Tailwind CSS v4                  |
+| Solana Client  | `@solana/kit`, wallet-standard   |
+| Program Client | Codama (generated from IDL)      |
+| Program        | Anchor (Rust)                    |
+| Network        | Solana Devnet                    |
+| Database       | Supabase (`@supabase/ssr`)       |
+
+## Requirements
+
+- Node 20+
+- [Rust](https://rustup.rs/), [Solana CLI](https://solana.com/docs/intro/installation), [Anchor 1.x](https://www.anchor-lang.com/docs/installation)
+- Phantom or Solflare wallet on Devnet
+
+## Commands
+
+```shell
+npm install       # dependencies
+npm run dev       # dApp at http://localhost:3000
+npm run build     # production build
+npm run lint      # eslint
+npm run format    # prettier
+npm run setup     # anchor build + generate TS client with Codama
+npm run anchor-test   # program tests (LiteSVM)
+```
+
+> `npm run setup` and `npm run anchor-test` require an Anchor program in
+> `anchor/programs/`. If none exists, create one first (`anchor init` or manually),
+> set `declare_id!` with `anchor keys sync`, then run `setup`.
+
+## Environment
+
+```shell
+cp .env.example .env.local   # then fill in your Supabase project values
+```
+
+Supabase clients live in `app/lib/supabase/` (`client.ts` for browser,
+`server.ts` for Server Components/Actions).
+
+## Structure
+
+```
+├── app/
+│   ├── components/         # UI: wallet, cluster, theme, providers
+│   ├── generated/          # Codama-generated TS client (do not edit)
+│   ├── lib/
+│   │   ├── wallet/         # wallet-standard connection (Phantom/Solflare)
+│   │   ├── hooks/          # use-balance, use-send-transaction
+│   │   ├── solana-client*  # RPC client + context
+│   │   ├── errors.ts       # transaction error parsing
+│   │   └── explorer.ts     # Solana Explorer URLs per cluster
+│   ├── layout.tsx
+│   └── page.tsx
+├── anchor/
+│   └── programs/           # Anchor program (Rust)
+└── codama.json             # IDL → TypeScript client
+```
+
+## Codama
+
+`codama.json` points to `./anchor/target/idl/julit.json` and generates
+`./app/generated/julit`. If your program is named differently, update both
+paths.
