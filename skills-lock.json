@@ -25,6 +25,12 @@
       "skillPath": "skills/solana-dev/SKILL.md",
       "computedHash": "fc278aba173b0596f43c6db6e6c3a2875c96d62281e243e168f8fdebe07609ea"
     },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "211141fd078b4b3645803868528d54221bc7755d24d5c8af45a366785c151dba"
+    },
     "to-spec": {
       "source": "mattpocock/skills",
       "sourceType": "github",
