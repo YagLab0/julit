@@ -23,16 +23,16 @@ Empty Solana dApp starter: Next.js + `@solana/kit` frontend with wallet connecti
 ## Commands
 
 ```shell
-npm install       # dependencies
-npm run dev       # dApp at http://localhost:3000
-npm run build     # production build
-npm run lint      # eslint
-npm run format    # prettier
-npm run setup     # anchor build + generate TS client with Codama
-npm run anchor-test   # program tests (LiteSVM)
+pnpm install      # dependencies
+pnpm dev          # dApp at http://localhost:3000
+pnpm build        # production build
+pnpm lint         # eslint
+pnpm format       # prettier
+pnpm setup        # anchor build + generate TS client with Codama
+pnpm anchor-test  # program tests (LiteSVM)
 ```
 
-> `npm run setup` and `npm run anchor-test` require an Anchor program in
+> `pnpm setup` and `pnpm anchor-test` require an Anchor program in
 > `anchor/programs/`. If none exists, create one first (`anchor init` or manually),
 > set `declare_id!` with `anchor keys sync`, then run `setup`.
 
