@@ -115,3 +115,16 @@ _Avoid_: Shopping cart, wallet balance, transaction ledger
 **Completed Batch**:
 A batch whose simulated purchase has been recorded on Solana and indexed with its purchasing buyer wallet and completion transaction signature.
 _Avoid_: Paid batch, delivered batch
+
+**Commercial Contract Request**:
+An offer or request initiated by a buyer or producer to establish a mutual-consent company contract, enabling the allocation and purchase of reserved batches.
+_Avoid_: Informal inquiry, purchase order
+
+**Cryptographic Contract Signature**:
+An Ed25519 message signature produced by a company's verified wallet proving consent to a commercial contract's terms without on-chain transaction overhead.
+_Avoid_: On-chain escrow, paper signature
+
+**Batch Showcase**:
+The interactive technical preview within an origin modal displaying procedural 3D representations, chemical purity, ESG indicators, and commercial pricing for a selected lithium batch.
+_Avoid_: Static thumbnail, photo gallery
+
