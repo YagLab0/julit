@@ -13,11 +13,11 @@ seam.
 
 **Blocked by:** 02 (needs the generated decoder, PDA finder, and `Audit` decoder)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Missing/failed/unconfirmed tx → rejected; no JuLit ix or wrong discriminator → rejected
-- [ ] Batch account ≠ path PDA or auditor ≠ verified wallet → rejected
-- [ ] Digest and findings read from the on-chain `Audit` account, never the request body
-- [ ] Already-`audited` index row → 409; happy path writes all fields in one update
-- [ ] Vitest cases: every reject path + happy path payload `{ auditSha256, esgApproved, euAssessment, auditTxSignature, observedSlot }`
-- [ ] `pnpm build`, `pnpm lint`, `pnpm test`, `pnpm format:check` green
+- [x] Missing/failed/unconfirmed tx → rejected; no JuLit ix or wrong discriminator → rejected
+- [x] Batch account ≠ path PDA or auditor ≠ verified wallet → rejected
+- [x] Digest and findings read from the on-chain `Audit` account, never the request body
+- [x] Already-`audited` index row → 409; happy path writes all fields in one update
+- [x] Vitest cases: every reject path + happy path payload `{ auditSha256, esgApproved, euAssessment, auditTxSignature, observedSlot }`
+- [x] `pnpm build`, `pnpm lint`, `pnpm test`, `pnpm format:check` green
