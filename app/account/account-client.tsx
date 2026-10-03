@@ -31,7 +31,9 @@ const NEXT_STEPS: Record<
   },
   auditor: {
     title: "Certificar lotes",
-    body: "Próximamente vas a poder subir el certificado de auditoría y firmar la certificación de tus lotes asignados.",
+    body: "Subí el certificado de auditoría y declará los hallazgos ESG y de la regulación europea de tus lotes asignados.",
+    href: "/audit",
+    linkLabel: "Certificar lotes",
   },
   buyer: {
     title: "Comprar lotes",
