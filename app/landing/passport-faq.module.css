@@ -1,0 +1,363 @@
+.container {
+  max-width: 1152px;
+  margin-inline: auto;
+  padding: 96px 40px;
+}
+
+.passportLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 68px;
+}
+
+.passportCopy,
+.passportFigure,
+.faqIntro,
+.questions {
+  min-width: 0;
+}
+
+.heading {
+  font-size: clamp(2rem, 3.6vw, 2.875rem);
+  font-weight: 400;
+  line-height: 1.13;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.passportCopy .heading {
+  margin-top: 22px;
+  max-width: 430px;
+}
+
+.description {
+  margin-top: 22px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+
+.integrityNote {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.8;
+}
+
+.passportFigure {
+  margin: 0;
+  padding: 40px 32px 28px;
+  border: 1px solid var(--border-low);
+  border-radius: 26px;
+  background: radial-gradient(
+    ellipse at top right,
+    color-mix(in srgb, var(--color-brand-100) 32%, var(--secondary)),
+    var(--secondary) 70%
+  );
+}
+
+.document {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--background);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+.document::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 8px -6px -8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--background);
+  transform: rotate(-3deg);
+}
+
+.documentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px 24px;
+  border-bottom: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+  background: var(--background);
+}
+
+.documentTitle {
+  min-width: 0;
+  max-width: 180px;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.035em;
+  overflow-wrap: break-word;
+}
+
+.documentEmblem {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 auto;
+  color: var(--color-brand-700);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 8px 24px 12px;
+  border-radius: 0 0 14px 14px;
+  background: var(--background);
+  list-style: none;
+}
+
+.field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 22px 14px 22px 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.field:nth-child(even) {
+  padding-right: 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--border-low);
+}
+
+.field:nth-child(n + 3) {
+  border-top: 1px solid var(--border-low);
+}
+
+.field svg {
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  color: var(--color-brand-700);
+}
+
+.field span {
+  min-width: 0;
+}
+
+.conceptCaption {
+  position: relative;
+  max-width: 320px;
+  margin: 26px auto 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.faqLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  align-items: start;
+  gap: 80px;
+  padding-top: 88px;
+  padding-bottom: 100px;
+}
+
+.faqIntro .heading {
+  max-width: 340px;
+}
+
+.questions {
+  border-top: 1px solid var(--border);
+}
+
+.question {
+  border-bottom: 1px solid var(--border);
+}
+
+.question summary {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: -0.02em;
+  list-style: none;
+  overflow-wrap: break-word;
+}
+
+.question summary > span:first-child {
+  min-width: 0;
+}
+
+.question summary::-webkit-details-marker {
+  display: none;
+}
+
+.question summary:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--ring);
+  outline-offset: 5px;
+}
+
+.disclosureMarker {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--color-brand-700);
+}
+
+.disclosureMarker::before,
+.disclosureMarker::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  background: currentColor;
+}
+
+.disclosureMarker::before {
+  width: 10px;
+  height: 1px;
+}
+
+.disclosureMarker::after {
+  width: 1px;
+  height: 10px;
+}
+
+.question[open] .disclosureMarker::after {
+  display: none;
+}
+
+.answer {
+  margin: 0;
+  padding: 0 52px 26px 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.8;
+  overflow-wrap: break-word;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .question summary:hover .disclosureMarker {
+    border-color: var(--color-brand-700);
+    background: var(--secondary);
+  }
+}
+
+@media (max-width: 1023px) {
+  .passportLayout {
+    gap: 36px;
+  }
+
+  .passportFigure {
+    padding: 32px 24px 24px;
+  }
+
+  .faqLayout {
+    gap: 48px;
+  }
+}
+
+@media (max-width: 859px) {
+  .passportLayout,
+  .faqLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .passportCopy .heading,
+  .faqIntro .heading {
+    max-width: 560px;
+  }
+
+  .passportFigure {
+    width: 100%;
+    max-width: 540px;
+    justify-self: center;
+  }
+}
+
+@media (max-width: 767px) {
+  .container {
+    padding: 80px 28px;
+  }
+
+  .passportFigure {
+    padding: 28px 20px 24px;
+    border-radius: 22px;
+  }
+
+  .documentHeader {
+    padding: 22px 18px;
+    gap: 14px;
+  }
+
+  .fields {
+    padding-inline: 18px;
+  }
+
+  .question summary {
+    gap: 16px;
+  }
+
+  .answer {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  .passportFigure {
+    padding-inline: 16px;
+  }
+
+  .document::before {
+    transform: none;
+  }
+
+  .documentHeader {
+    align-items: flex-start;
+    padding: 20px 16px;
+  }
+
+  .documentEmblem {
+    width: 32px;
+    height: 32px;
+  }
+
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 16px;
+  }
+
+  .field,
+  .field:nth-child(even) {
+    flex-direction: row;
+    align-items: center;
+    padding: 18px 0;
+    border-left: 0;
+  }
+
+  .field:nth-child(n + 2) {
+    border-top: 1px solid var(--border-low);
+  }
+}

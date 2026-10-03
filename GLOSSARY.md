@@ -25,8 +25,8 @@ A PDF report containing chemical analysis or environmental evidence used to cert
 _Avoid_: Passport
 
 **Passport**:
-The public record of a batch's origin, production metrics, sustainability metrics, and certification evidence.
-_Avoid_: Audit certificate, QR code
+The public record of a batch's origin, production metrics, sustainability metrics, and certification evidence. It is not an official EU battery passport or a guarantee of regulatory compliance.
+_Avoid_: Audit certificate, QR code, official EU certification
 
 **Buyer**:
 The entity purchasing a batch from its producer.
