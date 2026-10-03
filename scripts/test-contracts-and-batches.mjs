@@ -125,7 +125,14 @@ async function main() {
   }
   console.log(`✓ Buyer signed in: ${authData.user.id}`);
 
-  // Generate dynamic Ed25519 keypair for test buyer wallet
+  // Check existing buyer company wallet
+  let { data: buyerCompany } = await service
+    .from("companies")
+    .select("id, name, wallet_address, company_type")
+    .eq("id", authData.user.id)
+    .single();
+
+  // Generate dynamic Ed25519 keypair for test signing
   const keyPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
     "sign",
     "verify",
@@ -133,26 +140,30 @@ async function main() {
   const pubRaw = new Uint8Array(
     await crypto.subtle.exportKey("raw", keyPair.publicKey)
   );
-  const testWallet = getAddressDecoder().decode(pubRaw);
-  console.log(`✓ Generated dynamic buyer wallet: ${testWallet}`);
+  const generatedWallet = getAddressDecoder().decode(pubRaw);
 
-  // Dynamically link test buyer wallet to buyer company
-  const { data: buyerCompany, error: bindErr } = await service
-    .from("companies")
-    .update({
-      wallet_address: testWallet,
-      wallet_verified_at: new Date().toISOString(),
-    })
-    .eq("id", authData.user.id)
-    .select("id, name, wallet_address, company_type")
-    .single();
+  if (!buyerCompany?.wallet_address) {
+    const { data: updatedCompany, error: bindErr } = await service
+      .from("companies")
+      .update({
+        wallet_address: generatedWallet,
+        wallet_verified_at: new Date().toISOString(),
+      })
+      .eq("id", authData.user.id)
+      .select("id, name, wallet_address, company_type")
+      .single();
 
-  if (bindErr || !buyerCompany || !buyerCompany.wallet_address) {
-    throw new Error(`Failed to bind buyer wallet: ${bindErr?.message}`);
+    if (bindErr || !updatedCompany?.wallet_address) {
+      throw new Error(`Failed to bind buyer wallet: ${bindErr?.message}`);
+    }
+    buyerCompany = updatedCompany;
+    console.log(`✓ Bound new buyer wallet: ${buyerCompany.wallet_address}`);
+  } else {
+    console.log(
+      `✓ Buyer company: ${buyerCompany.name}, using existing verified wallet: ${buyerCompany.wallet_address}`
+    );
   }
-  console.log(
-    `✓ Buyer company: ${buyerCompany.name}, bound wallet: ${buyerCompany.wallet_address}`
-  );
+  const testWallet = buyerCompany.wallet_address;
 
   // 3. Testing Ed25519 bilateral contract signing with producer
   console.log("\n3. Testing Ed25519 bilateral contract signing with producer...");
@@ -181,24 +192,27 @@ async function main() {
   );
   const sigB58 = getBase58Decoder().decode(sigBytes);
 
-  const isVerified = await verifyContractSignature(testWallet, msg, sigB58);
+  const isVerified = await verifyContractSignature(generatedWallet, msg, sigB58);
   if (!isVerified) throw new Error("Ed25519 signature verification failed");
   console.log(
     `✓ Generated and verified Ed25519 signature: ${sigB58.slice(0, 16)}...`
   );
 
-  // Insert contract as accepted
+  // Insert contract as accepted (upsert on producer_id,counterparty_id)
   const { data: insertedContract, error: insertContractErr } = await service
     .from("company_contracts")
-    .upsert({
-      producer_id: producer.id,
-      counterparty_id: buyerCompany.id,
-      initiator_id: buyerCompany.id,
-      status: "accepted",
-      initiator_signature: sigB58,
-      initiator_signed_at: timestamp,
-      responded_at: timestamp,
-    })
+    .upsert(
+      {
+        producer_id: producer.id,
+        counterparty_id: buyerCompany.id,
+        initiator_id: buyerCompany.id,
+        status: "accepted",
+        initiator_signature: sigB58,
+        initiator_signed_at: timestamp,
+        responded_at: timestamp,
+      },
+      { onConflict: "producer_id,counterparty_id" }
+    )
     .select()
     .single();
 

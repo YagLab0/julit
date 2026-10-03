@@ -117,6 +117,13 @@ describe("Regex patterns", () => {
         "5VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc"
       )
     ).toBe(true);
+    // Real Solana transaction signatures (88 chars Base58)
+    expect(
+      CONTRACT_SIGNATURE_PATTERN.test(
+        "7VFatVgMW4TzGoBKYQg7E7ggTGzPTjkzS7rDndc7E3hJBQ4dwRweABsSf72wdpdLVNconPGCqin2f8rjrJNUQV6"
+      )
+    ).toBe(true);
     expect(CONTRACT_SIGNATURE_PATTERN.test("short")).toBe(false);
   });
 });
+

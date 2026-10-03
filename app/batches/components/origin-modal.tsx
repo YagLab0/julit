@@ -11,6 +11,10 @@ import { OriginReference } from "./assets-panel";
 import { bagCount, TONNES_PER_BAG } from "./batch-model";
 import { Modal } from "./modal";
 import { useWallet } from "../../lib/wallet/context";
+import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
+import { createMemoInstruction } from "../../lib/solana/memo";
+import { useCluster } from "../../components/cluster-context";
+import { getExplorerUrl } from "../../lib/explorer";
 import { createClient } from "../../lib/supabase/client";
 import { buildContractAgreementMessage } from "../../lib/contracts";
 
@@ -359,6 +363,8 @@ export function OriginModal({
   onClose: () => void;
 }) {
   const { wallet, signMessage } = useWallet();
+  const { send: sendTransaction } = useSendTransaction();
+  const { cluster } = useCluster();
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -474,12 +480,6 @@ export function OriginModal({
       });
       return;
     }
-    if (!signMessage) {
-      toast.warning("Firma no disponible", {
-        description: "Tu billetera no soporta firma de mensajes (signMessage).",
-      });
-      return;
-    }
 
     setRequestingContract(true);
     try {
@@ -491,10 +491,25 @@ export function OriginModal({
         timestamp,
       });
 
-      const signatureBytes = await signMessage(
-        new TextEncoder().encode(message)
-      );
-      const signature = getBase58Decoder().decode(signatureBytes);
+      let signature: string;
+      let isOnChain = false;
+
+      try {
+        // Record on-chain using Solana SPL Memo Program transaction
+        const memoIx = createMemoInstruction(message, wallet.account.address);
+        signature = await sendTransaction({ instructions: [memoIx] });
+        isOnChain = true;
+      } catch (txErr) {
+        console.warn(
+          "On-chain memo transaction failed or unsupported, falling back to signMessage:",
+          txErr
+        );
+        if (!signMessage) throw txErr;
+        const signatureBytes = await signMessage(
+          new TextEncoder().encode(message)
+        );
+        signature = getBase58Decoder().decode(signatureBytes);
+      }
 
       const res = await fetch("/api/companies/contracts", {
         method: "POST",
@@ -503,6 +518,7 @@ export function OriginModal({
           target_company_id: producer.id,
           initiator_wallet: wallet.account.address,
           signature,
+          is_onchain: isOnChain,
           timestamp,
         }),
       });
@@ -516,17 +532,28 @@ export function OriginModal({
       }
 
       setContractStatus("pending");
-      toast.success("Solicitud de contrato enviada con éxito", {
-        description: `Tu solicitud criptográfica fue registrada para ${producer.name}. El productor podrá aceptarla en su panel.`,
-      });
+      if (isOnChain) {
+        const explorerUrl = getExplorerUrl(`/tx/${signature}`, cluster);
+        toast.success("Solicitud registrada en la blockchain de Solana", {
+          description: "La transacción fue confirmada en Solana Devnet.",
+          action: {
+            label: "Ver en Explorer",
+            onClick: () => window.open(explorerUrl, "_blank"),
+          },
+        });
+      } else {
+        toast.success("Solicitud de contrato enviada con éxito", {
+          description: `Tu solicitud criptográfica fue registrada para ${producer.name}. El productor podrá aceptarla en su panel.`,
+        });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/reject|cancel|denied/i.test(msg)) {
-        toast.info("Firma cancelada", {
+        toast.info("Transacción cancelada", {
           description: "Cancelaste la firma en tu billetera.",
         });
       } else {
-        toast.error("Error al firmar o enviar la solicitud.");
+        toast.error("Error al registrar la solicitud en la red.");
       }
     } finally {
       setRequestingContract(false);

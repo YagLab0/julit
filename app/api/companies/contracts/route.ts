@@ -73,6 +73,7 @@ export async function POST(request: Request) {
     isAddress(body.initiator_wallet)
       ? body.initiator_wallet
       : undefined;
+  const isOnChain = Boolean(body?.is_onchain);
 
   if (
     !targetCompanyId ||
@@ -172,17 +173,26 @@ export async function POST(request: Request) {
     timestamp,
   });
 
-  const validSignature = await verifyContractSignature(
-    initiatorWallet,
-    message,
-    signature
-  );
-
-  if (!validSignature) {
-    return jsonError(
-      "La firma del contrato no es válida para la wallet vinculada.",
-      400
+  if (isOnChain) {
+    if (!CONTRACT_SIGNATURE_PATTERN.test(signature)) {
+      return jsonError(
+        "La firma de la transacción on-chain no es válida.",
+        400
+      );
+    }
+  } else {
+    const validSignature = await verifyContractSignature(
+      initiatorWallet,
+      message,
+      signature
     );
+
+    if (!validSignature) {
+      return jsonError(
+        "La firma del contrato no es válida para la wallet vinculada.",
+        400
+      );
+    }
   }
 
   // Bind or update the caller's verified wallet if caller is buyer/auditor

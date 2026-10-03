@@ -9,6 +9,8 @@ import { COMPANY_TYPE_LABELS, type CompanyType } from "../lib/company";
 import { originName } from "../lib/origins";
 import { ellipsify, getExplorerUrl } from "../lib/explorer";
 import { useWallet } from "../lib/wallet/context";
+import { useSendTransaction } from "../lib/hooks/use-send-transaction";
+import { createMemoInstruction } from "../lib/solana/memo";
 import { useCluster } from "../components/cluster-context";
 import { WalletButton } from "../components/wallet-button";
 import { buildContractAgreementMessage } from "../lib/contracts";
@@ -117,7 +119,7 @@ export function AccountClient({
       {company.companyType === "buyer" && (
         <>
           <BuyerPortfolioCard batches={acquiredBatches} />
-          <BuyerContractsCard company={company} />
+          <BuyerContractsCard />
         </>
       )}
 
@@ -268,8 +270,10 @@ function BuyerPortfolioCard({ batches }: { batches: AcquiredBatch[] }) {
   );
 }
 
-function BuyerContractsCard({ company }: { company: AccountCompany }) {
+function BuyerContractsCard() {
   const { wallet, signMessage } = useWallet();
+  const { send: sendTransaction } = useSendTransaction();
+  const { cluster } = useCluster();
   const [contracts, setContracts] = useState<ContractWithParties[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -323,16 +327,9 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
       toast.error("Seleccioná una empresa productora.");
       return;
     }
-    if (!wallet || !signMessage) {
+    if (!wallet) {
       toast.warning("Billetera no disponible", {
-        description:
-          "Conectá una billetera que permita firmar mensajes (signMessage).",
-      });
-      return;
-    }
-    if (wallet.account.address !== company.walletAddress) {
-      toast.error("Billetera no coincide", {
-        description: "Conectá la billetera verificada de tu empresa.",
+        description: "Conectá tu billetera para solicitar el contrato.",
       });
       return;
     }
@@ -347,17 +344,33 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
         timestamp,
       });
 
-      const signatureBytes = await signMessage(
-        new TextEncoder().encode(message)
-      );
-      const signature = getBase58Decoder().decode(signatureBytes);
+      let signature: string;
+      let isOnChain = false;
+
+      try {
+        const memoIx = createMemoInstruction(message, wallet.account.address);
+        signature = await sendTransaction({ instructions: [memoIx] });
+        isOnChain = true;
+      } catch (txErr) {
+        console.warn(
+          "On-chain memo transaction failed, falling back to signMessage:",
+          txErr
+        );
+        if (!signMessage) throw txErr;
+        const signatureBytes = await signMessage(
+          new TextEncoder().encode(message)
+        );
+        signature = getBase58Decoder().decode(signatureBytes);
+      }
 
       const res = await fetch("/api/companies/contracts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           target_company_id: producer.id,
+          initiator_wallet: wallet.account.address,
           signature,
+          is_onchain: isOnChain,
           timestamp,
         }),
       });
@@ -368,19 +381,30 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
         return;
       }
 
-      toast.success("Solicitud de contrato enviada con éxito", {
-        description: `Tu solicitud fue enviada a ${producer.name}. El productor podrá aceptarla en su panel.`,
-      });
+      if (isOnChain) {
+        const explorerUrl = getExplorerUrl(`/tx/${signature}`, cluster);
+        toast.success("Solicitud registrada en la blockchain de Solana", {
+          description: "La transacción fue confirmada en Solana Devnet.",
+          action: {
+            label: "Ver en Explorer",
+            onClick: () => window.open(explorerUrl, "_blank"),
+          },
+        });
+      } else {
+        toast.success("Solicitud de contrato enviada con éxito", {
+          description: `Tu solicitud fue enviada a ${producer.name}. El productor podrá aceptarla en su panel.`,
+        });
+      }
       setShowModal(false);
       void loadContracts();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/reject|cancel|denied/i.test(msg)) {
-        toast.info("Firma cancelada", {
+        toast.info("Transacción cancelada", {
           description: "Cancelaste la firma en tu billetera.",
         });
       } else {
-        toast.error("Error al firmar o enviar la solicitud.");
+        toast.error("Error al registrar la solicitud en la red.");
       }
     } finally {
       setRequesting(false);
@@ -487,17 +511,37 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
                     Wallet productora:{" "}
                     {ellipsify(c.producer?.wallet_address ?? "", 6)}
                   </p>
-                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted font-mono">
-                    <span>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted font-mono">
+                    <span className="flex items-center gap-1.5">
                       Firma iniciador:{" "}
-                      {c.initiator_signature
-                        ? ellipsify(c.initiator_signature, 8)
-                        : "—"}
+                      {c.initiator_signature ? (
+                        <>
+                          <span>{ellipsify(c.initiator_signature, 8)}</span>
+                          <a
+                            href={getExplorerUrl(`/tx/${c.initiator_signature}`, cluster)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                          >
+                            Explorer ↗
+                          </a>
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </span>
                     {c.counterparty_signature && (
-                      <span>
+                      <span className="flex items-center gap-1.5">
                         Firma aceptación:{" "}
-                        {ellipsify(c.counterparty_signature, 8)}
+                        <span>{ellipsify(c.counterparty_signature, 8)}</span>
+                        <a
+                          href={getExplorerUrl(`/tx/${c.counterparty_signature}`, cluster)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                        >
+                          Explorer ↗
+                        </a>
                       </span>
                     )}
                   </div>
@@ -531,6 +575,7 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
 
 function ProducerContractsCard({ company }: { company: AccountCompany }) {
   const { wallet, signMessage } = useWallet();
+  const { cluster } = useCluster();
   const [contracts, setContracts] = useState<ContractWithParties[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -760,19 +805,39 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
                   <p className="mt-1 font-mono text-[11px] text-muted">
                     Wallet: {ellipsify(c.counterparty?.wallet_address ?? "", 6)}
                   </p>
-                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[10px] text-muted">
-                    <span>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 font-mono text-[10px] text-muted">
+                    <span className="flex items-center gap-1.5">
                       Iniciador:{" "}
-                      {c.initiator_signature
-                        ? ellipsify(c.initiator_signature, 8)
-                        : "—"}
+                      {c.initiator_signature ? (
+                        <>
+                          <span>{ellipsify(c.initiator_signature, 8)}</span>
+                          <a
+                            href={getExplorerUrl(`/tx/${c.initiator_signature}`, cluster)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                          >
+                            Explorer ↗
+                          </a>
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </span>
-                    <span>
-                      Aceptación:{" "}
-                      {c.counterparty_signature
-                        ? ellipsify(c.counterparty_signature, 8)
-                        : "—"}
-                    </span>
+                    {c.counterparty_signature && (
+                      <span className="flex items-center gap-1.5">
+                        Aceptación:{" "}
+                        <span>{ellipsify(c.counterparty_signature, 8)}</span>
+                        <a
+                          href={getExplorerUrl(`/tx/${c.counterparty_signature}`, cluster)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                        >
+                          Explorer ↗
+                        </a>
+                      </span>
+                    )}
                   </div>
                 </div>
 
