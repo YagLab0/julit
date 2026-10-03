@@ -1,35 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import type { Origin } from "../data/points";
-import {
-  OriginBatches,
-  OriginReference,
-  SortSelect,
-  type SortKey,
-} from "./assets-panel";
+import type { Origin } from "../data/origins";
+import { NoLotes, OriginReference } from "./assets-panel";
 
 /**
  * List view without the map: fallback if WebGL fails on the demo machine
  * and an accessible option (everything keyboard + screen-reader friendly).
  */
 export function AssetsListView({ origins }: { origins: Origin[] }) {
-  const [sort, setSort] = useState<SortKey>("price");
-
   return (
     <div className="absolute inset-0 overflow-y-auto px-4 pb-10 pt-28">
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Lotes
+              Orígenes
             </h1>
             <p className="text-sm text-muted">
-              Carbonato de litio de la Puna jujeña: en venta, en auditoría y
-              vendidos
+              Carbonato de litio de la Puna jujeña: fichas y referencias
+              públicas
             </p>
           </div>
-          <SortSelect value={sort} onChange={setSort} />
         </div>
 
         {origins.map((origin) => (
@@ -53,8 +44,8 @@ export function AssetsListView({ origins }: { origins: Origin[] }) {
             </div>
             <div className="mt-3 grid gap-4 md:grid-cols-[280px_1fr]">
               <OriginReference origin={origin} />
-              <div className="[&>ul:first-child]:grid [&>ul:first-child]:gap-3 [&>ul:first-child]:space-y-0 lg:[&>ul:first-child]:grid-cols-2">
-                <OriginBatches origin={origin} sort={sort} />
+              <div>
+                <NoLotes />
               </div>
             </div>
           </section>

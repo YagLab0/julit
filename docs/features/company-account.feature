@@ -17,6 +17,18 @@ Feature: Company account and verified wallet
     Then the API rejects the request
     And no company is created
 
+  @ui
+  Scenario: Producer type is not offered for self-registration
+    When a visitor opens the company registration form
+    Then only Auditor and Buyer are offered as company types
+
+  @api
+  Scenario: Reject a producer self-registration
+    Given a Supabase Auth user without a company profile
+    When the API receives a registration with the producer company type
+    Then the API rejects the request
+    And no company is created
+
   @api @db
   Scenario: Link a wallet by proving ownership
     Given a registered company without a wallet

@@ -52,7 +52,7 @@ export default async function NewBatchPage() {
         ) : !company.wallet_verified_at ? (
           <GateCard body="Vinculá la wallet verificada de tu empresa para poder firmar lotes." />
         ) : !company.origin_id ? (
-          <GateCard body="Asigná el origen de producción de tu empresa desde tu cuenta." />
+          <GateCard body="El origen de producción de tu empresa se provisiona desde el servidor. Contactá al operador de la demo." />
         ) : (
           <NewBatchClient
             producer={{

@@ -2,8 +2,9 @@
 
 3D map dApp: the user picks a point on a 3D map of the region and sees its
 on-chain assets for sale. Same pattern as the reference lithium project, but
-with JuLit data. Start from mock data with a visible demo notice; replace with
-Devnet PDAs (or an index) without touching the components.
+with JuLit data. Origins come from the public Supabase catalogue; batch
+surfaces stay empty until the Devnet index exists, and no simulated batch data
+ships (ADR-0007).
 
 ## 1. Stack
 
@@ -56,7 +57,8 @@ Devnet PDAs (or an index) without touching the components.
 ```
 app/<feature>/
 ├── page.tsx              # layout: map (dynamic, ssr:false) + header + notice + panel
-├── data/points.ts        # Point/Asset types + data + forSale()
+├── data/origins.ts       # Supabase origins row type + ORIGIN_COLUMNS + helpers
+├── data/points.ts        # geographic reference only (salar polygons, routes, ports)
 └── components/
     ├── region-map.tsx    # MapLibre: style, terrain, camera, markers
     ├── point-glow-overlay.tsx  # vgpu glow layer

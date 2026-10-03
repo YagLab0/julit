@@ -9,15 +9,20 @@ select ('00000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
   'company-' || n || '@example.test'
 from generate_series(1, 7) as n;
 
-insert into public.companies (id, name, company_type, wallet_address, wallet_verified_at) values
-  ('00000000-0000-0000-0000-000000000001', 'Producer A', 'producer', repeat('1', 31) || '2', now()),
-  ('00000000-0000-0000-0000-000000000002', 'Auditor', 'auditor', repeat('1', 31) || '3', now()),
-  ('00000000-0000-0000-0000-000000000003', 'Buyer A', 'buyer', repeat('1', 31) || '4', now()),
-  ('00000000-0000-0000-0000-000000000004', 'Buyer B', 'buyer', repeat('1', 31) || '5', now()),
-  ('00000000-0000-0000-0000-000000000005', 'Producer B', 'producer', repeat('1', 31) || '6', now()),
-  ('00000000-0000-0000-0000-000000000006', 'Unlinked buyer', 'buyer', null, null);
+insert into public.companies (id, name, company_type, wallet_address, wallet_verified_at, origin_id) values
+  ('00000000-0000-0000-0000-000000000001', 'Producer A', 'producer', repeat('1', 31) || '2', now(), 'olaroz'),
+  ('00000000-0000-0000-0000-000000000002', 'Auditor', 'auditor', repeat('1', 31) || '3', now(), null),
+  ('00000000-0000-0000-0000-000000000003', 'Buyer A', 'buyer', repeat('1', 31) || '4', now(), null),
+  ('00000000-0000-0000-0000-000000000004', 'Buyer B', 'buyer', repeat('1', 31) || '5', now(), null),
+  ('00000000-0000-0000-0000-000000000005', 'Producer B', 'producer', repeat('1', 31) || '6', now(), 'olaroz'),
+  ('00000000-0000-0000-0000-000000000006', 'Unlinked buyer', 'buyer', null, null, null);
 
 set local role service_role;
+
+insert into public.company_contracts (producer_id, counterparty_id, status, responded_at) values
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'accepted', now()),
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', 'accepted', now()),
+  ('00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000002', 'accepted', now());
 
 insert into public.batches (
   pda_address, batch_id, producer_wallet, auditor_wallet, reserved_buyer_wallet,
@@ -30,7 +35,7 @@ insert into public.batches (
 ), (
   repeat('1', 31) || '8', 'LIT-2026-EXAR-03', repeat('1', 31) || '2',
   repeat('1', 31) || '3', null,
-  'cauchari_olaroz', 50, 99.75, 80.25, 300.50, 7000, repeat('1', 63) || '3', 1001
+  'olaroz', 50, 99.75, 80.25, 300.50, 7000, repeat('1', 63) || '3', 1001
 );
 
 select throws_ok($$update public.companies set wallet_address = repeat('1', 31) || '9'
@@ -63,7 +68,7 @@ select throws_ok($$update public.batches set reserved_buyer_wallet = repeat('1',
   '23514', null, 'A reserved participant must be a buyer company');
 select throws_ok($$update public.batches set origin_id = 'unknown'
   where batch_id = 'LIT-2026-EXAR-02'$$,
-  '23503', null, 'A batch cannot reference an unknown origin');
+  '23514', null, 'A batch cannot reference an origin the producer is not bound to');
 
 select throws_ok($$update public.batches set purity_pct = 99.49
   where batch_id = 'LIT-2026-EXAR-02'$$,
