@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getBase58Decoder } from "@solana/kit";
 import { COMPANY_TYPE_LABELS, type CompanyType } from "../lib/company";
+import { ORIGINS, originName } from "../lib/origins";
 import { ellipsify, getExplorerUrl } from "../lib/explorer";
 import { useWallet } from "../lib/wallet/context";
 import { useCluster } from "../components/cluster-context";
@@ -15,6 +16,7 @@ export type AccountCompany = {
   companyType: CompanyType;
   walletAddress: string | null;
   walletVerifiedAt: string | null;
+  originId: string | null;
 };
 
 const NEXT_STEPS: Record<
@@ -23,7 +25,9 @@ const NEXT_STEPS: Record<
 > = {
   producer: {
     title: "Registrar lotes",
-    body: "Próximamente vas a poder crear lotes con métricas, origen y auditor designado, y firmarlos con tu wallet.",
+    body: "Creá un lote con sus métricas de producción y sostenibilidad, elegí el auditor designado y, opcionalmente, reservalo para un cliente.",
+    href: "/batches/new",
+    linkLabel: "Registrar lote",
   },
   auditor: {
     title: "Certificar lotes",
@@ -45,6 +49,8 @@ export function AccountClient({
   company: AccountCompany;
 }) {
   const nextStep = NEXT_STEPS[company.companyType];
+  const needsOrigin =
+    company.companyType === "producer" && company.originId == null;
 
   return (
     <div className="space-y-6">
@@ -54,6 +60,11 @@ export function AccountClient({
           {company.name}
         </h1>
         <p className="mt-1 text-xs text-muted">Cuenta: {email}</p>
+        {company.companyType === "producer" && company.originId && (
+          <p className="mt-1 text-xs text-muted">
+            Origen: {originName(company.originId)}
+          </p>
+        )}
       </section>
 
       <WalletCard
@@ -61,12 +72,14 @@ export function AccountClient({
         walletVerifiedAt={company.walletVerifiedAt}
       />
 
+      {needsOrigin && <OriginSetupCard />}
+
       <section className="rounded-2xl border border-border-low bg-card p-5">
         <h2 className="text-sm font-semibold">{nextStep.title}</h2>
         <p className="mt-1 text-xs leading-relaxed text-muted">
           {nextStep.body}
         </p>
-        {nextStep.href && (
+        {nextStep.href && !needsOrigin && (
           <Link
             href={nextStep.href}
             className="btn-secondary mt-3 inline-block"
@@ -76,6 +89,71 @@ export function AccountClient({
         )}
       </section>
     </div>
+  );
+}
+
+function OriginSetupCard() {
+  const router = useRouter();
+  const [originId, setOriginId] = useState<string>(ORIGINS[0].id);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function saveOrigin() {
+    setBusy(true);
+    setError(null);
+
+    const response = await fetch("/api/companies/origin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ origin_id: originId }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error ?? "No se pudo asignar el origen.");
+      setBusy(false);
+      return;
+    }
+
+    router.refresh();
+  }
+
+  return (
+    <section className="rounded-2xl border border-amber-300 bg-amber-50/60 p-5 dark:border-amber-800 dark:bg-amber-950/40">
+      <h2 className="text-sm font-semibold">Origen de producción</h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted">
+        Tu empresa productora todavía no tiene origen asignado. Elegilo una vez:
+        queda fijo y es el origen de todos tus lotes.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <select
+          value={originId}
+          onChange={(event) => setOriginId(event.target.value)}
+          className="rounded-lg border border-border-low bg-background px-3 py-2 text-sm text-foreground"
+        >
+          {ORIGINS.map((origin) => (
+            <option key={origin.id} value={origin.id}>
+              {origin.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => void saveOrigin()}
+          disabled={busy}
+          className="btn-primary"
+        >
+          {busy ? "Asignando…" : "Asignar origen"}
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 

@@ -20,7 +20,7 @@ export default async function AccountPage() {
 
   const { data: companyRow } = await supabase
     .from("companies")
-    .select("name, company_type, wallet_address, wallet_verified_at")
+    .select("name, company_type, wallet_address, wallet_verified_at, origin_id")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -31,6 +31,7 @@ export default async function AccountPage() {
           companyType: companyRow.company_type,
           walletAddress: companyRow.wallet_address,
           walletVerifiedAt: companyRow.wallet_verified_at,
+          originId: companyRow.origin_id,
         }
       : null;
 

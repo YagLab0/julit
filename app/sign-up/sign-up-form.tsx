@@ -6,6 +6,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { CompanyFields } from "../components/company-fields";
 import { inputClass, labelClass } from "../components/form-styles";
 import type { CompanyType } from "../lib/company";
+import { ORIGINS } from "../lib/origins";
 import { createClient } from "../lib/supabase/client";
 
 export function SignUpForm() {
@@ -15,6 +16,7 @@ export function SignUpForm() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [companyType, setCompanyType] = useState<CompanyType>("producer");
+  const [originId, setOriginId] = useState<string>(ORIGINS[0].id);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
@@ -50,7 +52,11 @@ export function SignUpForm() {
     const response = await fetch("/api/companies", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, company_type: companyType }),
+      body: JSON.stringify({
+        name,
+        company_type: companyType,
+        origin_id: companyType === "producer" ? originId : null,
+      }),
     });
 
     if (!response.ok && response.status !== 409) {
@@ -121,6 +127,8 @@ export function SignUpForm() {
         onNameChange={setName}
         companyType={companyType}
         onCompanyTypeChange={setCompanyType}
+        originId={originId}
+        onOriginIdChange={setOriginId}
       />
       {error && (
         <p role="alert" className="text-xs text-destructive">

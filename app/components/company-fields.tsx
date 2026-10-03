@@ -6,6 +6,7 @@ import {
   COMPANY_TYPES,
   type CompanyType,
 } from "../lib/company";
+import { ORIGINS } from "../lib/origins";
 import { inputClass, labelClass } from "./form-styles";
 
 type CompanyFieldsProps = {
@@ -13,6 +14,8 @@ type CompanyFieldsProps = {
   onNameChange: (name: string) => void;
   companyType: CompanyType;
   onCompanyTypeChange: (companyType: CompanyType) => void;
+  originId: string;
+  onOriginIdChange: (originId: string) => void;
 };
 
 export function CompanyFields({
@@ -20,6 +23,8 @@ export function CompanyFields({
   onNameChange,
   companyType,
   onCompanyTypeChange,
+  originId,
+  onOriginIdChange,
 }: CompanyFieldsProps) {
   return (
     <div className="space-y-4">
@@ -69,6 +74,30 @@ export function CompanyFields({
           ))}
         </div>
       </fieldset>
+
+      {companyType === "producer" && (
+        <div>
+          <label htmlFor="company-origin" className={labelClass}>
+            Origen de producción
+          </label>
+          <select
+            id="company-origin"
+            value={originId}
+            onChange={(event) => onOriginIdChange(event.target.value)}
+            required
+            className={inputClass}
+          >
+            {ORIGINS.map((origin) => (
+              <option key={origin.id} value={origin.id}>
+                {origin.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted">
+            Una productora opera un único origen. Queda fijo una vez asignado.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
