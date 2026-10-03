@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field } from "../../components/form-field";
@@ -9,7 +8,7 @@ import { VerifiedWalletGate } from "../../components/verified-wallet-gate";
 import { ellipsify } from "../../lib/explorer";
 import { Metric, Findings, numberFmt, percentFmt } from "../batch-display";
 import type { AuditorInfo } from "../audit-client";
-import { demoBatches, type DemoBatch, type EuAssessment } from "../demo-data";
+import type { AuditBatch, EuAssessment } from "../batches";
 import {
   CERTIFICATE_MAX_BYTES,
   validateCertifyForm,
@@ -57,10 +56,9 @@ function CertifyForm({
   batch,
   auditor,
 }: {
-  batch: DemoBatch;
+  batch: AuditBatch;
   auditor: AuditorInfo;
 }) {
-  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [digest, setDigest] = useState<string | null>(null);
   const [hashing, setHashing] = useState(false);
@@ -124,20 +122,11 @@ function CertifyForm({
     }
 
     // The certificate upload and certify_batch transaction land with the
-    // backend; the demo records the certification in the in-memory store.
-    const stored = demoBatches.find((b) => b.pdaAddress === batch.pdaAddress);
-    if (stored) {
-      stored.status = "audited";
-      stored.esgApproved = payload.esgApproved;
-      stored.euAssessment = payload.euAssessment;
-      stored.auditSha256 = payload.digest;
-    }
-
-    toast.success(`Lote ${batch.batchId} certificado`, {
+    // backend; for now the submit stops at that boundary.
+    toast.info("La certificación todavía no está conectada.", {
       description:
-        "La transacción on-chain se habilita con el programa Anchor.",
+        "La carga del certificado y la transacción on-chain se habilitan con la API y el programa Anchor.",
     });
-    router.push("/audit");
   };
 
   const ready =
@@ -292,14 +281,12 @@ function CertifyForm({
 }
 
 export function CertifyBatch({
-  pda,
+  batch,
   auditor,
 }: {
-  pda: string;
+  batch: AuditBatch | null;
   auditor: AuditorInfo;
 }) {
-  const batch = demoBatches.find((b) => b.pdaAddress === pda);
-
   return (
     <VerifiedWalletGate
       name={auditor.name}
@@ -316,7 +303,7 @@ export function CertifyBatch({
             Volver a mis lotes
           </Link>
         </div>
-      ) : batch.status === "audited" ? (
+      ) : batch.status !== "created" ? (
         <div className="mt-8 rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>

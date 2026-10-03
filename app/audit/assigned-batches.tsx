@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { ellipsify } from "../lib/explorer";
 import { Metric, Findings, numberFmt, percentFmt } from "./batch-display";
-import { demoBatches, type DemoBatch } from "./demo-data";
+import type { AuditBatch } from "./batches";
 
-function BatchCard({ batch }: { batch: DemoBatch }) {
+function BatchCard({ batch }: { batch: AuditBatch }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -53,14 +53,14 @@ function BatchCard({ batch }: { batch: DemoBatch }) {
         />
       </div>
 
-      {batch.status === "audited" && <Findings batch={batch} />}
+      {batch.status !== "created" && <Findings batch={batch} />}
     </div>
   );
 }
 
-export function AssignedBatches() {
-  const pending = demoBatches.filter((b) => b.status === "created");
-  const certified = demoBatches.filter((b) => b.status === "audited");
+export function AssignedBatches({ batches }: { batches: AuditBatch[] }) {
+  const pending = batches.filter((b) => b.status === "created");
+  const certified = batches.filter((b) => b.status !== "created");
 
   return (
     <>
