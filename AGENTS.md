@@ -10,6 +10,7 @@
 * Make architectural decisions for the long term. Do not accept a stopgap that only works for now and is meant to be replaced later.
 * Use Conventional Commits for commit messages (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
 * Write all code, comments, identifiers, and documentation in English. Only end-user-facing strings (UI text, toasts, user docs) go in Spanish.
+* Never publish anything to GitHub — issues, pull requests, comments, or releases. This repository's issue tracker is local markdown: specs and tickets live under `.scratch/<feature-slug>/`.
 
 ## Frontend
 
