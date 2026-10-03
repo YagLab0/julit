@@ -33,7 +33,6 @@ import { useWallet } from "../../lib/wallet/context";
 import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
 import { createMemoInstruction } from "../../lib/solana/memo";
 import { getExplorerUrl } from "../../lib/explorer";
-import { createClient } from "../../lib/supabase/client";
 import { buildContractAgreementMessage } from "../../lib/contracts";
 
 // R3F touches WebGL: client-only, never prerendered.
@@ -408,18 +407,20 @@ export function OriginModal({
           ]
       ).join("");
 
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("batches")
-        .update({
-          status: "completed",
-          buyer_wallet: wallet.account.address,
+      const res = await fetch("/api/batches/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pda_address: selected.pda_address,
           completion_tx_signature: simulatedSignature,
-        })
-        .eq("pda_address", selected.pda_address);
+        }),
+      });
 
-      if (error) {
-        throw new Error(error.message);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ?? "Error desconocido"
+        );
       }
 
       toast.success("¡Compra completada con éxito!", {
