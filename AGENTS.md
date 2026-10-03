@@ -1,4 +1,4 @@
-# Agent Rules
+# Agent Rule
 
 - Never assume anything. If requirements, context, or answers are uncertain or unknown, ask the user before proceeding.
 - Do not preserve backward compatibility. Remove obsolete paths instead of adding compatibility layers, fallbacks, or migrations.
