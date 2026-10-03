@@ -17,10 +17,10 @@ export const DEMO_AUDITORS: Counterparty[] = [
 export const DEMO_BUYERS: Counterparty[] = [
   {
     name: "Tesla Energy",
-    wallet: "ClienteTeslaEnergy33333333333333333333333",
+    wallet: "C1ienteTesaEnergy3333333333333333333333333",
   },
   {
     name: "BMW Group",
-    wallet: "ClienteBMWGroup4444444444444444444444444",
+    wallet: "C1ienteBMWGroup44444444444444444444444444",
   },
 ];

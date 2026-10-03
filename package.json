@@ -12,7 +12,8 @@
     "lint": "eslint",
     "postinstall": "node scripts/copy-maplibre-worker.mjs",
     "setup": "pnpm anchor-build && pnpm codama:js",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run"
   },
   "description": "Next.js, Tailwind, @solana/kit, Anchor vault program",
   "keywords": [
@@ -64,6 +65,7 @@
     "eslint-config-next": "16.0.10",
     "prettier": "^3.6.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "3.2.4"
   }
 }
