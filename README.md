@@ -62,9 +62,12 @@ supabase test db
 supabase db advisors --local --level warn --fail-on warn
 ```
 
-`supabase db reset --local` deletes local data and replays all migrations, including
-the existing migration that drops `public.users`. Use it only in a disposable
-database. Remote deployment requires an explicit, separately reviewed database push.
+`supabase db reset --local` deletes local data and replays all migrations. Use it only
+in a disposable database.
+
+These migrations are already applied to the linked project `sixusybflhwjtoikrecn`
+(`JuLit`). Remote deployment requires an explicit, separately reviewed database push;
+start with `supabase db push --dry-run --linked` to see exactly what would be applied.
 
 ## Structure
 

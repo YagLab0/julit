@@ -80,7 +80,9 @@ supabase test db
 supabase db advisors --local --level warn --fail-on warn
 ```
 
-Use `supabase db reset --local` only for a disposable local database: it deletes local data and replays all migrations, including the pre-existing `drop_public_users` migration. Review `supabase db push --help` and the linked project's migration history before explicitly choosing to deploy remotely. No remote changes are part of this delivery.
+Use `supabase db reset --local` only for a disposable local database: it deletes local data and replays all migrations.
+
+This migration set is applied to the linked project `sixusybflhwjtoikrecn` (`JuLit`, Postgres 17.11, PostgREST v14.18). Any further production change requires an explicit, separately reviewed `supabase db push --linked`, previewed with `--dry-run`.
 
 ## References
 
