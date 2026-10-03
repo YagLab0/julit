@@ -68,7 +68,7 @@ Client insertion, replacement, and deletion are denied by restrictive Storage po
 
 RLS and explicit grants provide public `SELECT` access to batches and origins, including reserved batches and negative audit outcomes. An authenticated company can read only its own company row; anonymous clients cannot read company records. Participant selection goes through the authenticated API, which returns only the necessary company directory fields. The server role can create/update companies and rebuild the batch index. Browsers cannot mutate these tables. Internal trigger functions are outside the exposed schema and use `SECURITY INVOKER` with a fixed empty search path.
 
-The catalogue filters `status = 'audited'`. A partial index supports ordering by `indexed_at DESC, pda_address`; participant and origin foreign keys are indexed. These indexes support the sub-second read target but do not establish an end-to-end latency guarantee.
+The public origin fiche reads the indexed batches of its origin, newest first (`indexed_at DESC`), and labels each status. A partial index supports ordering by `indexed_at DESC, pda_address`; participant and origin foreign keys are indexed. These indexes support the sub-second read target but do not establish an end-to-end latency guarantee.
 
 Public passport URLs are `/batch/<PDA_ADDRESS>`, not bare batch identifiers. QR images and Explorer URLs are derived rather than stored. Explorer links use `https://explorer.solana.com/address/<PDA_ADDRESS>?cluster=devnet`.
 
