@@ -252,14 +252,13 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
                   ? "Sin empresas registradas"
                   : "Elegí una empresa…"}
             </option>
-            {(directory?.type === offerType
-              ? directory.companies
-              : []
-            ).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            {(directory?.type === offerType ? directory.companies : []).map(
+              (c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              )
+            )}
           </select>
           <button
             type="button"
