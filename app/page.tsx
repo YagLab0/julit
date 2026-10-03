@@ -3,6 +3,7 @@
 import { ThemeToggle } from "./components/theme-toggle";
 import { ClusterSelect } from "./components/cluster-select";
 import { WalletButton } from "./components/wallet-button";
+import { SessionMenu } from "./components/session-menu";
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
             Solana Starter Kit
           </span>
           <div className="flex items-center gap-3">
+            <SessionMenu />
             <ThemeToggle />
             <ClusterSelect />
             <WalletButton />

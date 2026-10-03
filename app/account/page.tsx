@@ -1,0 +1,64 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { SessionMenu } from "../components/session-menu";
+import { ThemeToggle } from "../components/theme-toggle";
+import { WalletButton } from "../components/wallet-button";
+import { isCompanyType } from "../lib/company";
+import { createClient } from "../lib/supabase/server";
+import { AccountClient } from "./account-client";
+import { CompanyOnboardingForm } from "./company-onboarding-form";
+
+export default async function AccountPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const { data: companyRow } = await supabase
+    .from("companies")
+    .select("name, company_type, wallet_address, wallet_verified_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const company =
+    companyRow && isCompanyType(companyRow.company_type)
+      ? {
+          name: companyRow.name,
+          companyType: companyRow.company_type,
+          walletAddress: companyRow.wallet_address,
+          walletVerifiedAt: companyRow.wallet_verified_at,
+        }
+      : null;
+
+  return (
+    <div className="relative min-h-screen bg-background text-foreground">
+      <header className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-6 py-4">
+        <Link
+          href="/"
+          className="text-sm font-bold tracking-tight text-foreground"
+        >
+          JuLit
+        </Link>
+        <div className="flex items-center gap-3">
+          <SessionMenu />
+          <WalletButton />
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-4xl px-6 pb-16">
+        {company ? (
+          <AccountClient email={user.email ?? ""} company={company} />
+        ) : (
+          <div className="mx-auto mt-10 max-w-md">
+            <CompanyOnboardingForm />
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

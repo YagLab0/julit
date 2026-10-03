@@ -9,6 +9,7 @@ See [the glossary](../GLOSSARY.md) and [architecture decisions](./adr/).
 ## Tables
 
 - `companies`: one row per `auth.users.id`, with `name`, `company_type` (`producer`, `auditor`, or `buyer`), and at most one verified wallet. Registration can precede wallet linking. Once linked, the wallet and company type are fixed. A wallet cannot belong to two companies. There are no employee accounts, memberships, invitations, or duplicate user table.
+- `wallet_link_challenges`: the single-use proof records behind wallet linking: a 32-byte random `nonce`, the account and email it was issued to, the wallet address, the request domain, the issue time, an expiry five minutes later, and the consumption time. Only the server role can read or write them; browsers hold no grants. See [ADR-0005](./adr/0005-wallet-link-challenges-are-single-use.md).
 - `origins`: `olaroz` (Salar de Olaroz) and `cauchari_olaroz` (Cauchari-Olaroz).
 - `batches`: one row per PDA, identified publicly by `pda_address`. `(producer_wallet, batch_id)` is unique. `batch_id` occupies 1–32 UTF-8 bytes, matching the Solana seed limit; `LIT-2026-EXAR-02` is a valid example. The same identifier may be used by another producer.
 
@@ -16,14 +17,14 @@ Every participating wallet must belong to a registered, wallet-verified company 
 
 ## Units and exact values
 
-| Database field | Meaning | On-chain representation |
-| --- | --- | --- |
-| `volume_tonnes` | Whole metric tonnes of lithium carbonate | Unsigned `u64` |
-| `purity_pct` | 99.50–100.00%, at most two decimals | Percentage × 100, integer basis points |
-| `water_footprint_m3_per_tonne` | m³ of water per tonne, at most two decimals | Value × 100 as `u64` |
-| `carbon_footprint_kg_co2e_per_tonne` | kg CO₂e per tonne, at most two decimals | Value × 100 as `u64` |
-| `price_usdc` | Total batch quote, at most six decimals | Value × 1,000,000 as `u64` |
-| `observed_slot` | RPC context slot of the indexed snapshot | Unsigned `u64` |
+| Database field                       | Meaning                                     | On-chain representation                |
+| ------------------------------------ | ------------------------------------------- | -------------------------------------- |
+| `volume_tonnes`                      | Whole metric tonnes of lithium carbonate    | Unsigned `u64`                         |
+| `purity_pct`                         | 99.50–100.00%, at most two decimals         | Percentage × 100, integer basis points |
+| `water_footprint_m3_per_tonne`       | m³ of water per tonne, at most two decimals | Value × 100 as `u64`                   |
+| `carbon_footprint_kg_co2e_per_tonne` | kg CO₂e per tonne, at most two decimals     | Value × 100 as `u64`                   |
+| `price_usdc`                         | Total batch quote, at most six decimals     | Value × 1,000,000 as `u64`             |
+| `observed_slot`                      | RPC context slot of the indexed snapshot    | Unsigned `u64`                         |
 
 Postgres `numeric` and explicit constraints preserve unsigned values up to `18446744073709551615` and reject excess precision rather than silently rounding. Scaled water/carbon values and prices cannot exceed that integer range. Purity below 99.50% is rejected. Non-finite values, negative values, fractional tonnage, and overflows are rejected.
 
@@ -60,7 +61,7 @@ Client insertion, replacement, and deletion are denied by restrictive Storage po
 ## Authentication and access
 
 1. Supabase Auth creates the company account. The API derives `companies.id` from the verified session, never an arbitrary submitted user ID.
-2. The authenticated API creates the company profile. It proves wallet control using a domain-bound signed message tied to that account, with expiry and replay protection, before setting `wallet_address` and `wallet_verified_at`. Wallet connection alone is not proof of ownership. This also does not verify the company's legal identity or professional accreditation.
+2. The authenticated API creates the company profile. It proves wallet control with a single-use, domain-bound wallet link challenge tied to that account: `POST /api/companies/wallet/challenge` issues a nonce that expires after five minutes, the wallet signs the resulting message, and `POST /api/companies/wallet` rebuilds the message from the stored row, verifies the Ed25519 signature, and consumes the challenge while setting `wallet_address` and `wallet_verified_at` in one transaction (`public.link_company_wallet`, executable only by the server role). Wallet connection alone is not proof of ownership. This also does not verify the company's legal identity or professional accreditation.
 3. Wallet signatures authorize Solana instructions independently of the Auth session.
 4. The API verifies Devnet, programme ownership, account discriminator, PDA derivation, confirmed transaction success and account data before indexing. It updates `observed_slot` and `indexed_at` from the verified snapshot. Account metadata and user-editable JWT metadata are not authorization sources.
 

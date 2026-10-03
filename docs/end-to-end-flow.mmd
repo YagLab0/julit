@@ -15,10 +15,13 @@ sequenceDiagram
   PROD->>FE: Login Supabase Auth
   FE->>API: POST companies (nombre + tipo)
   API->>SB: INSERT companies con id = auth.uid, sin wallet
-  PROD->>FE: Firma mensaje domain-bound con signMessage
-  FE->>API: POST companies/wallet (mensaje + firma)
-  API->>API: Verifica firma ed25519, dominio, expiración y replay
-  API->>SB: UPDATE wallet_address + wallet_verified_at (queda fijo)
+  FE->>API: POST companies/wallet/challenge (wallet)
+  API->>SB: INSERT wallet_link_challenges (nonce, expira en 5 min)
+  API-->>FE: Mensaje domain-bound a firmar
+  PROD->>FE: Firma el mensaje con signMessage
+  FE->>API: POST companies/wallet (nonce + firma)
+  API->>API: Verifica firma ed25519 sobre el mensaje reconstruido
+  API->>SB: link_company_wallet consume el desafío y fija wallet + timestamp
 
   Note over PROD,SC: 2 · Productor crea el lote (on-chain y luego índice)
   PROD->>FE: Formulario de métricas, origen, auditor y reservado opcional

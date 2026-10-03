@@ -1,0 +1,92 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useMemo, useState } from "react";
+import { createClient } from "../lib/supabase/client";
+import { inputClass, labelClass } from "../components/form-styles";
+
+export function SignInForm() {
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError(
+        signInError.message === "Invalid login credentials"
+          ? "Email o contraseña incorrectos."
+          : signInError.message === "Email not confirmed"
+            ? "Confirmá tu correo electrónico antes de ingresar."
+            : "No se pudo iniciar sesión. Intentá de nuevo."
+      );
+      setBusy(false);
+      return;
+    }
+
+    router.push("/account");
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email" className={labelClass}>
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          autoComplete="email"
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label htmlFor="password" className={labelClass}>
+          Contraseña
+        </label>
+        <input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+          autoComplete="current-password"
+          className={inputClass}
+        />
+      </div>
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
+      <button type="submit" disabled={busy} className="btn-primary w-full">
+        {busy ? "Ingresando…" : "Ingresar"}
+      </button>
+      <p className="text-center text-xs text-muted">
+        ¿No tenés cuenta?{" "}
+        <Link
+          href="/sign-up"
+          className="font-semibold text-brand-700 dark:text-brand-400"
+        >
+          Creá la de tu empresa
+        </Link>
+      </p>
+    </form>
+  );
+}

@@ -60,6 +60,18 @@ _Avoid_: Payment received, USDC transfer
 A registered business entity participating in batch production, auditing, or purchasing.
 _Avoid_: Wallet, employee
 
+**Company Account**:
+The single Supabase Auth account that owns a company and grants it application access; it does not authorize blockchain operations by itself.
+_Avoid_: Membership, employee login
+
+**Verified Wallet**:
+The single wallet whose ownership a company has proven by signing a wallet link challenge; it is fixed once verified.
+_Avoid_: Connected wallet, login wallet
+
+**Wallet Link Challenge**:
+A single-use, domain-bound nonce issued to an authenticated company so its wallet can prove ownership; it expires five minutes after issuance.
+_Avoid_: Session, login token
+
 **Batch Price**:
 The total quoted price for purchasing an entire batch, expressed in USDC.
 _Avoid_: Price per tonne, payment received

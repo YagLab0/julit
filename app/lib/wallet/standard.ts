@@ -7,8 +7,10 @@ import {
   type StandardDisconnectFeature,
 } from "@wallet-standard/features";
 import {
+  SolanaSignMessage,
   SolanaSignTransaction,
   SolanaSignAndSendTransaction,
+  type SolanaSignMessageFeature,
   type SolanaSignTransactionFeature,
   type SolanaSignAndSendTransactionFeature,
 } from "@solana/wallet-standard-features";
@@ -54,6 +56,7 @@ function createConnector(wallet: StandardWallet): WalletConnector {
 
       const hasSendTx = SolanaSignAndSendTransaction in wallet.features;
       const hasSignTx = SolanaSignTransaction in wallet.features;
+      const hasSignMessage = SolanaSignMessage in wallet.features;
 
       const session: WalletSession = {
         account: walletAccount,
@@ -89,6 +92,18 @@ function createConnector(wallet: StandardWallet): WalletConnector {
                 transaction,
                 chain: chain as `${string}:${string}`,
               });
+              return new Uint8Array(result.signature);
+            }
+          : undefined,
+        signMessage: hasSignMessage
+          ? async (message: Uint8Array) => {
+              const feature = wallet.features[
+                SolanaSignMessage
+              ] as SolanaSignMessageFeature[typeof SolanaSignMessage];
+              const [result] = await feature.signMessage({ account, message });
+              if (result.signatureType && result.signatureType !== "ed25519") {
+                throw new Error("Unsupported signature type");
+              }
               return new Uint8Array(result.signature);
             }
           : undefined,

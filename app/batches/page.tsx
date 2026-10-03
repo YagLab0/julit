@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { ThemeToggle } from "../components/theme-toggle";
+import { SessionMenu } from "../components/session-menu";
 import { MapLayersPanel, type LayerState } from "./components/map-layers-panel";
 import type { Basemap } from "./components/map-style";
 import type { MapStatus } from "./components/region-map";
@@ -218,6 +219,7 @@ export default function JuLitAppPage() {
           <Link href="/batches/new" className="btn-secondary">
             Registrar lote
           </Link>
+          <SessionMenu />
           <ViewToggle
             view={view}
             onChange={setView}
