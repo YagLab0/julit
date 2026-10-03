@@ -64,6 +64,53 @@ pub mod julit {
         batch.bump = ctx.bumps.batch;
         Ok(())
     }
+
+    /// Certifies a batch exactly once. Only the designated auditor may sign;
+    /// the audit record lives in its own PDA so the Batch layout never
+    /// migrates and the certificate digest stays permanently on-chain for
+    /// later forgery checks.
+    pub fn certify_batch(
+        ctx: Context<CertifyBatch>,
+        audit_hash: [u8; 32],
+        esg_approved: bool,
+        eu_assessment: EuAssessment,
+    ) -> Result<()> {
+        let batch = &mut ctx.accounts.batch;
+        batch.status = BatchStatus::Audited;
+
+        let audit = &mut ctx.accounts.audit;
+        audit.audit_hash = audit_hash;
+        audit.esg_approved = esg_approved;
+        audit.eu_assessment = eu_assessment;
+        audit.certified_slot = Clock::get()?.slot;
+        audit.bump = ctx.bumps.audit;
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct CertifyBatch<'info> {
+    #[account(
+        mut,
+        seeds = [b"batch", batch.producer.as_ref(), batch.batch_id.as_bytes()],
+        bump = batch.bump,
+        has_one = auditor @ BatchError::NotDesignatedAuditor,
+        constraint = batch.status == BatchStatus::Created @ BatchError::AlreadyCertified,
+    )]
+    pub batch: Account<'info, Batch>,
+    /// One-shot audit record. `init` makes a second certification impossible.
+    #[account(
+        init,
+        payer = auditor,
+        space = Audit::SPACE,
+        seeds = [b"audit", batch.key().as_ref()],
+        bump
+    )]
+    pub audit: Account<'info, Audit>,
+    /// The batch's designated auditor, signing and paying for the audit PDA.
+    #[account(mut)]
+    pub auditor: Signer<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -120,11 +167,34 @@ impl Batch {
     }
 }
 
+/// Immutable audit record for a certified batch. Lives in its own PDA
+/// (["audit", batch]) so the Batch layout stays untouched.
+#[account]
+pub struct Audit {
+    /// SHA-256 of the certificate PDF uploaded to storage.
+    pub audit_hash: [u8; 32],
+    pub esg_approved: bool,
+    pub eu_assessment: EuAssessment,
+    pub certified_slot: u64,
+    pub bump: u8,
+}
+
+impl Audit {
+    pub const SPACE: usize = 8 + 32 + 1 + 1 + 8 + 1;
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
 pub enum BatchStatus {
     Created,
     Audited,
     Completed,
+}
+
+/// EU Battery Regulation conformity outcome declared by the auditor.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+pub enum EuAssessment {
+    Conformant,
+    NonConformant,
 }
 
 #[error_code]
@@ -141,4 +211,8 @@ pub enum BatchError {
     AuditorIsProducer,
     #[msg("Reserved buyer cannot be the producer or the auditor")]
     BuyerIsParty,
+    #[msg("Only the designated auditor can certify this batch")]
+    NotDesignatedAuditor,
+    #[msg("Batch is already audited")]
+    AlreadyCertified,
 }
