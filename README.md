@@ -43,7 +43,9 @@ cp .env.example .env.local   # then fill in your Supabase project values
 ```
 
 Supabase clients live in `app/lib/supabase/` (`client.ts` for browser,
-`server.ts` for Server Components/Actions).
+`server.ts` for Server Components/Actions, `service.ts` for server-only API
+writes). `SUPABASE_SECRET_KEY` (Project Settings -> API keys) is required for
+the API route handlers and must never reach the browser.
 
 ## Database
 

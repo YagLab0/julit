@@ -30,6 +30,7 @@ type WalletContextValue = {
   status: WalletStatus;
   wallet: WalletSession | undefined;
   signer: TransactionSigner | undefined;
+  signMessage: ((message: Uint8Array) => Promise<Uint8Array>) | undefined;
   error: unknown;
   connect: (connectorId: string) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -121,10 +122,15 @@ export function WalletProvider({ children }: PropsWithChildren) {
     localStorage.removeItem(STORAGE_KEY);
   }, [session]);
 
-  const signer = useMemo(
-    () => (session ? createWalletSigner(session, chain) : undefined),
-    [session, chain]
-  );
+  const signer = useMemo(() => {
+    if (!session) return undefined;
+    try {
+      return createWalletSigner(session, chain);
+    } catch {
+      // A wallet that only signs messages still connects; it cannot sign transactions.
+      return undefined;
+    }
+  }, [session, chain]);
 
   const value = useMemo<WalletContextValue>(
     () => ({
@@ -132,6 +138,7 @@ export function WalletProvider({ children }: PropsWithChildren) {
       status,
       wallet: session,
       signer,
+      signMessage: session?.signMessage,
       error,
       connect,
       disconnect,

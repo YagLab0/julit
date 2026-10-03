@@ -42,3 +42,17 @@ Feature: Company account and verified wallet
     Given a company with a verified wallet
     When anyone tries to replace the wallet, change the company type, or reassign the company to another account
     Then the database rejects the change
+
+  @api @db
+  Scenario: Consume a wallet link challenge once
+    Given a company signs a wallet link challenge
+    When the API links the wallet
+    Then the challenge is consumed
+    And it cannot authorize another link
+
+  @api @db
+  Scenario: Keep a challenge after a failed link
+    Given a company signs a wallet link challenge for a wallet already linked to another company
+    When the API attempts to link the wallet
+    Then the API rejects the request
+    And the challenge is not consumed
