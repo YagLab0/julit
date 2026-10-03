@@ -68,6 +68,45 @@ function ViewToggle({
   );
 }
 
+type CatalogFilter = "sale" | "purchased";
+
+function CatalogFilterToggle({
+  filter,
+  onChange,
+}: {
+  filter: CatalogFilter;
+  onChange: (filter: CatalogFilter) => void;
+}) {
+  const options: { value: CatalogFilter; label: string }[] = [
+    { value: "sale", label: "En venta" },
+    { value: "purchased", label: "Mis compras" },
+  ];
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Filtro de lotes"
+      className="flex rounded-lg border border-border bg-card p-0.5 shadow-sm"
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          aria-checked={filter === option.value}
+          onClick={() => onChange(option.value)}
+          className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+            filter === option.value
+              ? "bg-primary text-primary-foreground"
+              : "text-foreground/75 hover:bg-accent"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function LoadingOverlay() {
   return (
     <div className="absolute inset-0 z-10 grid place-items-center bg-background">
@@ -167,6 +206,7 @@ export default function JuLitAppPage() {
   const [catalogueStatus, setCatalogueStatus] =
     useState<CatalogueStatus>("loading");
   const [reloadKey, setReloadKey] = useState(0);
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>("sale");
   const [view, setView] = useState<View>("map");
   const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
   const [skipIntroSignal, setSkipIntroSignal] = useState(0);
@@ -288,6 +328,10 @@ export default function JuLitAppPage() {
           <Link href="/batches/new" className="btn-secondary">
             Registrar lote
           </Link>
+          <CatalogFilterToggle
+            filter={catalogFilter}
+            onChange={setCatalogFilter}
+          />
           <SessionMenu />
           <ViewToggle
             view={view}
@@ -314,6 +358,7 @@ export default function JuLitAppPage() {
         <OriginModal
           key={selectedOrigin.id}
           origin={selectedOrigin}
+          filter={catalogFilter}
           onClose={() => setSelectedId(null)}
         />
       )}

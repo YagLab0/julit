@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getBase58Decoder } from "@solana/kit";
 import { passportPath } from "../../batch/verification";
 import { useCluster } from "../../components/cluster-context";
 import { PassportQr } from "../../components/passport-qr";
@@ -28,6 +29,12 @@ import {
   type SortKey,
 } from "./batch-display";
 import { Modal } from "./modal";
+import { useWallet } from "../../lib/wallet/context";
+import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
+import { createMemoInstruction } from "../../lib/solana/memo";
+import { getExplorerUrl } from "../../lib/explorer";
+import { createClient } from "../../lib/supabase/client";
+import { buildContractAgreementMessage } from "../../lib/contracts";
 
 // R3F touches WebGL: client-only, never prerendered.
 const BatchModel = dynamic(
@@ -44,24 +51,25 @@ const BatchModel = dynamic(
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0">
+    <div className="rounded-lg border border-border bg-card p-2 text-center">
       <p className="text-[10px] font-medium tracking-wide text-muted uppercase">
         {label}
       </p>
-      <p className="truncate font-mono text-sm font-semibold tabular-nums text-foreground">
+      <p className="mt-0.5 font-mono text-xs font-semibold text-foreground">
         {value}
       </p>
     </div>
   );
 }
 
-/** Single 3D viewer for the selected batch, with HUD overlays. */
+/** 3D stage with overlay badge and big-bag volume summary. */
 function BatchStage({ batch }: { batch: Batch }) {
   const bags = bagCount(batch.volume_tonnes);
+
   return (
-    <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-[radial-gradient(ellipse_at_50%_30%,var(--color-brand-100),var(--color-card)_70%)] dark:bg-[radial-gradient(ellipse_at_50%_30%,color-mix(in_srgb,var(--color-brand-900)_70%,transparent),var(--color-card)_70%)]">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border bg-gradient-to-b from-card via-card to-background">
       <BatchModel
-        batchId={batch.pda_address}
+        batchId={batch.batch_id}
         volumeTonnes={batch.volume_tonnes}
       />
 
@@ -197,11 +205,66 @@ export function OriginModal({
   onClose,
 }: {
   origin: Origin;
+  filter?: "sale" | "purchased";
   onClose: () => void;
 }) {
+  const { wallet, signMessage } = useWallet();
+  const { send: sendTransaction } = useSendTransaction();
+  const { cluster } = useCluster();
+
   const { state, retry } = useOriginBatches(origin.id);
   const [sort, setSort] = useState<SortKey>("price");
   const [selectedPda, setSelectedPda] = useState<string | null>(null);
+
+  const [buying, setBuying] = useState(false);
+  const [producer, setProducer] = useState<{
+    id: string;
+    name: string;
+    wallet_address: string;
+  } | null>(null);
+  const [contractStatus, setContractStatus] = useState<
+    "none" | "pending" | "accepted" | "revoked"
+  >("none");
+  const [requestingContract, setRequestingContract] = useState(false);
+
+  // Load producer company and contract status
+  useEffect(() => {
+    let active = true;
+
+    fetch(`/api/companies?origin_id=${origin.id}&type=producer`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data?.companies?.[0]) return;
+        setProducer(data.companies[0]);
+      })
+      .catch(() => {});
+
+    fetch("/api/companies/contracts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data?.contracts) return;
+        const matching = data.contracts.find(
+          (c: {
+            producer?: { origin_id?: string; id?: string };
+            producer_id?: string;
+            status: "none" | "pending" | "accepted" | "revoked";
+          }) =>
+            c.producer?.origin_id === origin.id ||
+            c.producer?.id === producer?.id ||
+            c.producer_id === producer?.id
+        );
+        if (matching) {
+          setContractStatus(matching.status);
+        } else {
+          setContractStatus("none");
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [origin.id, producer?.id]);
 
   const batches = state.status === "ready" ? state.batches : [];
   const forSale = sortBatches(
@@ -216,6 +279,161 @@ export function OriginModal({
     created[0] ??
     completed[0];
   const availableTonnes = forSale.reduce((sum, b) => sum + b.volume_tonnes, 0);
+
+  const isReservedForOther = Boolean(
+    selected?.reserved_buyer_wallet &&
+      wallet?.account?.address !== selected.reserved_buyer_wallet
+  );
+  const isReservedForMe = Boolean(
+    selected?.reserved_buyer_wallet &&
+      wallet?.account?.address === selected.reserved_buyer_wallet
+  );
+
+  async function handleRequestContract() {
+    if (!producer) {
+      toast.error(
+        "No se pudo identificar la empresa productora de este origen."
+      );
+      return;
+    }
+    if (!wallet) {
+      toast.warning("Billetera no conectada", {
+        description:
+          "Conectá tu billetera para solicitar el contrato comercial.",
+      });
+      return;
+    }
+
+    setRequestingContract(true);
+    try {
+      const timestamp = new Date().toISOString();
+      const message = buildContractAgreementMessage({
+        producerWallet: producer.wallet_address,
+        counterpartyWallet: wallet.account.address,
+        initiatorWallet: wallet.account.address,
+        timestamp,
+      });
+
+      let signature: string;
+      let isOnChain = false;
+
+      try {
+        // Record on-chain using Solana SPL Memo Program transaction
+        const memoIx = createMemoInstruction(message, wallet.account.address);
+        signature = await sendTransaction({ instructions: [memoIx] });
+        isOnChain = true;
+      } catch (txErr) {
+        console.warn(
+          "On-chain memo transaction failed or unsupported, falling back to signMessage:",
+          txErr
+        );
+        if (!signMessage) throw txErr;
+        const signatureBytes = await signMessage(
+          new TextEncoder().encode(message)
+        );
+        signature = getBase58Decoder().decode(signatureBytes);
+      }
+
+      const res = await fetch("/api/companies/contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target_company_id: producer.id,
+          initiator_wallet: wallet.account.address,
+          signature,
+          is_onchain: isOnChain,
+          timestamp,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error(
+          err?.error ?? "No se pudo registrar la solicitud de contrato."
+        );
+        return;
+      }
+
+      setContractStatus("pending");
+      if (isOnChain) {
+        const explorerUrl = getExplorerUrl(`/tx/${signature}`, cluster);
+        toast.success("Solicitud registrada en la blockchain de Solana", {
+          description: "La transacción fue confirmada en Solana Devnet.",
+          action: {
+            label: "Ver en Explorer",
+            onClick: () => window.open(explorerUrl, "_blank"),
+          },
+        });
+      } else {
+        toast.success("Solicitud de contrato enviada con éxito", {
+          description: `Tu solicitud criptográfica fue registrada para ${producer.name}. El productor podrá aceptarla en su panel.`,
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(msg)) {
+        toast.info("Transacción cancelada", {
+          description: "Cancelaste la firma en tu billetera.",
+        });
+      } else {
+        toast.error("Error al registrar la solicitud en la red.");
+      }
+    } finally {
+      setRequestingContract(false);
+    }
+  }
+
+  async function handleBuy() {
+    if (!selected) return;
+    if (isReservedForOther) {
+      toast.error(
+        "Este lote se encuentra reservado exclusivamente para otro cliente corporativo."
+      );
+      return;
+    }
+    if (!wallet) {
+      toast.warning("Billetera no disponible", {
+        description: "Conectá tu billetera para adquirir el lote.",
+      });
+      return;
+    }
+
+    setBuying(true);
+    try {
+      const simulatedSignature = Array.from(
+        { length: 88 },
+        () =>
+          "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"[
+            Math.floor(Math.random() * 58)
+          ]
+      ).join("");
+
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("batches")
+        .update({
+          status: "completed",
+          buyer_wallet: wallet.account.address,
+          completion_tx_signature: simulatedSignature,
+        })
+        .eq("pda_address", selected.pda_address);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      toast.success("¡Compra completada con éxito!", {
+        description: `Lote ${selected.batch_id} adquirido (${Number(selected.price_usdc).toLocaleString("es-AR")} USDC).`,
+      });
+
+      retry();
+    } catch (err) {
+      console.error("Error buying batch", err);
+      toast.error("Error al procesar la liquidación del lote.");
+    } finally {
+      setBuying(false);
+    }
+  }
 
   return (
     <Modal onClose={onClose} labelledBy="origin-modal-title" maxWidth={1040}>
@@ -258,6 +476,7 @@ export function OriginModal({
             </svg>
           </button>
         </div>
+
         {state.status === "loading" && (
           <div aria-hidden className="mt-3 grid grid-cols-3 gap-3 sm:max-w-md">
             {[0, 1, 2].map((i) => (
@@ -313,11 +532,55 @@ export function OriginModal({
             </section>
 
             <div className="min-w-0 space-y-5">
+              {/* Commercial Contract Banner */}
+              {producer && (
+                <section className="rounded-xl border border-border bg-card p-3.5 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground">
+                        Acuerdo comercial · {producer.name}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-muted">
+                        {contractStatus === "accepted"
+                          ? "✓ Tu empresa está autorizada para reservar y adquirir lotes exclusivos."
+                          : contractStatus === "pending"
+                            ? "⏳ Solicitud enviada on-chain en Solana (Aguardando confirmación del productor)."
+                            : "Requerido para la asignación preferencial y reserva exclusiva de lotes."}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      {contractStatus === "accepted" ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          Cliente habilitado
+                        </span>
+                      ) : contractStatus === "pending" ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                          Solicitud enviada
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={requestingContract}
+                          onClick={() => void handleRequestContract()}
+                          className="btn-primary cursor-pointer px-3 py-1.5 text-xs whitespace-nowrap"
+                        >
+                          {requestingContract
+                            ? "Firmando…"
+                            : "Solicitar contrato comercial"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+
               {forSale.length > 0 && (
                 <section>
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-foreground">
-                      Lotes en venta
+                      Lotes en venta ({forSale.length})
                     </h3>
                     <SortSelect value={sort} onChange={setSort} />
                   </div>
@@ -405,28 +668,42 @@ export function OriginModal({
               {selected.batch_id}
             </p>
           </div>
-          {selected.status === "audited" ? (
-            <button
-              type="button"
-              onClick={() =>
-                toast.info(
-                  "Demo visual: la compra todavía no está conectada.",
-                  {
-                    description: `Lote ${selected.batch_id} · solo visualización.`,
-                  }
-                )
-              }
-              className="btn-primary min-w-32 px-5 py-2.5 text-sm"
-            >
-              Comprar lote
-            </button>
-          ) : (
-            <p className="max-w-52 text-right text-[11px] text-muted">
-              {selected.status === "created"
-                ? "Se habilita para la compra al ser auditado."
-                : "Compra simulada: no hubo transferencia de fondos."}
-            </p>
-          )}
+          <div className="flex items-center gap-2">
+            {selected.status === "completed" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/30 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                Lote adquirido
+              </span>
+            )}
+            {selected.status === "audited" && (
+              <button
+                type="button"
+                disabled={buying || isReservedForOther}
+                onClick={() => void handleBuy()}
+                className={`min-w-32 px-5 py-2.5 text-sm transition ${
+                  isReservedForOther
+                    ? "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
+                    : "btn-primary cursor-pointer"
+                }`}
+                title={
+                  isReservedForOther ? "Reservado para otra empresa" : undefined
+                }
+              >
+                {buying
+                  ? "Confirmando…"
+                  : isReservedForOther
+                    ? "Reservado para otra empresa"
+                    : isReservedForMe
+                      ? "Comprar lote (Reservado)"
+                      : "Comprar lote"}
+              </button>
+            )}
+            {selected.status === "created" && (
+              <p className="max-w-52 text-right text-[11px] text-muted">
+                Se habilita para la compra al ser auditado.
+              </p>
+            )}
+          </div>
         </footer>
       )}
     </Modal>

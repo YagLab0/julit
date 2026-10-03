@@ -3,6 +3,34 @@ import { jsonError, readJsonBody } from "../../lib/server/api";
 import { createClient } from "../../lib/supabase/server";
 import { createServiceClient } from "../../lib/supabase/service";
 
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const type = url.searchParams.get("type");
+  const originId = url.searchParams.get("origin_id");
+
+  const service = createServiceClient();
+  let query = service
+    .from("companies")
+    .select(
+      "id, name, company_type, origin_id, wallet_address, wallet_verified_at"
+    )
+    .not("wallet_address", "is", null);
+
+  if (type) {
+    query = query.eq("company_type", type);
+  }
+  if (originId) {
+    query = query.eq("origin_id", originId);
+  }
+
+  const { data: companies, error } = await query;
+  if (error) {
+    return jsonError("Error al obtener las empresas registradas.", 500);
+  }
+
+  return Response.json({ companies: companies ?? [] });
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {

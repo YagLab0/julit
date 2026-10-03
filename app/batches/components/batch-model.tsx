@@ -7,6 +7,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { BRAND_SCALE } from "./brand";
 import { bagCount, MAX_BAGS } from "./batch-display";
+export { bagCount, TONNES_PER_BAG } from "./batch-display";
 
 const BAG = { w: 0.62, h: 0.72, gap: 0.08 };
 const GRID = 3; // bags per row/column in one layer
