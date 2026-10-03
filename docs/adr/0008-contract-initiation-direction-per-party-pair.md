@@ -19,7 +19,7 @@ party, which is the auditor or the buyer regardless of who offered.
 
 Consequences: the API enforces both directions (`POST` rejects a producer
 offering to a buyer, and rejects any pair outside the two flows);
-`PATCH` lets the *responder* act — the counterparty for producer-auditor
+`PATCH` lets the _responder_ act — the counterparty for producer-auditor
 contracts, the producer for buyer-producer ones. The responder is derived
 from the same type rule, so no `initiated_by` column exists. Accepted
 contracts keep feeding the batch form's counterparty options unchanged:

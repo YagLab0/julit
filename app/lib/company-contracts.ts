@@ -13,7 +13,7 @@ export type ContractRole = "producer" | "counterparty";
 export type ContractPosture = "initiator" | "responder";
 
 export function contractDirection(
-  counterpartyType: CompanyType,
+  counterpartyType: CompanyType
 ): { initiator: ContractRole; responder: ContractRole } | null {
   switch (counterpartyType) {
     case "auditor":
@@ -27,7 +27,7 @@ export function contractDirection(
 
 export function contractPosture(
   role: ContractRole,
-  counterpartyType: CompanyType,
+  counterpartyType: CompanyType
 ): ContractPosture | null {
   const direction = contractDirection(counterpartyType);
   if (!direction) return null;
@@ -41,8 +41,11 @@ export function contractPosture(
  */
 export function offerDirection(
   initiatorType: CompanyType,
-  responderType: CompanyType,
-): { counterpartyType: "auditor" | "buyer"; producerIsInitiator: boolean } | null {
+  responderType: CompanyType
+): {
+  counterpartyType: "auditor" | "buyer";
+  producerIsInitiator: boolean;
+} | null {
   if (initiatorType === "producer") {
     return responderType === "auditor"
       ? { counterpartyType: "auditor", producerIsInitiator: true }

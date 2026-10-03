@@ -311,7 +311,8 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
                     ].toLowerCase()}
                     {c.posture === "responder"
                       ? " · oferta recibida"
-                      : " · oferta enviada"})
+                      : " · oferta enviada"}
+                    )
                   </span>
                 </p>
                 <span
@@ -389,8 +390,8 @@ function BuyerOffersCard() {
     <section className="rounded-2xl border border-border-low bg-card p-5">
       <h2 className="text-sm font-semibold">Ofertas de compradoras</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Las compradoras te ofrecen contratos para reservar tus lotes.
-        Aceptalas para habilitarlas como clientes.
+        Las compradoras te ofrecen contratos para reservar tus lotes. Aceptalas
+        para habilitarlas como clientes.
       </p>
 
       {offers === null ? (
@@ -408,9 +409,7 @@ function BuyerOffersCard() {
             >
               <p className="text-xs">
                 <span className="font-medium">{c.counterparty?.name}</span>{" "}
-                <span className="text-muted">
-                  quiere comprar tu producción
-                </span>
+                <span className="text-muted">quiere comprar tu producción</span>
               </p>
               <div className="flex gap-2">
                 <button
