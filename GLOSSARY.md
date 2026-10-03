@@ -107,3 +107,11 @@ _Avoid_: Any registered auditor, inspector
 **Client**:
 A buyer company holding an accepted company contract with the producer.
 _Avoid_: Customer, any registered buyer
+
+**Buyer Portfolio**:
+The view of all completed batches acquired by a specific buyer company, used for tracking lithium inventory and regulatory reporting.
+_Avoid_: Shopping cart, wallet balance, transaction ledger
+
+**Completed Batch**:
+A batch whose simulated purchase has been recorded on Solana and indexed with its purchasing buyer wallet and completion transaction signature.
+_Avoid_: Paid batch, delivered batch

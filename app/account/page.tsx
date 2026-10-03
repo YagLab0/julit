@@ -4,7 +4,7 @@ import { SessionMenu } from "../components/session-menu";
 import { ThemeToggle } from "../components/theme-toggle";
 import { isCompanyType } from "../lib/company";
 import { createClient } from "../lib/supabase/server";
-import { AccountClient } from "./account-client";
+import { AccountClient, type AcquiredBatch } from "./account-client";
 import { CompanyOnboardingForm } from "./company-onboarding-form";
 
 export default async function AccountPage() {
@@ -34,6 +34,17 @@ export default async function AccountPage() {
         }
       : null;
 
+  let acquiredBatches: AcquiredBatch[] = [];
+  if (company?.companyType === "buyer" && company.walletAddress) {
+    const { data: batches } = await supabase
+      .from("batches")
+      .select("batch_id, pda_address, volume_tonnes, purity_pct, price_usdc, completion_tx_signature, origin_id, indexed_at")
+      .eq("buyer_wallet", company.walletAddress)
+      .eq("status", "completed")
+      .order("indexed_at", { ascending: false });
+    acquiredBatches = batches ?? [];
+  }
+
   return (
     <div className="relative min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-6 py-4">
@@ -51,7 +62,11 @@ export default async function AccountPage() {
 
       <main className="mx-auto max-w-4xl px-6 pb-16">
         {company ? (
-          <AccountClient email={user.email ?? ""} company={company} />
+          <AccountClient
+            email={user.email ?? ""}
+            company={company}
+            acquiredBatches={acquiredBatches}
+          />
         ) : (
           <div className="mx-auto mt-10 max-w-md">
             <CompanyOnboardingForm />

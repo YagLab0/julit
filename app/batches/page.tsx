@@ -66,6 +66,45 @@ function ViewToggle({
   );
 }
 
+type CatalogFilter = "sale" | "purchased";
+
+function CatalogFilterToggle({
+  filter,
+  onChange,
+}: {
+  filter: CatalogFilter;
+  onChange: (filter: CatalogFilter) => void;
+}) {
+  const options: { value: CatalogFilter; label: string }[] = [
+    { value: "sale", label: "En venta" },
+    { value: "purchased", label: "Mis compras" },
+  ];
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Filtro de lotes"
+      className="flex rounded-lg border border-border bg-card p-0.5 shadow-sm"
+    >
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          aria-checked={filter === option.value}
+          onClick={() => onChange(option.value)}
+          className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+            filter === option.value
+              ? "bg-primary text-primary-foreground"
+              : "text-foreground/75 hover:bg-accent"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function LoadingOverlay() {
   return (
     <div className="absolute inset-0 z-10 grid place-items-center bg-background">
@@ -122,6 +161,7 @@ function IntroTitle({
 export default function JuLitAppPage() {
   // Visual demo: static mock data, no repository, no wallet.
   const origins = useMemo(() => mergeOrigins(), []);
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>("sale");
   const [view, setView] = useState<View>("map");
   const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
   const [skipIntroSignal, setSkipIntroSignal] = useState(0);
@@ -139,7 +179,18 @@ export default function JuLitAppPage() {
       ? "dark"
       : "light";
 
-  const selectedOrigin = origins.find((o) => o.id === selectedId) ?? null;
+  const displayedOrigins = useMemo(() => {
+    if (catalogFilter === "sale") {
+      return origins;
+    }
+    return origins.map((origin) => ({
+      ...origin,
+      batches: origin.batches.filter((b) => b.status === "Completed"),
+    }));
+  }, [origins, catalogFilter]);
+
+  const selectedOrigin =
+    displayedOrigins.find((o) => o.id === selectedId) ?? null;
 
   const handleStatus = useCallback((status: MapStatus) => {
     setMapStatus(status);
@@ -177,7 +228,7 @@ export default function JuLitAppPage() {
           aria-hidden={!showMap}
         >
           <RegionMap
-            origins={origins}
+            origins={displayedOrigins}
             selectedId={selectedId}
             onSelect={handleSelect}
             onStatusChange={handleStatus}
@@ -203,7 +254,7 @@ export default function JuLitAppPage() {
         </div>
       )}
 
-      {view === "list" && <AssetsListView origins={origins} />}
+      {view === "list" && <AssetsListView origins={displayedOrigins} />}
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-wrap items-start justify-between gap-3 p-4">
         <div className="pointer-events-auto rounded-2xl border border-border bg-card/90 px-4 py-3 shadow-sm backdrop-blur">
@@ -219,6 +270,10 @@ export default function JuLitAppPage() {
           <Link href="/batches/new" className="btn-secondary">
             Registrar lote
           </Link>
+          <CatalogFilterToggle
+            filter={catalogFilter}
+            onChange={setCatalogFilter}
+          />
           <SessionMenu />
           <ViewToggle
             view={view}

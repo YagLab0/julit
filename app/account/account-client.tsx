@@ -19,6 +19,17 @@ export type AccountCompany = {
   originId: string | null;
 };
 
+export type AcquiredBatch = {
+  batch_id: string;
+  pda_address: string;
+  volume_tonnes: number;
+  purity_pct: number;
+  price_usdc: number;
+  completion_tx_signature: string;
+  origin_id: string;
+  indexed_at: string;
+};
+
 const NEXT_STEPS: Record<
   CompanyType,
   { title: string; body: string; href?: string; linkLabel?: string }
@@ -44,9 +55,11 @@ const NEXT_STEPS: Record<
 export function AccountClient({
   email,
   company,
+  acquiredBatches = [],
 }: {
   email: string;
   company: AccountCompany;
+  acquiredBatches?: AcquiredBatch[];
 }) {
   const nextStep = NEXT_STEPS[company.companyType];
   const needsOrigin =
@@ -74,21 +87,139 @@ export function AccountClient({
 
       {needsOrigin && <OriginSetupCard />}
 
-      <section className="rounded-2xl border border-border-low bg-card p-5">
-        <h2 className="text-sm font-semibold">{nextStep.title}</h2>
-        <p className="mt-1 text-xs leading-relaxed text-muted">
-          {nextStep.body}
-        </p>
-        {nextStep.href && !needsOrigin && (
-          <Link
-            href={nextStep.href}
-            className="btn-secondary mt-3 inline-block"
-          >
-            {nextStep.linkLabel}
-          </Link>
-        )}
-      </section>
+      {company.companyType === "buyer" && (
+        <BuyerPortfolioCard batches={acquiredBatches} />
+      )}
+
+      {company.companyType !== "buyer" && (
+        <section className="rounded-2xl border border-border-low bg-card p-5">
+          <h2 className="text-sm font-semibold">{nextStep.title}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            {nextStep.body}
+          </p>
+          {nextStep.href && !needsOrigin && (
+            <Link
+              href={nextStep.href}
+              className="btn-secondary mt-3 inline-block"
+            >
+              {nextStep.linkLabel}
+            </Link>
+          )}
+        </section>
+      )}
     </div>
+  );
+}
+
+function BuyerPortfolioCard({
+  batches,
+}: {
+  batches: AcquiredBatch[];
+}) {
+  const { cluster } = useCluster();
+  const totalVolume = batches.reduce(
+    (sum, b) => sum + Number(b.volume_tonnes || 0),
+    0
+  );
+
+  return (
+    <section className="rounded-2xl border border-border-low bg-card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold">Lotes adquiridos</h2>
+          <p className="mt-0.5 text-xs text-muted">
+            Portafolio de litio bajo liquidación simulada (ADR-0002).
+          </p>
+        </div>
+        <Link href="/batches" className="btn-secondary text-xs">
+          Explorar catálogo
+        </Link>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-border-low bg-secondary/50 p-3">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+            Volumen acumulado
+          </p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
+            {new Intl.NumberFormat("es-AR").format(totalVolume)}{" "}
+            <span className="text-xs font-semibold text-muted">t Li₂CO₃</span>
+          </p>
+        </div>
+        <div className="rounded-xl border border-border-low bg-secondary/50 p-3">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+            Lotes completados
+          </p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
+            {batches.length}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border-low bg-secondary/50 p-3 col-span-2 sm:col-span-1">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+            Liquidación
+          </p>
+          <p className="mt-1 text-xs font-semibold text-brand-700 dark:text-brand-400">
+            Simulada en Devnet
+          </p>
+        </div>
+      </div>
+
+      {batches.length === 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-border-low p-6 text-center">
+          <p className="text-xs font-medium text-muted">
+            Tu empresa todavía no tiene lotes adquiridos.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            Navegá el catálogo de lotes auditados para iniciar la compra simulada.
+          </p>
+          <Link href="/batches" className="btn-primary mt-3 inline-block text-xs">
+            Ir al catálogo
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {batches.map((batch) => (
+            <div
+              key={batch.batch_id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-low bg-background p-3 text-sm"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-foreground">
+                    {batch.batch_id}
+                  </span>
+                  <span className="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-700 dark:text-brand-400">
+                    Completado
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted">
+                  {batch.volume_tonnes} t · {Number(batch.purity_pct).toFixed(2)} % Li₂CO₃ · Origen: {originName(batch.origin_id)}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/batch/${batch.pda_address || batch.batch_id}`}
+                  className="btn-secondary text-xs px-2.5 py-1.5"
+                >
+                  Ver Pasaporte
+                </Link>
+                {batch.completion_tx_signature && (
+                  <a
+                    href={getExplorerUrl(`/tx/${batch.completion_tx_signature}`, cluster)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                  >
+                    Explorer
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

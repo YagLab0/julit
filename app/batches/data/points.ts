@@ -38,6 +38,9 @@ export type Batch = {
   reportSha256?: string;
   reportUrl?: string;
   history: BatchEvent[];
+  pdaAddress?: string;
+  reservedBuyerWallet?: string;
+  buyerWallet?: string;
 };
 
 export type OriginInfo = {
