@@ -179,5 +179,25 @@ insert into public.batches (
     '6VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
     '1VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
     1010
+  ),
+  (
+    'BatchPdaPenaBLanca3333333333333333333333',
+    'LIT-2026-PBL-03',
+    'ProdSaLesdeLALtipLano111111111111111111111',
+    'AuditAnd1noLabCert111111111111111111111111',
+    null,
+    'pena_blanca',
+    280,
+    99.72,
+    46.50,
+    7800.00,
+    14500.000000,
+    'audited',
+    'd1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+    true,
+    'conformant',
+    '7VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    '4VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    1015
   )
 on conflict (pda_address) do nothing;

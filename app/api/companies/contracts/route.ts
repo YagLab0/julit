@@ -208,7 +208,13 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      return jsonError("Error al registrar la solicitud de contrato.", 500);
+      console.error("Error al actualizar contrato revocado:", error);
+      return jsonError(
+        error.message
+          ? `Error al registrar la solicitud de contrato: ${error.message}`
+          : "Error al registrar la solicitud de contrato.",
+        500
+      );
     }
     contractData = data;
   } else {
@@ -226,7 +232,13 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      return jsonError("Error al registrar la solicitud de contrato.", 500);
+      console.error("Error al registrar solicitud de contrato:", error);
+      return jsonError(
+        error.message
+          ? `Error al registrar la solicitud de contrato: ${error.message}`
+          : "Error al registrar la solicitud de contrato.",
+        500
+      );
     }
     contractData = data;
   }

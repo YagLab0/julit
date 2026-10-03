@@ -372,6 +372,14 @@ export function OriginModal({
     "none" | "pending" | "accepted" | "revoked"
   >("none");
   const [requestingContract, setRequestingContract] = useState(false);
+  const [currentUserCompany, setCurrentUserCompany] = useState<{
+    id: string;
+    name: string;
+    company_type: string;
+    wallet_address: string | null;
+    wallet_verified_at: string | null;
+  } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -439,6 +447,26 @@ export function OriginModal({
       })
       .catch(() => {});
 
+    // Fetch caller company profile
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!active) return;
+      if (!user) {
+        setAuthChecked(true);
+        setCurrentUserCompany(null);
+        return;
+      }
+      supabase
+        .from("companies")
+        .select("id, name, company_type, wallet_address, wallet_verified_at")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!active) return;
+          setAuthChecked(true);
+          setCurrentUserCompany(data ?? null);
+        });
+    });
+
     return () => {
       active = false;
     };
@@ -466,10 +494,48 @@ export function OriginModal({
       );
       return;
     }
+    if (authChecked && !currentUserCompany) {
+      toast.error("Iniciá sesión para solicitar un contrato comercial.", {
+        description:
+          "Podés registrarte o ingresar como comprador desde el menú de sesión.",
+      });
+      return;
+    }
+    if (
+      currentUserCompany &&
+      currentUserCompany.company_type !== "buyer" &&
+      currentUserCompany.company_type !== "auditor"
+    ) {
+      toast.error("Tipo de cuenta no habilitada", {
+        description:
+          "Sólo empresas compradoras o auditoras pueden solicitar acuerdos comerciales con productoras.",
+      });
+      return;
+    }
+    if (
+      currentUserCompany &&
+      (!currentUserCompany.wallet_address ||
+        !currentUserCompany.wallet_verified_at)
+    ) {
+      toast.warning("Billetera no verificada", {
+        description:
+          "Debés vincular y verificar la billetera de tu empresa en tu cuenta antes de solicitar contratos.",
+      });
+      return;
+    }
     if (!wallet) {
       toast.warning("Billetera no conectada", {
         description:
           "Conectá tu billetera para solicitar el contrato comercial.",
+      });
+      return;
+    }
+    if (
+      currentUserCompany?.wallet_address &&
+      wallet.account.address !== currentUserCompany.wallet_address
+    ) {
+      toast.error("Billetera no coincide", {
+        description: `Conectá la billetera verificada de tu empresa (${currentUserCompany.wallet_address.slice(0, 4)}...${currentUserCompany.wallet_address.slice(-4)}) para firmar la solicitud.`,
       });
       return;
     }
@@ -705,6 +771,23 @@ export function OriginModal({
                         <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                         Solicitud enviada
                       </span>
+                    ) : authChecked && !currentUserCompany ? (
+                      <Link
+                        href="/sign-in"
+                        className="btn-primary inline-block cursor-pointer px-3 py-1.5 text-xs whitespace-nowrap"
+                      >
+                        Iniciar sesión
+                      </Link>
+                    ) : authChecked &&
+                      currentUserCompany &&
+                      (!currentUserCompany.wallet_address ||
+                        !currentUserCompany.wallet_verified_at) ? (
+                      <Link
+                        href="/account"
+                        className="btn-secondary inline-block cursor-pointer px-3 py-1.5 text-xs whitespace-nowrap"
+                      >
+                        Vincular wallet
+                      </Link>
                     ) : (
                       <button
                         type="button"
