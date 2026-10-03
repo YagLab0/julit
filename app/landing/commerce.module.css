@@ -110,13 +110,6 @@
   padding: 36px;
 }
 
-.participantIcon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 32px;
-  color: var(--color-brand-700);
-}
-
 .participantCard p {
   max-width: 420px;
   margin-top: 16px;
@@ -183,9 +176,5 @@
   .commerceCard,
   .participantCard {
     padding: 24px;
-  }
-
-  .participantIcon {
-    margin-bottom: 24px;
   }
 }
