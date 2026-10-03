@@ -1,4 +1,8 @@
 import styles from "./commerce.module.css";
+import {
+  BuyerReviewWidget,
+  ProducerStructureWidget,
+} from "./participant-widgets";
 
 export function CommerceSection() {
   return (
@@ -198,19 +202,7 @@ export function ParticipantsSection() {
 
         <div className={styles.participantsGrid}>
           <article className={styles.participantCard} data-landing-reveal>
-            <svg
-              className={styles.participantIcon}
-              viewBox="0 0 48 48"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m5 31 9-16 9 16m-5-9 6-11 19 25H5" />
-              <path d="M5 42h38M14 36v6m20-6v6M14 15l4 7" />
-            </svg>
+            <ProducerStructureWidget />
             <h3>Para productores</h3>
             <p className="text-muted">
               Presentá el origen y la evidencia de tus lotes en una estructura
@@ -224,20 +216,7 @@ export function ParticipantsSection() {
             data-landing-reveal
             data-landing-delay="50"
           >
-            <svg
-              className={styles.participantIcon}
-              viewBox="0 0 48 48"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M29 7H11a3 3 0 0 0-3 3v28a3 3 0 0 0 3 3h15M29 7v10h10L29 7Zm10 10v6M15 22h11m-11 6h7" />
-              <circle cx="33" cy="33" r="7" />
-              <path d="m38 38 5 5m-13-10 2 2 4-4" />
-            </svg>
+            <BuyerReviewWidget />
             <h3>Para compradores</h3>
             <p className="text-muted">
               Revisá los datos declarados, la documentación y la evaluación del
