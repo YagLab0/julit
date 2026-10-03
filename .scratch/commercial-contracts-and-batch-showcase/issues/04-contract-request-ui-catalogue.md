@@ -4,10 +4,10 @@
 
 **Blocked by:** 01: Fixtures de prueba locales y Batch Showcase enriquecido con 3D en el modal de origen, 03: API de contratos comerciales con verificación de firma Ed25519
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Add contract status banner and CTA button in `OriginModal` header/detail.
-- [ ] Connect "Solicitar contrato comercial" to wallet `signMessage` and `POST /api/companies/contracts`.
-- [ ] Show pending state badge: "Solicitud enviada (Pendiente)".
-- [ ] Show accepted state badge: "Cliente habilitado", unlocking purchase for reserved batches.
-- [ ] Display informative toasts using Sonner for contract submission.
+- [x] Add contract status banner and CTA button in `OriginModal` header/detail.
+- [x] Connect "Solicitar contrato comercial" to wallet `signMessage` and `POST /api/companies/contracts`.
+- [x] Show pending state badge: "Solicitud enviada (Pendiente)".
+- [x] Show accepted state badge: "Cliente habilitado", unlocking purchase for reserved batches.
+- [x] Display informative toasts using Sonner for contract submission.

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import React, { Component, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { getBase58Decoder } from "@solana/kit";
 import { formatNumber } from "../data/points";
 import type { Origin } from "../data/origins";
 import { OriginReference } from "./assets-panel";
@@ -11,6 +12,7 @@ import { bagCount, TONNES_PER_BAG } from "./batch-model";
 import { Modal } from "./modal";
 import { useWallet } from "../../lib/wallet/context";
 import { createClient } from "../../lib/supabase/client";
+import { buildContractAgreementMessage } from "../../lib/contracts";
 
 export type BatchRow = {
   batch_id: string;
@@ -351,11 +353,20 @@ export function OriginModal({
   filter?: "sale" | "purchased";
   onClose: () => void;
 }) {
-  const { wallet } = useWallet();
+  const { wallet, signMessage } = useWallet();
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
+  const [producer, setProducer] = useState<{
+    id: string;
+    name: string;
+    wallet_address: string;
+  } | null>(null);
+  const [contractStatus, setContractStatus] = useState<
+    "none" | "pending" | "accepted" | "revoked"
+  >("none");
+  const [requestingContract, setRequestingContract] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -389,10 +400,42 @@ export function OriginModal({
       }
     });
 
+    // Fetch producer company for this origin
+    fetch(`/api/companies?origin_id=${origin.id}&type=producer`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data?.companies?.[0]) return;
+        setProducer(data.companies[0]);
+      })
+      .catch(() => {});
+
+    // Fetch user contracts
+    fetch("/api/companies/contracts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data?.contracts) return;
+        const matching = data.contracts.find(
+          (c: {
+            producer?: { origin_id?: string; id?: string };
+            producer_id?: string;
+            status: "none" | "pending" | "accepted" | "revoked";
+          }) =>
+            c.producer?.origin_id === origin.id ||
+            c.producer?.id === producer?.id ||
+            c.producer_id === producer?.id
+        );
+        if (matching) {
+          setContractStatus(matching.status);
+        } else {
+          setContractStatus("none");
+        }
+      })
+      .catch(() => {});
+
     return () => {
       active = false;
     };
-  }, [origin.id, filter]);
+  }, [origin.id, filter, producer?.id]);
 
   const selected = batches.find((b) => b.batch_id === selectedId) ?? batches[0];
 
@@ -408,6 +451,73 @@ export function OriginModal({
     selected?.reserved_buyer_wallet &&
       wallet?.account?.address === selected.reserved_buyer_wallet
   );
+
+  async function handleRequestContract() {
+    if (!producer) {
+      toast.error("No se pudo identificar la empresa productora de este origen.");
+      return;
+    }
+    if (!wallet) {
+      toast.warning("Billetera no conectada", {
+        description: "Conectá tu billetera para solicitar el contrato comercial.",
+      });
+      return;
+    }
+    if (!signMessage) {
+      toast.warning("Firma no disponible", {
+        description: "Tu billetera no soporta firma de mensajes (signMessage).",
+      });
+      return;
+    }
+
+    setRequestingContract(true);
+    try {
+      const timestamp = new Date().toISOString();
+      const message = buildContractAgreementMessage({
+        producerWallet: producer.wallet_address,
+        counterpartyWallet: wallet.account.address,
+        initiatorWallet: wallet.account.address,
+        timestamp,
+      });
+
+      const signatureBytes = await signMessage(
+        new TextEncoder().encode(message)
+      );
+      const signature = getBase58Decoder().decode(signatureBytes);
+
+      const res = await fetch("/api/companies/contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target_company_id: producer.id,
+          signature,
+          timestamp,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error(err?.error ?? "No se pudo solicitar el contrato comercial.");
+        return;
+      }
+
+      setContractStatus("pending");
+      toast.success("Solicitud de contrato enviada con éxito", {
+        description: `Tu solicitud criptográfica fue registrada para ${producer.name}. El productor podrá aceptarla en su panel.`,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(msg)) {
+        toast.info("Firma cancelada", {
+          description: "Cancelaste la firma en tu billetera.",
+        });
+      } else {
+        toast.error("Error al firmar o enviar la solicitud.");
+      }
+    } finally {
+      setRequestingContract(false);
+    }
+  }
 
   async function handleBuy() {
     if (!selected) return;
@@ -548,6 +658,50 @@ export function OriginModal({
 
           {/* Right Column: Categorized Batches & Origin Reference */}
           <div className="min-w-0 space-y-5">
+            {/* Commercial Contract Banner */}
+            {producer && (
+              <section className="rounded-xl border border-border bg-card p-3.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground">
+                      Acuerdo comercial · {producer.name}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted">
+                      {contractStatus === "accepted"
+                        ? "✓ Tu empresa está autorizada para reservar y adquirir lotes exclusivos."
+                        : contractStatus === "pending"
+                          ? "⏳ Solicitud enviada criptográficamente (Aguardando firma del productor)."
+                          : "Requerido para la asignación preferencial y reserva exclusiva de lotes."}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    {contractStatus === "accepted" ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Cliente habilitado
+                      </span>
+                    ) : contractStatus === "pending" ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Solicitud enviada
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={requestingContract}
+                        onClick={() => void handleRequestContract()}
+                        className="btn-primary cursor-pointer px-3 py-1.5 text-xs whitespace-nowrap"
+                      >
+                        {requestingContract
+                          ? "Firmando…"
+                          : "Solicitar contrato comercial"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
+
             {loading ? (
               <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-muted">
                 Cargando lotes del origen…
