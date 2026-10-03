@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  verifyCertification,
-  type VerifyCertificationInput,
-} from "./verify";
+import { verifyCertification, type VerifyCertificationInput } from "./verify";
 
 const AUDITOR = "AuditorWallet111111111111111111111111111111";
 const OTHER = "OtherWallet1111111111111111111111111111111";

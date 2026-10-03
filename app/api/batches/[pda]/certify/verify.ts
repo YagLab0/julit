@@ -64,7 +64,9 @@ export type VerifiedCertification = {
 
 export type CertifyRejection = { status: number; message: string };
 
-export function verifyCertification(input: VerifyCertificationInput):
+export function verifyCertification(
+  input: VerifyCertificationInput
+):
   | { ok: true; certification: VerifiedCertification }
   | { ok: false; rejection: CertifyRejection } {
   const reject = (status: number, message: string) => ({

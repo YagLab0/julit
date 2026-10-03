@@ -22,10 +22,7 @@ import {
 import { createSolanaClient } from "../../../../lib/solana-client";
 import { createClient } from "../../../../lib/supabase/server";
 import { createServiceClient } from "../../../../lib/supabase/service";
-import {
-  verifyCertification,
-  type CertifyInstructionFacts,
-} from "./verify";
+import { verifyCertification, type CertifyInstructionFacts } from "./verify";
 
 const BATCH_STATUS_NAMES = {
   [BatchStatus.Created]: "created",
@@ -142,8 +139,7 @@ export async function POST(
       );
       if (isCertify) {
         try {
-          const decoded =
-            getCertifyBatchInstructionDataDecoder().decode(data);
+          const decoded = getCertifyBatchInstructionDataDecoder().decode(data);
           certifyInstruction = {
             batch: accountKeys[ix.accounts[0]],
             audit: accountKeys[ix.accounts[1]],

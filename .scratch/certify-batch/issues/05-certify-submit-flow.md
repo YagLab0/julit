@@ -10,9 +10,9 @@ a rejected wallet signature records nothing.
 
 **Blocked by:** 03, 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Submit runs the three steps in order with per-step failure states
-- [ ] Wallet rejection aborts without touching the index
-- [ ] Success toast + return to workspace; certified batch shows findings + Explorer link (devnet)
-- [ ] `pnpm build`, `pnpm lint`, `pnpm test`, `pnpm format:check` green
+- [x] Submit runs the three steps in order with per-step failure states
+- [x] Wallet rejection aborts without touching the index
+- [x] Success toast + return to workspace; certified batch shows findings + Explorer link (devnet)
+- [x] `pnpm build`, `pnpm lint`, `pnpm test`, `pnpm format:check` green

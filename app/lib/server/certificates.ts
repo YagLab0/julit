@@ -8,8 +8,7 @@ export function certificatePath(pda: string, digest: string): string {
 }
 
 export function bytesToHex(bytes: ReadonlyUint8Array | ArrayBuffer): string {
-  const view =
-    bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes;
+  const view = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes;
   return Array.from(view)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
