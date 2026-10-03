@@ -27,9 +27,24 @@ Devnet PDAs (or an index) without touching the components.
 
 ## 3. Design tokens (`app/globals.css`)
 
-- Use semantic tokens only: `bg-background`, `text-foreground`, `bg-card`,
-  `border-border-low`, `text-muted`, `bg-primary` /
-  `text-primary-foreground`, `bg-cream`. Never hardcode hex in components.
+- Surfaces/text/borders: semantic tokens only (`bg-background`,
+  `text-foreground`, `bg-card`, `border-border-low`, `text-muted`,
+  `bg-secondary`, `hover:bg-accent`). Never hardcode hex in components.
+- Brand: `--color-brand-*` scale (plain `@theme`, teal by default) with
+  utilities (`bg-brand-600`, `text-brand-700`, `ring-brand-200`…).
+  `--color-primary` points at the brand (`brand-600` light /
+  `brand-500` dark), so `bg-primary` buttons follow the retheme.
+- Roles: `.btn-primary` = main actions (solid brand),
+  `.btn-secondary` = secondary actions (neutral outline, theme-aware),
+  `.eyebrow` = section labels. Never rebuild these styles inline.
+- Retheme: change the brand scale in `globals.css` + the matching values
+  in `app/batches/components/brand.ts` (JS realm: MapLibre paint +
+  WebGPU shader can't read CSS vars). Map markers reference the same
+  vars (`var(--color-brand-600)`); route colors stay in `map-style.ts`
+  (map-semantic, not brand). Status colors (amber/emerald) stay fixed.
+- Radius: `--radius` drives `rounded-md/lg/xl`. For a square UI also set
+  `--radius-2xl: 0` (`rounded-2xl` follows the Tailwind default, and
+  `rounded-full` pills/dots stay round on purpose).
 - Dark mode via `next-themes` (`.dark` class). The map base must follow the
   theme toggle; a light map on dark UI (or vice versa) is a bug.
 - Marker/pin styles live in `globals.css` next to the tokens, not in the map

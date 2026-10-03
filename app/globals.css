@@ -5,8 +5,11 @@
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
+  /* Primary action color = brand. Change --color-brand-* below (and the
+     matching values in app/batches/components/brand.ts for the map/JS realm)
+     to retheme the whole app. */
+  --primary: var(--color-brand-600);
+  --primary-foreground: #ffffff;
   --muted: #737373;
   --muted-foreground: #737373;
   --card: #ffffff;
@@ -32,8 +35,8 @@
 .dark {
   --background: #0a0a0a;
   --foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #171717;
+  --primary: var(--color-brand-500);
+  --primary-foreground: var(--color-brand-950);
   --muted: #a3a3a3;
   --muted-foreground: #737373;
   --card: #171717;
@@ -82,6 +85,24 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Brand palette (plain @theme so the values are emitted as CSS variables
+   AND Tailwind utilities: bg-brand-600, text-brand-700, ring-brand-200…).
+   Single knob for the brand hue — keep in sync with brand.ts (JS realm:
+   MapLibre paint + WebGPU shader can't read CSS vars). */
+@theme {
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+  --color-brand-950: #042f2e;
+}
+
 @layer base {
   * {
     @apply border-border outline-transparent;
@@ -91,4 +112,293 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
   }
+}
+
+/* UI system: roles.
+   - .btn-primary   main actions (Comprar, active toggle): solid brand.
+   - .btn-secondary secondary actions (Cancelar, outline): neutral, theme-aware.
+   - .eyebrow       section labels over cards/panels: brand-tinted.
+   To retheme: change the brand scale above. For a square UI set
+   --radius: 0 and --radius-2xl: 0 (rounded-full pills/dots stay round). */
+@layer components {
+  .btn-primary {
+    cursor: pointer;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: background-color 150ms;
+  }
+  .btn-primary:hover {
+    background-color: color-mix(
+      in srgb,
+      var(--color-primary) 85%,
+      transparent
+    );
+  }
+  .btn-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .btn-secondary {
+    cursor: pointer;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: transparent;
+    color: color-mix(in srgb, var(--color-foreground) 75%, transparent);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: background-color 150ms;
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-accent);
+  }
+  .btn-secondary:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-brand-700);
+  }
+  .dark .eyebrow {
+    color: var(--color-brand-400);
+  }
+}
+
+/* JuLit /batches: origin markers over MapLibre (ported from lithium-passport) */
+/* Dot on the coordinate, card to the right: the 3D column rises from the
+   dot and stays visible. */
+.lp-mine-marker {
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+.lp-mine-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1.5px solid #d6d3d1;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 6px 10px;
+  box-shadow: 0 6px 18px rgba(28, 25, 23, 0.14);
+  white-space: nowrap;
+  transition:
+    border-color 150ms,
+    transform 150ms;
+}
+
+.lp-mine-marker:hover .lp-mine-card,
+.lp-mine-marker:focus-visible .lp-mine-card {
+  border-color: var(--color-brand-600);
+  transform: translateX(2px);
+}
+
+.lp-mine-marker--selected .lp-mine-card {
+  border-color: var(--color-brand-700);
+  background: var(--color-brand-50);
+}
+
+.lp-mine-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1c1917;
+  letter-spacing: -0.01em;
+}
+
+.lp-mine-meta {
+  font-size: 11px;
+  font-weight: 500;
+  color: #57534e;
+}
+
+.lp-mine-dot {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--color-brand-600);
+  box-shadow: 0 0 0 3px #ffffff;
+}
+
+/* Fallback without WebGPU: CSS pulse on the dot. */
+.lp-mine-dot::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-brand-600);
+  animation: lp-pulse 2s ease-out infinite;
+}
+
+@keyframes lp-pulse {
+  from {
+    opacity: 0.8;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-mine-dot::after {
+    animation: none;
+  }
+}
+
+.lp-hidden {
+  display: none !important;
+}
+
+.lp-mine-marker--dimmed {
+  opacity: 0.45;
+}
+
+.lp-mine-marker--dimmed:hover,
+.lp-mine-marker--dimmed:focus-visible {
+  opacity: 1;
+}
+
+.lp-mine-marker--cluster .lp-mine-card {
+  border-color: var(--color-brand-600);
+}
+
+/* Dark mode markers. */
+.dark .lp-mine-card {
+  background: rgba(23, 23, 23, 0.94);
+  border-color: #404040;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+.dark .lp-mine-name {
+  color: #fafafa;
+}
+.dark .lp-mine-meta {
+  color: #a3a3a3;
+}
+.dark .lp-mine-dot {
+  box-shadow: 0 0 0 3px #171717;
+}
+.dark .lp-mine-marker--selected .lp-mine-card {
+  background: color-mix(in srgb, var(--color-brand-950) 95%, transparent);
+  border-color: var(--color-brand-500);
+}
+
+/* Context salares (no batches): context only, not interactive. */
+.lp-salar-marker {
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  font-family: var(--font-sans);
+}
+.lp-salar-marker .lp-salar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #a8a29e;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+.lp-salar-marker .lp-salar-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px dashed #a8a29e;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.lp-salar-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #57534e;
+}
+.lp-salar-meta {
+  font-size: 10px;
+  color: #78716c;
+}
+.dark .lp-salar-marker .lp-salar-card {
+  background: rgba(23, 23, 23, 0.85);
+  border-color: #57534e;
+}
+.dark .lp-salar-marker .lp-salar-dot {
+  box-shadow: 0 0 0 2px #171717;
+}
+.dark .lp-salar-name {
+  color: #d6d3d1;
+}
+.dark .lp-salar-meta {
+  color: #a8a29e;
+}
+
+/* Export ports (visible with the routes layer). */
+.lp-port-marker {
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  font-family: var(--font-sans);
+}
+.lp-port-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9);
+}
+.lp-port-card {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4px 9px;
+  box-shadow: 0 4px 12px rgba(28, 25, 23, 0.16);
+  white-space: nowrap;
+}
+.lp-port-name {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1c1917;
+}
+.lp-port-meta {
+  display: block;
+  font-size: 10px;
+  color: #57534e;
+}
+.dark .lp-port-card {
+  background: rgba(23, 23, 23, 0.95);
+}
+.dark .lp-port-name {
+  color: #fafafa;
+}
+.dark .lp-port-meta {
+  color: #a3a3a3;
+}
+.dark .lp-port-icon {
+  box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.9);
+}
+.lp-port-marker--west {
+  flex-direction: row-reverse;
 }
