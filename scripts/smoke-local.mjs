@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Smoke test for the provisioned demo: proves by code only that
-//   1. both provisioned producers sign in with email + password,
+//   1. the four demo accounts sign in with email + password
+//      (two producers, one auditor, one buyer),
 //   2. POST /api/companies rejects a producer registration (400),
 //   3. POST /api/companies accepts a fresh auditor registration (201),
 //   4. the origins catalogue is publicly readable,
@@ -27,13 +28,12 @@ import { createServerClient } from "@supabase/ssr";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const PRODUCER_PASSWORD = "julit-demo-2026";
-const PRODUCERS = [
-  { email: "productor.olaroz@julit.dev", password: PRODUCER_PASSWORD },
-  {
-    email: "productor.cauchari-olaroz@julit.dev",
-    password: PRODUCER_PASSWORD,
-  },
+const DEMO_PASSWORD = "julit-demo-2026";
+const DEMO_ACCOUNTS = [
+  { email: "productor.olaroz@julit.dev", password: DEMO_PASSWORD },
+  { email: "productor.cauchari-olaroz@julit.dev", password: DEMO_PASSWORD },
+  { email: "auditor@julit.dev", password: DEMO_PASSWORD },
+  { email: "comprador@julit.dev", password: DEMO_PASSWORD },
 ];
 
 function localStatus() {
@@ -103,23 +103,23 @@ try {
   report(false, "app responds", `${appUrl}: ${error.message}`);
 }
 
-for (const producer of PRODUCERS) {
+for (const account of DEMO_ACCOUNTS) {
   try {
     jar.clear();
-    const { data, error } = await auth.auth.signInWithPassword(producer);
+    const { data, error } = await auth.auth.signInWithPassword(account);
     report(
       !error && Boolean(data.session),
-      `producer signs in: ${producer.email}`,
+      `signs in: ${account.email}`,
       error?.message
     );
   } catch (error) {
-    report(false, `producer signs in: ${producer.email}`, error.message);
+    report(false, `signs in: ${account.email}`, error.message);
   }
 }
 
 try {
   jar.clear();
-  const { error } = await auth.auth.signInWithPassword(PRODUCERS[0]);
+  const { error } = await auth.auth.signInWithPassword(DEMO_ACCOUNTS[0]);
   if (error) {
     report(false, "producer registration rejected", error.message);
   } else {
@@ -147,7 +147,7 @@ if (!isLocalTarget) {
     const email = `smoke-auditor+${Date.now()}@julit.dev`;
     const { data, error } = await auth.auth.signUp({
       email,
-      password: PRODUCER_PASSWORD,
+      password: DEMO_PASSWORD,
     });
     if (error || !data.session) {
       report(
@@ -199,12 +199,15 @@ if (!isLocalTarget) {
     )
       .trim()
       .split("\n")[0];
+    const demoEmails =
+      "'productor.olaroz@julit.dev','productor.cauchari-olaroz@julit.dev'," +
+      "'auditor@julit.dev','comprador@julit.dev'";
     const countQuery =
-      "select (select count(*) from auth.users where email like 'productor.%@julit.dev')" +
+      `select (select count(*) from auth.users where email in (${demoEmails}))` +
       " || ':' || (select count(*) from auth.identities i join auth.users u on u.id = i.user_id" +
-      " where u.email like 'productor.%@julit.dev')" +
+      ` where u.email in (${demoEmails}))` +
       " || ':' || (select count(*) from public.companies" +
-      " where name in ('Sales de Jujuy','Minera Exar'));";
+      " where name in ('Sales de Jujuy','Minera Exar','Auditor Demo','Comprador Demo'));";
     const psql = (args, input) =>
       execFileSync(
         "docker",
@@ -228,7 +231,7 @@ if (!isLocalTarget) {
     );
     const after = psql(["-t", "-A", "-c", countQuery]).trim();
     report(
-      before === "2:2:2" && after === before,
+      before === "4:4:4" && after === before,
       "seed re-run leaves counts unchanged",
       `${before} -> ${after}`
     );

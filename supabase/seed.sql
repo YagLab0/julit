@@ -1,12 +1,13 @@
--- Demo-only producer accounts, one per origin, provisioned instead of
--- self-registered. Applied locally by `supabase db reset` and to the linked
--- project by the reviewed `supabase db push --include-seed` runbook.
+-- Demo-only accounts: the two producers (one per origin) plus an auditor and
+-- a buyer for the demo flow. Applied locally by `supabase db reset` and to the
+-- linked project by the reviewed `supabase db push --include-seed` runbook.
 -- Idempotent: re-running never duplicates or overwrites.
 --
--- Credentials are demo-only:
---   productor.olaroz@julit.dev          -> Sales de Jujuy  (olaroz)
---   productor.cauchari-olaroz@julit.dev -> Minera Exar    (cauchari_olaroz)
---   password: julit-demo-2026
+-- Credentials are demo-only (password julit-demo-2026):
+--   productor.olaroz@julit.dev          -> Sales de Jujuy  (producer, olaroz)
+--   productor.cauchari-olaroz@julit.dev -> Minera Exar    (producer, cauchari_olaroz)
+--   auditor@julit.dev                   -> Auditor Demo   (auditor)
+--   comprador@julit.dev                 -> Comprador Demo (buyer)
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -33,6 +34,26 @@ insert into auth.users (
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
     '', '', '', '', '', ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    'authenticated', 'authenticated',
+    'auditor@julit.dev',
+    extensions.crypt('julit-demo-2026', extensions.gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+    '', '', '', '', '', ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'a1a1a1a1-0000-4000-8000-000000000004',
+    'authenticated', 'authenticated',
+    'comprador@julit.dev',
+    extensions.crypt('julit-demo-2026', extensions.gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+    '', '', '', '', '', ''
   )
 on conflict (id) do nothing;
 
@@ -54,10 +75,26 @@ values
     'a1a1a1a1-0000-4000-8000-000000000002',
     '{"sub":"a1a1a1a1-0000-4000-8000-000000000002","email":"productor.cauchari-olaroz@julit.dev","email_verified":true}'::jsonb,
     'email', now(), now(), now()
+  ),
+  (
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    '{"sub":"a1a1a1a1-0000-4000-8000-000000000003","email":"auditor@julit.dev","email_verified":true}'::jsonb,
+    'email', now(), now(), now()
+  ),
+  (
+    'a1a1a1a1-0000-4000-8000-000000000004',
+    'a1a1a1a1-0000-4000-8000-000000000004',
+    'a1a1a1a1-0000-4000-8000-000000000004',
+    '{"sub":"a1a1a1a1-0000-4000-8000-000000000004","email":"comprador@julit.dev","email_verified":true}'::jsonb,
+    'email', now(), now(), now()
   )
 on conflict do nothing;
 
 insert into public.companies (id, name, company_type, origin_id) values
   ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales de Jujuy', 'producer', 'olaroz'),
-  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Exar', 'producer', 'cauchari_olaroz')
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Exar', 'producer', 'cauchari_olaroz'),
+  ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null),
+  ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null)
 on conflict (id) do nothing;

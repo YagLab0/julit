@@ -48,11 +48,11 @@ psql(
   readFileSync(join(root, "supabase", "seed.sql"), "utf8")
 );
 
-const producers = psql([
+const accounts = psql([
   "-t",
   "-A",
   "-c",
-  "select count(*) from public.companies where name in ('Sales de Jujuy','Minera Exar');",
+  "select count(*) from public.companies where name in ('Sales de Jujuy','Minera Exar','Auditor Demo','Comprador Demo');",
 ]).trim();
 
-console.log(`seed applied to ${container} (demo producers: ${producers})`);
+console.log(`seed applied to ${container} (demo accounts: ${accounts})`);

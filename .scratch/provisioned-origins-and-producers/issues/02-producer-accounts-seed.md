@@ -14,4 +14,4 @@
 
 ## Comments
 
-Delivered `supabase/seed.sql`. Direct `auth.users` inserts needed the token columns as empty strings and identity timestamps set, or GoTrue fails the login scan; both fixed and covered by `pnpm smoke`. Producers are seeded already bound to their origin (ADR-0006).
+Delivered `supabase/seed.sql`. Direct `auth.users` inserts needed the token columns as empty strings and identity timestamps set, or GoTrue fails the login scan; both fixed and covered by `pnpm smoke`. Producers are seeded already bound to their origin (ADR-0006). Extended on request: the seed also provisions the demo auditor (Auditor Demo) and buyer (Comprador Demo) accounts — see the spec amendments.
