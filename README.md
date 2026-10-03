@@ -45,6 +45,27 @@ cp .env.example .env.local   # then fill in your Supabase project values
 Supabase clients live in `app/lib/supabase/` (`client.ts` for browser,
 `server.ts` for Server Components/Actions).
 
+## Database
+
+Lithium Passport migrations define company accounts, the public Devnet batch index,
+and the public audit PDF bucket. They do not implement the application API or Anchor
+programme. See [the database contract](docs/database.md), [domain glossary](GLOSSARY.md),
+and [architecture decisions](docs/adr/).
+
+With Docker and the Supabase CLI installed:
+
+```shell
+supabase start
+supabase migration up --local
+supabase migration list --local
+supabase test db
+supabase db advisors --local --level warn --fail-on warn
+```
+
+`supabase db reset --local` deletes local data and replays all migrations, including
+the existing migration that drops `public.users`. Use it only in a disposable
+database. Remote deployment requires an explicit, separately reviewed database push.
+
 ## Structure
 
 ```
@@ -61,6 +82,9 @@ Supabase clients live in `app/lib/supabase/` (`client.ts` for browser,
 │   └── page.tsx
 ├── anchor/
 │   └── programs/           # Anchor program (Rust)
+├── supabase/
+│   ├── migrations/         # Company accounts, batch index, and PDF storage
+│   └── tests/database/     # pgTAP behavior and access-control regressions
 └── codama.json             # IDL → TypeScript client
 ```
 
