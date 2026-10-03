@@ -196,7 +196,7 @@ function CertifyForm({
       const indexRes = await fetch(`/api/batches/${batch.pdaAddress}/certify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signature: txSignature }),
+        body: JSON.stringify({ tx_signature: txSignature }),
       });
       if (!indexRes.ok) {
         const indexBody = (await indexRes.json().catch(() => null)) as {

@@ -96,7 +96,7 @@ export async function POST(
   }
 
   const body = await readJsonBody(request);
-  const txSignature = body?.signature;
+  const txSignature = body?.tx_signature;
   if (typeof txSignature !== "string" || !txSignature) {
     return jsonError("Falta la firma de la transacción.", 400);
   }
@@ -121,35 +121,29 @@ export async function POST(
   if (tx && !tx.meta?.err) {
     const message = tx.transaction.message;
     const accountKeys = message.accountKeys as readonly string[];
-    const ix = (
-      message.instructions as unknown as {
-        programIdIndex: number;
-        accounts: number[];
-        data: string;
-      }[]
-    ).find(
-      (candidate) =>
-        accountKeys[candidate.programIdIndex] === JULIT_PROGRAM_ADDRESS
-    );
-
-    if (ix) {
+    for (const ix of message.instructions as unknown as {
+      programIdIndex: number;
+      accounts: number[];
+      data: string;
+    }[]) {
+      if (accountKeys[ix.programIdIndex] !== JULIT_PROGRAM_ADDRESS) continue;
       const data = getBase58Encoder().encode(ix.data);
       const isCertify = CERTIFY_BATCH_DISCRIMINATOR.every(
         (byte, index) => data[index] === byte
       );
-      if (isCertify) {
-        try {
-          const decoded = getCertifyBatchInstructionDataDecoder().decode(data);
-          certifyInstruction = {
-            batch: accountKeys[ix.accounts[0]],
-            audit: accountKeys[ix.accounts[1]],
-            auditor: accountKeys[ix.accounts[2]],
-            auditHash: bytesToHex(decoded.auditHash),
-          };
-        } catch {
-          certifyInstruction = null;
-        }
+      if (!isCertify) continue;
+      try {
+        const decoded = getCertifyBatchInstructionDataDecoder().decode(data);
+        certifyInstruction = {
+          batch: accountKeys[ix.accounts[0]],
+          audit: accountKeys[ix.accounts[1]],
+          auditor: accountKeys[ix.accounts[2]],
+          auditHash: bytesToHex(decoded.auditHash),
+        };
+      } catch {
+        certifyInstruction = null;
       }
+      break;
     }
   }
 

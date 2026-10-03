@@ -75,7 +75,10 @@ export async function POST(
   if (file.type !== "application/pdf") {
     return jsonError("El certificado debe ser un PDF.", 400);
   }
-  if (file.size === 0 || file.size > CERTIFICATE_MAX_BYTES) {
+  if (file.size === 0) {
+    return jsonError("El certificado está vacío.", 400);
+  }
+  if (file.size > CERTIFICATE_MAX_BYTES) {
     return jsonError("El certificado supera el máximo de 50 MiB.", 400);
   }
 
@@ -96,7 +99,11 @@ export async function POST(
     });
 
   if (error) {
-    if (error.message.includes("already exists")) {
+    const { statusCode } = error as { statusCode?: string | number };
+    if (
+      String(statusCode) === "409" ||
+      error.message.includes("already exists")
+    ) {
       return jsonError("Este certificado ya fue subido.", 409);
     }
     return jsonError("No se pudo guardar el certificado.", 500);

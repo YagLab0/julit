@@ -201,3 +201,19 @@ auditTxSignature, observedSlot }`.
   object's expected path.
 - Negative findings must remain first-class: `esg_approved: false` and
   `non_conformant` certify the batch and keep it purchasable (ADR-0004).
+
+### Colleague deployment
+
+The upgrade authority keypair (`EwpCo293GQT8X6dpiLFdfvbu1wRLCheUDB4WmuPEXbyF`)
+must be the wallet and the program keypair must stay at
+`anchor/target/deploy/julit-keypair.json` (gitignored, already present on the
+machine that deployed `D3aKAxF8…`). Then:
+
+1. `avm install 0.32.1 && avm use 0.32.1` (the program pins
+   `anchor-lang = "=0.32.1"`).
+2. `pnpm anchor-build` — runs `anchor build`, which re-syncs `declare_id!`
+   from the deploy keypair; with the real keypair this is a no-op.
+3. `anchor deploy` from `anchor/` against devnet.
+4. `pnpm codama:js` if the IDL changed; the generated client is committed.
+5. Confirm `declare_id!` still reads `D3aKAxF8…` before deploying — if it
+   shows another address, the deploy keypair file is missing or wrong.
