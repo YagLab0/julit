@@ -37,7 +37,9 @@ export function validateCompletionRequest(
 export function validateCompletionEligibility(
   company: CompletionCompany | null,
   batch: CompletionBatch | null
-): { ok: true } | { ok: false; status: number; error: string } {
+):
+  | { ok: true; buyerWallet: string }
+  | { ok: false; status: number; error: string } {
   if (!company) {
     return {
       ok: false,
@@ -86,5 +88,5 @@ export function validateCompletionEligibility(
       error: "Este lote está reservado exclusivamente para otra empresa.",
     };
   }
-  return { ok: true };
+  return { ok: true, buyerWallet: company.wallet_address };
 }

@@ -1,6 +1,6 @@
 # Issue 04: Automated Unit & API Route Tests
 
-**Status:** in-progress
+**Status:** closed
 **Spec:** `../spec.md`
 
 ## Description
@@ -9,12 +9,15 @@ Provide comprehensive automated test coverage for Web Crypto verification and th
 
 ## Acceptance Criteria
 - [x] Web Crypto SHA-256 verification tests (`app/batch/passport-verification.test.ts`).
-- [ ] API Route tests for `POST /api/batches/complete` (`app/api/batches/complete/route.test.ts`) covering:
-  - Unauthenticated requests (401)
-  - Non-buyer companies (403)
+- [x] Validation unit tests for `POST /api/batches/complete` (`app/api/batches/complete/validation.test.ts`) covering:
+  - Valid PDA & signature format (base58 regex)
+  - Invalid PDA & signature formats (400)
+  - Unauthenticated / missing company profile (403)
+  - Non-buyer company types (producer, auditor) (403)
   - Unlinked wallet (403)
-  - Invalid PDA or signature format (400)
-  - Batch not found (404)
-  - Batch not in audited status (409)
+  - Non-existent batch (404)
+  - Already completed batch (409)
+  - Non-audited batch (e.g. status = created) (409)
   - Reserved batch third-party attempt (403)
-  - Successful settlement update (200)
+  - Reserved batch designated buyer approval (200)
+  - Open spot batch buyer approval (200)

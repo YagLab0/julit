@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     .from("batches")
     .update({
       status: "completed",
-      buyer_wallet: company.wallet_address,
+      buyer_wallet: eligibility.buyerWallet,
       completion_tx_signature: completionTxSignature,
     })
     .eq("pda_address", pdaAddress)
