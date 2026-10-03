@@ -75,16 +75,16 @@ export function SessionMenu() {
 
   if (state.status === "anonymous") {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <Link
           href="/sign-in"
-          className="rounded-lg border border-border-low px-3 py-1.5 text-xs font-medium text-foreground/80 transition hover:bg-accent"
+          className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-border-low px-3 py-1.5 text-xs font-medium whitespace-nowrap text-foreground/80 transition hover:bg-accent lg:min-h-0"
         >
           Ingresar
         </Link>
         <Link
           href="/sign-up"
-          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+          className="inline-flex min-h-10 shrink-0 items-center rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-primary-foreground transition hover:opacity-90 lg:min-h-0"
         >
           Crear cuenta
         </Link>
@@ -93,22 +93,23 @@ export function SessionMenu() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       <Link
         href="/account"
-        className="flex flex-col rounded-lg border border-border-low px-3 py-1.5 transition hover:bg-accent"
+        title={state.companyName ?? state.email ?? "Mi cuenta"}
+        className="flex max-w-44 min-w-0 flex-col rounded-lg border border-border-low px-3 py-1.5 transition hover:bg-accent sm:max-w-64"
       >
-        <span className="text-xs font-semibold leading-tight text-foreground">
+        <span className="truncate text-xs font-semibold leading-tight text-foreground">
           {state.companyName ?? state.email ?? "Mi cuenta"}
         </span>
-        <span className="text-[10px] leading-tight text-muted">
+        <span className="truncate text-[10px] leading-tight text-muted">
           {state.companyTypeLabel ?? "Completá tu empresa"}
         </span>
       </Link>
       <button
         type="button"
         onClick={() => void supabase.auth.signOut()}
-        className="rounded-lg border border-border-low px-3 py-1.5 text-xs font-medium text-foreground/80 transition hover:bg-accent"
+        className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-border-low px-3 py-1.5 text-xs font-medium whitespace-nowrap text-foreground/80 transition hover:bg-accent lg:min-h-0"
       >
         Salir
       </button>

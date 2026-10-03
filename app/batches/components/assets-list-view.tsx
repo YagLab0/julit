@@ -10,7 +10,7 @@ import { OriginBatches } from "./origin-batches";
  */
 export function AssetsListView({ origins }: { origins: Origin[] }) {
   return (
-    <div className="absolute inset-0 overflow-y-auto px-4 pb-10 pt-28">
+    <div className="absolute inset-0 overflow-y-auto px-4 pt-[calc(var(--explorer-chrome,3.5rem)+1rem)] pb-28">
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

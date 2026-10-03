@@ -67,26 +67,27 @@ function BatchStage({ batch }: { batch: Batch }) {
 
   return (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border bg-gradient-to-b from-card via-card to-background">
-      <BatchModel
-        batchId={batch.batch_id}
-        volumeTonnes={batch.volume_tonnes}
-      />
+      <BatchModel batchId={batch.batch_id} volumeTonnes={batch.volume_tonnes} />
 
       <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-        <div className="rounded-lg bg-background/80 px-2.5 py-1.5 shadow-sm ring-1 ring-border backdrop-blur">
-          <p className="font-mono text-xs font-bold text-foreground">
+        <div className="min-w-0 rounded-lg bg-background/80 px-2.5 py-1.5 shadow-sm ring-1 ring-border backdrop-blur">
+          <p className="truncate font-mono text-xs font-bold text-foreground">
             {batch.batch_id}
           </p>
-          <p className="text-[10px] text-muted">Li₂CO₃ · grado batería</p>
+          <p className="truncate text-[10px] text-muted">
+            Li₂CO₃ · grado batería
+          </p>
         </div>
-        <StatusBadge status={batch.status} />
+        <span className="shrink-0">
+          <StatusBadge status={batch.status} />
+        </span>
       </div>
 
       <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-end justify-between gap-2 text-[10px] text-muted">
-        <span className="rounded-md bg-background/80 px-2 py-1 ring-1 ring-border backdrop-blur">
+        <span className="min-w-0 rounded-md bg-background/80 px-2 py-1 ring-1 ring-border backdrop-blur">
           {integerFmt.format(bags)} big bags · 1 ≈ {TONNES_PER_BAG} t
         </span>
-        <span className="hidden sm:inline">Arrastrá para rotar</span>
+        <span className="hidden shrink-0 sm:inline">Arrastrá para rotar</span>
       </div>
     </div>
   );
@@ -281,11 +282,11 @@ export function OriginModal({
 
   const isReservedForOther = Boolean(
     selected?.reserved_buyer_wallet &&
-      wallet?.account?.address !== selected.reserved_buyer_wallet
+    wallet?.account?.address !== selected.reserved_buyer_wallet
   );
   const isReservedForMe = Boolean(
     selected?.reserved_buyer_wallet &&
-      wallet?.account?.address === selected.reserved_buyer_wallet
+    wallet?.account?.address === selected.reserved_buyer_wallet
   );
 
   async function handleRequestContract() {
@@ -643,19 +644,19 @@ export function OriginModal({
       {state.status === "loading" && (
         <footer
           aria-hidden
-          className="flex shrink-0 items-center justify-between gap-4 border-t border-border bg-card px-5 py-3"
+          className="flex shrink-0 flex-col gap-3 border-t border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5"
         >
           <div className="space-y-1.5">
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-6 w-36" />
             <Skeleton className="h-3 w-40" />
           </div>
-          <Skeleton className="h-10 w-32 rounded-lg" />
+          <Skeleton className="h-10 w-full rounded-lg sm:w-32" />
         </footer>
       )}
 
       {state.status === "ready" && selected && (
-        <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-border bg-card px-5 py-3">
+        <footer className="flex shrink-0 flex-col gap-3 border-t border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="min-w-0">
             <p className="text-[10px] font-medium tracking-wide text-muted uppercase">
               Total del lote
@@ -669,7 +670,7 @@ export function OriginModal({
               {selected.batch_id}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
             {selected.status === "completed" && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/30 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
@@ -681,7 +682,7 @@ export function OriginModal({
                 type="button"
                 disabled={buying || isReservedForOther}
                 onClick={() => void handleBuy()}
-                className={`min-w-32 px-5 py-2.5 text-sm transition ${
+                className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
                   isReservedForOther
                     ? "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
                     : "btn-primary cursor-pointer"
@@ -700,7 +701,7 @@ export function OriginModal({
               </button>
             )}
             {selected.status === "created" && (
-              <p className="max-w-52 text-right text-[11px] text-muted">
+              <p className="text-[11px] text-muted sm:max-w-52 sm:text-right">
                 Se habilita para la compra al ser auditado.
               </p>
             )}

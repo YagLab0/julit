@@ -440,3 +440,13 @@
 .lp-port-marker--west {
   flex-direction: row-reverse;
 }
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left {
+  margin-bottom: max(10px, env(safe-area-inset-bottom));
+}
+.maplibregl-ctrl-bottom-right {
+  margin-right: max(10px, env(safe-area-inset-right));
+}
+.maplibregl-ctrl-bottom-left {
+  margin-left: max(10px, env(safe-area-inset-left));
+}

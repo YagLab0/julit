@@ -32,7 +32,7 @@ export function Modal({
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}
-      className="fixed inset-0 z-40 flex items-end justify-center sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6"
     >
       <div
         aria-hidden

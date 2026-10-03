@@ -50,7 +50,7 @@ export function MapLayersPanel({
   const set = (patch: Partial<LayerState>) => onChange({ ...layers, ...patch });
 
   return (
-    <div className="pointer-events-auto w-64 space-y-2">
+    <div className="pointer-events-auto w-full max-w-64 space-y-2">
       <section
         aria-label="Capas del mapa"
         className="rounded-2xl border border-border bg-card/95 p-2 shadow-sm backdrop-blur"

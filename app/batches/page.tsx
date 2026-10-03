@@ -2,7 +2,14 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { ThemeToggle } from "../components/theme-toggle";
@@ -28,10 +35,12 @@ function ViewToggle({
   view,
   onChange,
   mapDisabled,
+  stretch = false,
 }: {
   view: View;
   onChange: (view: View) => void;
   mapDisabled: boolean;
+  stretch?: boolean;
 }) {
   const options: { value: View; label: string }[] = [
     { value: "map", label: "Mapa" },
@@ -41,7 +50,7 @@ function ViewToggle({
     <div
       role="radiogroup"
       aria-label="Vista"
-      className="flex rounded-lg border border-border bg-card p-0.5 shadow-sm"
+      className={`flex rounded-lg border border-border bg-card p-0.5 shadow-sm ${stretch ? "w-full" : "shrink-0"}`}
     >
       {options.map((option) => {
         const disabled = option.value === "map" && mapDisabled;
@@ -58,7 +67,7 @@ function ViewToggle({
                 : undefined
             }
             onClick={() => onChange(option.value)}
-            className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${view === option.value ? "bg-primary text-primary-foreground" : "text-foreground/75 hover:bg-accent"}`}
+            className={`min-h-10 cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-40 lg:min-h-0 ${stretch ? "flex-1" : "shrink-0"} ${view === option.value ? "bg-primary text-primary-foreground" : "text-foreground/75 hover:bg-accent"}`}
           >
             {option.label}
           </button>
@@ -73,9 +82,11 @@ type CatalogFilter = "sale" | "purchased";
 function CatalogFilterToggle({
   filter,
   onChange,
+  stretch = false,
 }: {
   filter: CatalogFilter;
   onChange: (filter: CatalogFilter) => void;
+  stretch?: boolean;
 }) {
   const options: { value: CatalogFilter; label: string }[] = [
     { value: "sale", label: "En venta" },
@@ -85,7 +96,7 @@ function CatalogFilterToggle({
     <div
       role="radiogroup"
       aria-label="Filtro de lotes"
-      className="flex rounded-lg border border-border bg-card p-0.5 shadow-sm"
+      className={`flex rounded-lg border border-border bg-card p-0.5 shadow-sm ${stretch ? "w-full" : "shrink-0"}`}
     >
       {options.map((option) => (
         <button
@@ -94,7 +105,7 @@ function CatalogFilterToggle({
           role="radio"
           aria-checked={filter === option.value}
           onClick={() => onChange(option.value)}
-          className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+          className={`min-h-10 cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition lg:min-h-0 ${stretch ? "flex-1" : "shrink-0"} ${
             filter === option.value
               ? "bg-primary text-primary-foreground"
               : "text-foreground/75 hover:bg-accent"
@@ -175,12 +186,12 @@ function IntroTitle({
   return (
     <div
       aria-hidden={!visible}
-      className={`pointer-events-none absolute inset-x-0 top-[13%] z-10 flex flex-col items-center px-6 text-center transition-opacity duration-700 ${visible ? "opacity-100" : "opacity-0"}`}
+      className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col items-center px-6 text-center transition-opacity duration-700 top-[max(12%,calc(var(--explorer-chrome,3.5rem)+0.75rem))] ${visible ? "opacity-100" : "opacity-0"}`}
     >
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-400">
         JuLit · Demo visual
       </p>
-      <h1 className="mt-2 max-w-2xl text-4xl font-bold tracking-tight text-foreground [text-shadow:0_1px_12px_rgba(255,255,255,0.9)]">
+      <h1 className="mt-2 max-w-2xl text-2xl font-bold tracking-tight text-foreground [text-shadow:0_1px_12px_rgba(255,255,255,0.9)] sm:text-4xl">
         Litio trazable de la Puna jujeña
       </h1>
       <p className="mt-3 text-sm font-medium text-foreground/75 [text-shadow:0_1px_8px_rgba(255,255,255,0.9)]">
@@ -200,7 +211,65 @@ function IntroTitle({
   );
 }
 
+function ExplorerMenu({
+  view,
+  onView,
+  mapDisabled,
+  filter,
+  onFilter,
+  panelRef,
+}: {
+  view: View;
+  onView: (view: View) => void;
+  mapDisabled: boolean;
+  filter: CatalogFilter;
+  onFilter: (filter: CatalogFilter) => void;
+  panelRef: RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={panelRef}
+      id="explorer-menu"
+      role="dialog"
+      aria-label="Opciones"
+      tabIndex={-1}
+      className="pointer-events-auto absolute inset-x-3 top-[calc(100%+0.5rem)] z-40 animate-fade-in rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur lg:hidden"
+    >
+      <p className="eyebrow">Vista</p>
+      <div className="mt-2">
+        <ViewToggle
+          stretch
+          view={view}
+          onChange={onView}
+          mapDisabled={mapDisabled}
+        />
+      </div>
+      <p className="eyebrow mt-4">Lotes</p>
+      <div className="mt-2">
+        <CatalogFilterToggle stretch filter={filter} onChange={onFilter} />
+      </div>
+      <Link
+        href="/batches/new"
+        className="btn-secondary mt-3 inline-flex w-full items-center justify-center"
+      >
+        Registrar lote
+      </Link>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+        <SessionMenu />
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted">Tema</span>
+          <ThemeToggle />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function JuLitAppPage() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   // Origins come from the public Supabase `origins` catalogue.
   const [origins, setOrigins] = useState<Origin[]>([]);
   const [catalogueStatus, setCatalogueStatus] =
@@ -208,6 +277,7 @@ export default function JuLitAppPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>("sale");
   const [view, setView] = useState<View>("map");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
   const [skipIntroSignal, setSkipIntroSignal] = useState(0);
   const [titleVisible, setTitleVisible] = useState(true);
@@ -267,92 +337,187 @@ export default function JuLitAppPage() {
   const handleSelect = useCallback((id: string | null) => {
     setTitleVisible(false);
     setSelectedId(id);
+    setMenuOpen(false);
   }, []);
 
   const ready = catalogueStatus === "ready";
   const mapAvailable = mapStatus !== "error";
   const showMap = ready && view === "map" && mapAvailable;
 
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    const root = rootRef.current;
+    if (!header || !root) return;
+    const observer = new ResizeObserver(() => {
+      root.style.setProperty("--explorer-chrome", `${header.offsetHeight}px`);
+    });
+    root.style.setProperty("--explorer-chrome", `${header.offsetHeight}px`);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      menuButtonRef.current?.focus();
+    };
+    const onPointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (menuRef.current?.contains(target)) return;
+      if (menuButtonRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [menuOpen]);
+
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-background text-foreground">
-      {showMap && (
-        <RegionMap
-          origins={origins}
-          selectedId={selectedId}
-          onSelect={handleSelect}
-          onStatusChange={handleStatus}
-          skipIntroSignal={skipIntroSignal}
-          basemap={basemap}
-          showRoutes={layers.routes}
+    <div
+      ref={rootRef}
+      className="relative h-dvh w-full overflow-hidden bg-background text-foreground"
+    >
+      {menuOpen && (
+        <div
+          aria-hidden
+          className="absolute inset-0 z-30 lg:hidden"
+          onClick={() => setMenuOpen(false)}
         />
       )}
-
-      {showMap && mapStatus === "loading" && <LoadingOverlay />}
-      {showMap && mapStatus !== "loading" && (
-        <IntroTitle
-          visible={titleVisible && !selectedId}
-          showSkip={mapStatus === "intro"}
-          onSkip={() => setSkipIntroSignal((n) => n + 1)}
-        />
-      )}
-
-      {showMap && mapStatus !== "loading" && (
-        <div className="pointer-events-none absolute top-24 left-4 z-20">
-          <MapLayersPanel layers={layers} onChange={setLayers} />
-        </div>
-      )}
-
-      {ready && view === "list" && <AssetsListView origins={origins} />}
-
-      {catalogueStatus !== "ready" && (
-        <CatalogueStatusOverlay
-          status={catalogueStatus}
-          onRetry={() => {
-            setCatalogueStatus("loading");
-            setReloadKey((n) => n + 1);
-          }}
-        />
-      )}
-
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start justify-between gap-3 p-4">
-        <div className="pointer-events-auto rounded-2xl border border-border bg-card/90 px-4 py-3 shadow-sm backdrop-blur">
+      <header
+        ref={headerRef}
+        className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:p-4"
+      >
+        <div className="pointer-events-auto min-w-0 rounded-2xl border border-border bg-card/90 px-3 py-2 shadow-sm backdrop-blur lg:px-4 lg:py-3">
           <Link
             href="/"
             className="text-sm font-bold tracking-tight text-foreground"
           >
             JuLit
           </Link>
-          <p className="text-xs text-muted">Demo visual · Puna jujeña</p>
+          <p className="hidden text-xs text-muted lg:block">
+            Demo visual · Puna jujeña
+          </p>
         </div>
-        <div className="pointer-events-auto flex items-center gap-2">
-          <Link href="/batches/new" className="btn-secondary">
+        <button
+          ref={menuButtonRef}
+          type="button"
+          aria-expanded={menuOpen}
+          aria-controls="explorer-menu"
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+          onClick={() => setMenuOpen((open) => !open)}
+          className="pointer-events-auto inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-card/90 text-foreground shadow-sm backdrop-blur transition-transform duration-150 ease-out active:scale-[0.97] lg:hidden"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            {menuOpen ? (
+              <path d="M6 6l12 12M18 6 6 18" />
+            ) : (
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            )}
+          </svg>
+        </button>
+        <div className="pointer-events-auto hidden items-center gap-2 lg:flex">
+          <Link
+            href="/batches/new"
+            className="btn-secondary inline-flex shrink-0 items-center whitespace-nowrap"
+          >
             Registrar lote
           </Link>
           <CatalogFilterToggle
             filter={catalogFilter}
             onChange={setCatalogFilter}
           />
-          <SessionMenu />
           <ViewToggle
             view={view}
             onChange={setView}
             mapDisabled={!mapAvailable}
           />
+          <SessionMenu />
           <ThemeToggle />
         </div>
+        {menuOpen && (
+          <ExplorerMenu
+            panelRef={menuRef}
+            view={view}
+            onView={(next) => {
+              setView(next);
+              setMenuOpen(false);
+            }}
+            mapDisabled={!mapAvailable}
+            filter={catalogFilter}
+            onFilter={(next) => {
+              setCatalogFilter(next);
+              setMenuOpen(false);
+            }}
+          />
+        )}
       </header>
 
-      {ready && (
-        <div
-          role="note"
-          className="absolute bottom-4 left-4 z-10 max-w-xs rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50/95 dark:bg-amber-950/60 px-3 py-2 text-[11px] leading-snug text-amber-900 dark:text-amber-200 shadow-sm"
-        >
-          <p>
-            <strong>Datos de referencia pública.</strong> Ubicaciones,
-            capacidades y salares: cada origen cita su fuente.
-          </p>
-        </div>
-      )}
+      <div className="absolute inset-0">
+        {showMap && (
+          <RegionMap
+            origins={origins}
+            selectedId={selectedId}
+            onSelect={handleSelect}
+            onStatusChange={handleStatus}
+            skipIntroSignal={skipIntroSignal}
+            basemap={basemap}
+            showRoutes={layers.routes}
+          />
+        )}
+
+        {showMap && mapStatus === "loading" && <LoadingOverlay />}
+        {showMap && mapStatus !== "loading" && (
+          <IntroTitle
+            visible={titleVisible && !selectedId}
+            showSkip={mapStatus === "intro"}
+            onSkip={() => setSkipIntroSignal((n) => n + 1)}
+          />
+        )}
+
+        {showMap && mapStatus !== "loading" && !titleVisible && (
+          <div className="pointer-events-none absolute top-[calc(var(--explorer-chrome,3.5rem)+0.75rem)] left-3 z-20 max-h-[calc(100%-5.5rem)] max-w-[calc(100%-4.75rem)] overflow-y-auto overscroll-contain lg:left-4">
+            <MapLayersPanel layers={layers} onChange={setLayers} />
+          </div>
+        )}
+
+        {ready && view === "list" && <AssetsListView origins={origins} />}
+
+        {catalogueStatus !== "ready" && (
+          <CatalogueStatusOverlay
+            status={catalogueStatus}
+            onRetry={() => {
+              setCatalogueStatus("loading");
+              setReloadKey((n) => n + 1);
+            }}
+          />
+        )}
+
+        {ready && (
+          <div
+            role="note"
+            className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-10 max-w-[calc(100%-4.75rem)] rounded-lg border border-amber-300 bg-amber-50/95 px-3 py-2 text-[11px] leading-snug text-amber-900 shadow-sm lg:bottom-4 lg:left-4 lg:max-w-xs dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200"
+          >
+            <p>
+              <strong>Datos de referencia pública.</strong> Ubicaciones,
+              capacidades y salares: cada origen cita su fuente.
+            </p>
+          </div>
+        )}
+      </div>
 
       {selectedOrigin && (
         <OriginModal
