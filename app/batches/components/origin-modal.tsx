@@ -32,7 +32,7 @@ export type BatchRow = {
   eu_regulation_assessment: string | null;
   reserved_buyer_wallet: string | null;
   buyer_wallet: string | null;
-  created_at: string;
+  indexed_at: string;
   creation_tx_signature: string | null;
   audit_tx_signature: string | null;
   completion_tx_signature: string | null;
@@ -380,7 +380,7 @@ export function OriginModal({
       .from("batches")
       .select("*")
       .eq("origin_id", origin.id)
-      .order("created_at", { ascending: false });
+      .order("indexed_at", { ascending: false });
 
     query.then(({ data, error }) => {
       if (!active) return;

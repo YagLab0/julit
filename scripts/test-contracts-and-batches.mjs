@@ -85,6 +85,34 @@ async function main() {
   if (!pbl02.reserved_buyer_wallet)
     throw new Error("LIT-2026-PBL-02 should be reserved");
 
+  // 1b. Verify OriginModal query by origin_id ordered by indexed_at
+  console.log(
+    "\n1b. Verifying OriginModal batch query for Salar del Cóndor..."
+  );
+  const { data: condorBatches, error: condorErr } = await anon
+    .from("batches")
+    .select("*")
+    .eq("origin_id", "condor")
+    .order("indexed_at", { ascending: false });
+
+  if (condorErr || !condorBatches || condorBatches.length === 0) {
+    throw new Error(
+      `Failed to load Condor batches with indexed_at: ${condorErr?.message}`
+    );
+  }
+  const cnrBatch = condorBatches[0];
+  if (
+    cnrBatch.batch_id !== "LIT-2026-CNR-01" ||
+    cnrBatch.status !== "audited"
+  ) {
+    throw new Error(
+      `Unexpected Condor batch data: ${JSON.stringify(cnrBatch)}`
+    );
+  }
+  console.log(
+    `✓ Salar del Cóndor loaded correctly: ${cnrBatch.batch_id} (${cnrBatch.volume_tonnes} t, ${cnrBatch.purity_pct}% Li2CO3, status: ${cnrBatch.status})`
+  );
+
   // 2. Verify Buyer account and contracts
   console.log("\n2. Verifying Buyer account and accepted contract...");
   const buyerEmail = "comprador@julit.dev";
