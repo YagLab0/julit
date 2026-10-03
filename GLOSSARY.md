@@ -28,6 +28,10 @@ _Avoid_: Passport
 The public record of a batch's origin, production metrics, sustainability metrics, and certification evidence.
 _Avoid_: Audit certificate, QR code
 
+**Certificate Verification**:
+The public check that a certificate PDF's bytes hash to the digest recorded for its batch. It proves the document matches the recorded digest, not the truth of the auditor's findings.
+_Avoid_: EU compliance check, audit validation
+
 **Buyer**:
 The entity purchasing a batch from its producer.
 _Avoid_: Inspector, auditor
