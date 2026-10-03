@@ -1,0 +1,299 @@
+.widget {
+  position: relative;
+  height: 310px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    var(--background),
+    var(--secondary)
+  );
+  color: var(--foreground);
+}
+.grid {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.45;
+  background-image:
+    linear-gradient(var(--border-low) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-low) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(transparent, black 40%, transparent);
+}
+.overline {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.batchTag,
+.linkedBatch,
+.reviewTag {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 6%, transparent);
+  font-size: 11px;
+  border-radius: 9px;
+}
+.batchTag {
+  bottom: 58px;
+  left: 50%;
+  width: 160px;
+  margin-left: -80px;
+  padding: 9px 12px;
+}
+.tagDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.fields {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.fields span {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--background);
+}
+.reportBack {
+  position: absolute;
+  width: 210px;
+  height: 184px;
+  top: 61px;
+  left: 50%;
+  margin-left: -105px;
+  transform: rotate(-7deg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--accent);
+}
+.report {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  width: 224px;
+  margin-left: -112px;
+  padding: 18px 16px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.documentHeader {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.documentHeader small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 400;
+}
+.documentIcon {
+  display: flex;
+  padding: 6px;
+  border-radius: 7px;
+  color: var(--primary);
+  background: var(--accent);
+}
+.documentIcon svg,
+.integrity svg,
+.linkedBatch svg,
+.reviewTag svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.reportRule {
+  height: 1px;
+  background: var(--border-low);
+  margin: 13px 0;
+}
+.reportRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.reportRow i {
+  height: 4px;
+  width: 30px;
+  border-radius: 3px;
+  background: var(--border);
+}
+.reportLines {
+  display: grid;
+  gap: 5px;
+  margin-top: 14px;
+}
+.reportLines i {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-low);
+}
+.reportLines i:last-child {
+  width: 65%;
+}
+.integrity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-low);
+  color: var(--primary);
+  font-size: 9px;
+}
+.integrity svg {
+  width: 14px;
+  height: 14px;
+}
+.connection {
+  position: absolute;
+  top: 242px;
+  left: 50%;
+  width: 1px;
+  height: 21px;
+  background: var(--primary);
+}
+.linkedBatch {
+  bottom: 17px;
+  left: 50%;
+  width: 140px;
+  margin-left: -70px;
+  padding: 8px 12px;
+  color: var(--primary);
+}
+.linkedBatch svg {
+  width: 14px;
+  height: 14px;
+}
+.passport {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  width: 246px;
+  margin-left: -123px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.passportHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 14px;
+  background: var(--landing-inverse);
+  color: var(--landing-on-inverse);
+  font-size: 8px;
+}
+.passportHeader > span:first-child {
+  font-size: 14px;
+  letter-spacing: -0.06em;
+}
+.passportDot {
+  margin-left: 4px;
+  color: var(--color-brand-300);
+  font-size: 7px;
+}
+.passportTitle {
+  padding: 13px 14px 9px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+.passportRows {
+  padding: 0 14px 9px;
+}
+.passportRows > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border-low);
+  padding: 9px 0;
+  font-size: 9px;
+}
+.rowNumber {
+  color: var(--primary);
+  font-size: 8px;
+}
+.rowArrow {
+  margin-left: auto;
+  color: var(--muted);
+}
+.reviewTag {
+  bottom: 16px;
+  left: 50%;
+  width: 164px;
+  margin-left: -82px;
+  padding: 8px 10px;
+  color: var(--primary);
+}
+.reviewTag svg {
+  width: 14px;
+  height: 14px;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .report {
+    width: 196px;
+    margin-left: -98px;
+    padding-inline: 12px;
+  }
+  .reportBack {
+    width: 184px;
+    margin-left: -92px;
+  }
+  .passport {
+    width: 202px;
+    margin-left: -101px;
+  }
+  .passportHeader {
+    padding-inline: 10px;
+  }
+  .passportTitle {
+    padding-inline: 10px;
+  }
+  .passportRows {
+    padding-inline: 10px;
+  }
+}
+@media (max-width: 374px) {
+  .passport {
+    width: 220px;
+    margin-left: -110px;
+  }
+}

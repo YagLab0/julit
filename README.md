@@ -1,6 +1,6 @@
 # julit
 
-Empty Solana dApp starter: Next.js + `@solana/kit` frontend with wallet connection ready, no demo program. Create your Anchor program in `anchor/programs/` and build the app on top.
+JuLit presents a B2B lithium-carbonate proposition and an existing Solana Devnet demonstration. The public `/` landing explains the proposed process and evidence boundaries; `/batches` opens the Origin catalogue and map. Demo settlement is simulated and does not transfer USDC. See [the public landing contract and asset provenance](docs/landing.md).
 
 ## Stack
 
@@ -77,6 +77,7 @@ start with `supabase db push --dry-run --linked` to see exactly what would be ap
 ├── app/
 │   ├── components/         # UI: wallet, cluster, theme, providers
 │   ├── generated/          # Codama-generated TS client (do not edit)
+│   ├── landing/            # Public presentation, native FAQ, isolated theme, motion
 │   ├── lib/
 │   │   ├── wallet/         # wallet-standard connection (Phantom/Solflare)
 │   │   ├── hooks/          # use-balance, use-send-transaction
