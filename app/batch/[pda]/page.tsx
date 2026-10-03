@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { PassportClient } from "./passport-client";
 import { getExplorerUrl, ellipsify } from "@/app/lib/explorer";
 import Link from "next/link";
+import { ThemeToggle } from "@/app/components/theme-toggle";
+import { SessionMenu } from "@/app/components/session-menu";
 
 export default async function BatchPassportPage({ params }: { params: Promise<{ pda: string }> }) {
   const { pda } = await params;
@@ -28,16 +30,22 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
   const explorerUrlPda = getExplorerUrl(`/address/${batch.pda_address}`, "devnet");
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
-      <header className="mb-8">
-        <Link
-          href="/batches"
-          className="text-xs font-semibold text-brand-700 dark:text-brand-400 hover:underline mb-2 inline-block"
-        >
-          ← Volver al catálogo
-        </Link>
-        <h1 className="text-2xl font-bold text-foreground">Pasaporte de Lote</h1>
-        <p className="text-muted">ID: {batch.batch_id}</p>
+    <div className="container mx-auto p-4 max-w-3xl min-h-screen">
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link
+            href="/batches"
+            className="text-xs font-semibold text-brand-700 dark:text-brand-400 hover:underline mb-2 inline-block"
+          >
+            ← Volver al catálogo
+          </Link>
+          <h1 className="text-2xl font-bold text-foreground">Pasaporte de Lote</h1>
+          <p className="text-muted">ID: {batch.batch_id}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <SessionMenu />
+          <ThemeToggle />
+        </div>
       </header>
       
       <main className="space-y-6">

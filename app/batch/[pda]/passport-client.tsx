@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import QRCode from "qrcode";
 
 interface PassportClientProps {
@@ -104,8 +105,19 @@ export function PassportClient({ auditSha256, auditCertificatePath, pda }: Passp
           <span className="eyebrow">Código QR Público</span>
           {qrUrl ? (
             <>
-              <img src={qrUrl} alt="QR Code del Pasaporte" className="w-32 h-32 rounded-md" />
-              <a href={qrUrl} download={`qr-batch-${pda.slice(0, 8)}.png`} className="text-xs text-brand-700 hover:underline">
+              <Image
+                src={qrUrl}
+                alt="Código QR del Pasaporte"
+                width={128}
+                height={128}
+                unoptimized
+                className="w-32 h-32 rounded-md"
+              />
+              <a
+                href={qrUrl}
+                download={`qr-batch-${pda.slice(0, 8)}.png`}
+                className="text-xs text-brand-700 hover:underline dark:text-brand-400"
+              >
                 Descargar QR
               </a>
             </>
