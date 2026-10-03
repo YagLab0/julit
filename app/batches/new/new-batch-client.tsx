@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ellipsify } from "../../lib/explorer";
 import { useWallet } from "../../lib/wallet/context";
-import { DEMO_AUDITORS, DEMO_BUYERS } from "./counterparties";
-import { RegisterBatchForm } from "./register-batch-form";
+import { RegisterBatchForm, type Counterparty } from "./register-batch-form";
 
 export type ProducerInfo = {
   name: string;
@@ -15,6 +15,47 @@ export type ProducerInfo = {
 
 export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
   const { wallet } = useWallet();
+  const [counterparties, setCounterparties] = useState<{
+    auditors: Counterparty[];
+    buyers: Counterparty[];
+  } | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  const walletMatches = wallet?.account.address === producer.walletAddress;
+
+  useEffect(() => {
+    if (!walletMatches) return;
+    let cancelled = false;
+
+    Promise.all([
+      fetch("/api/companies/contracts/counterparties?type=auditor").then((r) =>
+        r.ok ? r.json() : Promise.reject(r.status)
+      ),
+      fetch("/api/companies/contracts/counterparties?type=buyer").then((r) =>
+        r.ok ? r.json() : Promise.reject(r.status)
+      ),
+    ])
+      .then(
+        ([auditors, buyers]: [
+          { counterparties: Counterparty[] },
+          { counterparties: Counterparty[] },
+        ]) => {
+          if (!cancelled) {
+            setCounterparties({
+              auditors: auditors.counterparties,
+              buyers: buyers.counterparties,
+            });
+          }
+        }
+      )
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [walletMatches]);
 
   if (!wallet) {
     return (
@@ -33,7 +74,7 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
     );
   }
 
-  if (wallet.account.address !== producer.walletAddress) {
+  if (!walletMatches) {
     return (
       <div className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/60 p-8 text-center dark:border-amber-800 dark:bg-amber-950/40">
         <p className="text-sm text-amber-900 dark:text-amber-200">
@@ -54,11 +95,45 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
+        <p className="text-sm text-destructive">
+          No se pudieron cargar tus contrapartes contratadas. Recargá la página.
+        </p>
+      </div>
+    );
+  }
+
+  if (!counterparties) {
+    return (
+      <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
+        <p className="text-sm text-muted">
+          Cargando auditores y clientes contratados…
+        </p>
+      </div>
+    );
+  }
+
+  if (counterparties.auditors.length === 0) {
+    return (
+      <div className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/60 p-8 text-center dark:border-amber-800 dark:bg-amber-950/40">
+        <p className="text-sm text-amber-900 dark:text-amber-200">
+          Necesitás un contrato aceptado con una auditora para registrar un
+          lote. Ofrecelo desde tu cuenta y esperá a que lo acepten.
+        </p>
+        <Link href="/account" className="btn-secondary mt-4 inline-block">
+          Gestionar contratos
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <RegisterBatchForm
       producer={producer}
-      auditors={DEMO_AUDITORS}
-      buyers={DEMO_BUYERS}
+      auditors={counterparties.auditors}
+      buyers={counterparties.buyers}
     />
   );
 }
