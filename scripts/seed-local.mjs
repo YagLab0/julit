@@ -52,7 +52,7 @@ const accounts = psql([
   "-t",
   "-A",
   "-c",
-  "select count(*) from public.companies where name in ('Sales de Jujuy','Minera Exar','Auditor Demo','Comprador Demo');",
+  "select count(*) from public.companies where name in ('Sales del Altiplano S.A.','Minera Cóndor S.A.','Auditor Demo','Comprador Demo');",
 ]).trim();
 
 console.log(`seed applied to ${container} (demo accounts: ${accounts})`);

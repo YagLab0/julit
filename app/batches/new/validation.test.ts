@@ -13,13 +13,13 @@ const BUYER_B = "UncontractedBuyer88888888888888888888888";
 
 const CTX: BatchFormContext = {
   producerWallet: PRODUCER,
-  originId: "olaroz",
+  originId: "pena_blanca",
   contractedAuditors: [AUDITOR],
   contractedBuyers: [BUYER],
 };
 
 const VALID: BatchFormValues = {
-  batchId: "LIT-2026-OLZ-05",
+  batchId: "LIT-2026-PBL-05",
   volumeTonnes: "420",
   purityPct: "99.55",
   waterM3PerTonne: "50.80",
@@ -38,8 +38,8 @@ describe("validateBatchForm", () => {
     const { errors, payload } = check();
     expect(errors).toEqual({});
     expect(payload).toEqual({
-      batchId: "LIT-2026-OLZ-05",
-      originId: "olaroz",
+      batchId: "LIT-2026-PBL-05",
+      originId: "pena_blanca",
       volumeTonnes: "420",
       purityBasisPoints: "9955",
       waterM3PerTonneScaled: "5080",

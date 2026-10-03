@@ -11,14 +11,14 @@ Feature: Batch registration and public indexing
   @program @api @db
   Scenario: Register a battery-grade batch
     Given the Producer builds a create_batch transaction carrying
-      | field                              | value            |
-      | batch_id                           | LIT-2026-EXAR-02 |
-      | origin                             | Salar de Olaroz  |
-      | volume_tonnes                      | 100              |
-      | purity_pct                         | 99.50            |
-      | water_footprint_m3_per_tonne       | 125.50           |
-      | carbon_footprint_kg_co2e_per_tonne | 450.25           |
-      | price_usdc                         | 12000.123456     |
+      | field                              | value                |
+      | batch_id                           | LIT-2026-PBL-02      |
+      | origin                             | Salar de Peña Blanca |
+      | volume_tonnes                      | 100                  |
+      | purity_pct                         | 99.50                |
+      | water_footprint_m3_per_tonne       | 125.50               |
+      | carbon_footprint_kg_co2e_per_tonne | 450.25               |
+      | price_usdc                         | 12000.123456         |
     And the transaction designates the registered Auditor
     When the Producer signs and submits the transaction to Devnet
     And the API verifies programme ownership, account discriminator, PDA derivation, transaction confirmation and account data

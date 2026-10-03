@@ -3,11 +3,13 @@
 -- pending, one accepted) so the auditor inbox has real rows. Applied locally
 -- by `supabase db reset` and to the linked project by the reviewed
 -- `supabase db push --include-seed` runbook.
--- Idempotent: re-running never duplicates or overwrites.
+-- Idempotent: re-running never duplicates or overwrites. Producer and mine
+-- names are fictional; the site coordinates and capacity figures are the
+-- reference values the demo uses.
 --
 -- Credentials are demo-only (password julit-demo-2026):
---   productor.olaroz@julit.dev          -> Sales de Jujuy  (producer, olaroz)
---   productor.cauchari-olaroz@julit.dev -> Minera Exar    (producer, cauchari_olaroz)
+--   productor.olaroz@julit.dev          -> Sales del Altiplano S.A. (producer, pena_blanca)
+--   productor.cauchari-olaroz@julit.dev -> Minera Cóndor S.A.      (producer, condor)
 --   auditor@julit.dev                   -> Auditor Demo   (auditor)
 --   comprador@julit.dev                 -> Comprador Demo (buyer)
 
@@ -95,8 +97,8 @@ values
 on conflict do nothing;
 
 insert into public.companies (id, name, company_type, origin_id) values
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales de Jujuy', 'producer', 'olaroz'),
-  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Exar', 'producer', 'cauchari_olaroz'),
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca'),
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor'),
   ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null),
   ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null)
 on conflict (id) do nothing;
