@@ -24,10 +24,10 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
 
     Promise.all([
       fetch("/api/companies/contracts/counterparties?type=auditor").then((r) =>
-        r.ok ? r.json() : Promise.reject(r.status),
+        r.ok ? r.json() : Promise.reject(r.status)
       ),
       fetch("/api/companies/contracts/counterparties?type=buyer").then((r) =>
-        r.ok ? r.json() : Promise.reject(r.status),
+        r.ok ? r.json() : Promise.reject(r.status)
       ),
     ])
       .then(
@@ -41,7 +41,7 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
               buyers: buyers.counterparties,
             });
           }
-        },
+        }
       )
       .catch(() => {
         if (!cancelled) setLoadError(true);

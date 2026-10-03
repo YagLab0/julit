@@ -173,6 +173,7 @@ download for printing or attaching to batch documentation.
   `Number`. Contrasted fields: PDA derivation, programme address, batch id,
   producer, origin, volume, purity, water, carbon, status. Price, reservation
   and buyer are out of the contrast along with the display (ADR-0008).
+
 - **Contrast island**: uses the generated Codama client and
   `createSolanaClient("devnet")` — `findBatchPda` for the derivation check and
   `fetchMaybeBatch` for the account. States: checking, verified, mismatch
