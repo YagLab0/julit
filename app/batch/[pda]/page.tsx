@@ -6,7 +6,11 @@ import Link from "next/link";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { SessionMenu } from "@/app/components/session-menu";
 
-export default async function BatchPassportPage({ params }: { params: Promise<{ pda: string }> }) {
+export default async function BatchPassportPage({
+  params,
+}: {
+  params: Promise<{ pda: string }>;
+}) {
   const { pda } = await params;
   const supabase = await createClient();
   const { data: batch } = await supabase
@@ -21,13 +25,23 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
 
   const purityFormatted = Number(batch.purity_pct).toFixed(2) + " %";
   const waterFormatted = Number(batch.water_footprint_m3_per_tonne).toFixed(2);
-  const carbonFormatted = Number(batch.carbon_footprint_kg_co2e_per_tonne).toFixed(2);
-  const priceFormatted = batch.price_usdc ? Number(batch.price_usdc).toLocaleString("es-AR", { style: "currency", currency: "USD" }) : "N/A";
-  
+  const carbonFormatted = Number(
+    batch.carbon_footprint_kg_co2e_per_tonne
+  ).toFixed(2);
+  const priceFormatted = batch.price_usdc
+    ? Number(batch.price_usdc).toLocaleString("es-AR", {
+        style: "currency",
+        currency: "USD",
+      })
+    : "N/A";
+
   const formatter = new Intl.NumberFormat("es-AR");
   const volumeFormatted = formatter.format(batch.volume_tonnes);
-  
-  const explorerUrlPda = getExplorerUrl(`/address/${batch.pda_address}`, "devnet");
+
+  const explorerUrlPda = getExplorerUrl(
+    `/address/${batch.pda_address}`,
+    "devnet"
+  );
 
   return (
     <div className="container mx-auto p-4 max-w-3xl min-h-screen">
@@ -39,7 +53,9 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
           >
             ← Volver al catálogo
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Pasaporte de Lote</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Pasaporte de Lote
+          </h1>
           <p className="text-muted">ID: {batch.batch_id}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -47,42 +63,62 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
           <ThemeToggle />
         </div>
       </header>
-      
+
       <main className="space-y-6">
         <section className="bg-card border border-border-low rounded-lg p-6 shadow-sm">
           <h2 className="eyebrow mb-4">Detalles del Lote</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted block">Volumen (Toneladas)</span>
-              <span className="text-foreground font-medium">{volumeFormatted}</span>
+              <span className="text-foreground font-medium">
+                {volumeFormatted}
+              </span>
             </div>
             <div>
               <span className="text-muted block">Pureza</span>
-              <span className="text-foreground font-medium">{purityFormatted}</span>
+              <span className="text-foreground font-medium">
+                {purityFormatted}
+              </span>
             </div>
             <div>
               <span className="text-muted block">Huella Hídrica (m³/t)</span>
-              <span className="text-foreground font-medium">{waterFormatted}</span>
+              <span className="text-foreground font-medium">
+                {waterFormatted}
+              </span>
             </div>
             <div>
-              <span className="text-muted block">Huella de Carbono (kg CO₂e/t)</span>
-              <span className="text-foreground font-medium">{carbonFormatted}</span>
+              <span className="text-muted block">
+                Huella de Carbono (kg CO₂e/t)
+              </span>
+              <span className="text-foreground font-medium">
+                {carbonFormatted}
+              </span>
             </div>
             <div>
               <span className="text-muted block">Precio</span>
-              <span className="text-foreground font-medium">{priceFormatted}</span>
+              <span className="text-foreground font-medium">
+                {priceFormatted}
+              </span>
             </div>
             <div>
               <span className="text-muted block">Estado</span>
-              <span className="text-foreground font-medium capitalize">{batch.status}</span>
+              <span className="text-foreground font-medium capitalize">
+                {batch.status}
+              </span>
             </div>
             <div>
               <span className="text-muted block">Aprobado por ESG</span>
-              <span className="text-foreground font-medium">{batch.esg_approved ? "Sí" : "No"}</span>
+              <span className="text-foreground font-medium">
+                {batch.esg_approved ? "Sí" : "No"}
+              </span>
             </div>
             <div>
               <span className="text-muted block">Evaluación Regulación UE</span>
-              <span className="text-foreground font-medium">{batch.eu_regulation_assessment === "non_conformant" ? "No conforme" : batch.eu_regulation_assessment}</span>
+              <span className="text-foreground font-medium">
+                {batch.eu_regulation_assessment === "non_conformant"
+                  ? "No conforme"
+                  : batch.eu_regulation_assessment}
+              </span>
             </div>
           </div>
         </section>
@@ -92,36 +128,57 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-muted block">PDA</span>
-              <a href={explorerUrlPda} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
+              <a
+                href={explorerUrlPda}
+                target="_blank"
+                rel="noreferrer"
+                className="text-brand-700 hover:underline"
+              >
                 {ellipsify(batch.pda_address)}
               </a>
             </div>
             <div>
               <span className="text-muted block">Productor</span>
-              <span className="text-foreground">{ellipsify(batch.producer_wallet)}</span>
+              <span className="text-foreground">
+                {ellipsify(batch.producer_wallet)}
+              </span>
             </div>
             {batch.auditor_wallet && (
               <div>
                 <span className="text-muted block">Auditor</span>
-                <span className="text-foreground">{ellipsify(batch.auditor_wallet)}</span>
+                <span className="text-foreground">
+                  {ellipsify(batch.auditor_wallet)}
+                </span>
               </div>
             )}
             {batch.buyer_wallet && (
               <div>
                 <span className="text-muted block">Comprador</span>
-                <span className="text-foreground">{ellipsify(batch.buyer_wallet)}</span>
+                <span className="text-foreground">
+                  {ellipsify(batch.buyer_wallet)}
+                </span>
               </div>
             )}
             {batch.reserved_buyer_wallet && (
               <div>
                 <span className="text-muted block">Comprador Reservado</span>
-                <span className="text-foreground">{ellipsify(batch.reserved_buyer_wallet)}</span>
+                <span className="text-foreground">
+                  {ellipsify(batch.reserved_buyer_wallet)}
+                </span>
               </div>
             )}
             {batch.creation_tx_signature && (
               <div>
                 <span className="text-muted block">Tx Creación</span>
-                <a href={getExplorerUrl(`/tx/${batch.creation_tx_signature}`, "devnet")} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
+                <a
+                  href={getExplorerUrl(
+                    `/tx/${batch.creation_tx_signature}`,
+                    "devnet"
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-700 hover:underline"
+                >
                   {ellipsify(batch.creation_tx_signature)}
                 </a>
               </div>
@@ -129,7 +186,15 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
             {batch.audit_tx_signature && (
               <div>
                 <span className="text-muted block">Tx Auditoría</span>
-                <a href={getExplorerUrl(`/tx/${batch.audit_tx_signature}`, "devnet")} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
+                <a
+                  href={getExplorerUrl(
+                    `/tx/${batch.audit_tx_signature}`,
+                    "devnet"
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-700 hover:underline"
+                >
                   {ellipsify(batch.audit_tx_signature)}
                 </a>
               </div>
@@ -137,7 +202,15 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
             {batch.completion_tx_signature && (
               <div>
                 <span className="text-muted block">Tx Finalización</span>
-                <a href={getExplorerUrl(`/tx/${batch.completion_tx_signature}`, "devnet")} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
+                <a
+                  href={getExplorerUrl(
+                    `/tx/${batch.completion_tx_signature}`,
+                    "devnet"
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand-700 hover:underline"
+                >
                   {ellipsify(batch.completion_tx_signature)}
                 </a>
               </div>
@@ -145,7 +218,7 @@ export default async function BatchPassportPage({ params }: { params: Promise<{ 
           </div>
         </section>
 
-        <PassportClient 
+        <PassportClient
           auditSha256={batch.audit_sha256}
           auditCertificatePath={batch.audit_certificate_path}
           pda={batch.pda_address}

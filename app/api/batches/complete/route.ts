@@ -65,7 +65,10 @@ export async function POST(request: Request) {
     .single();
 
   if (updateError) {
-    return jsonError("No se pudo actualizar el índice del lote: " + updateError.message, 500);
+    return jsonError(
+      "No se pudo actualizar el índice del lote: " + updateError.message,
+      500
+    );
   }
 
   return Response.json({

@@ -24,8 +24,10 @@ export async function POST(
   const { id } = await params;
   const body = await readJsonBody(request);
   const status = typeof body?.status === "string" ? body.status : undefined;
-  const signature = typeof body?.signature === "string" ? body.signature : undefined;
-  const timestamp = typeof body?.timestamp === "string" ? body.timestamp : undefined;
+  const signature =
+    typeof body?.signature === "string" ? body.signature : undefined;
+  const timestamp =
+    typeof body?.timestamp === "string" ? body.timestamp : undefined;
 
   if (
     !UUID_PATTERN.test(id) ||
@@ -51,7 +53,8 @@ export async function POST(
   const service = createServiceClient();
   const { data: contract } = await service
     .from("company_contracts")
-    .select(`
+    .select(
+      `
       id,
       producer_id,
       counterparty_id,
@@ -59,7 +62,8 @@ export async function POST(
       status,
       producer:companies!company_contracts_producer_id_fkey(id, name, wallet_address),
       counterparty:companies!company_contracts_counterparty_id_fkey(id, name, wallet_address)
-    `)
+    `
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -143,11 +147,16 @@ export async function POST(
       })
       .eq("id", id)
       .eq("status", "pending")
-      .select("id, status, counterparty_signature, counterparty_signed_at, responded_at")
+      .select(
+        "id, status, counterparty_signature, counterparty_signed_at, responded_at"
+      )
       .single();
 
     if (error) {
-      return jsonError("No se pudo aceptar la solicitud. Intentá de nuevo.", 500);
+      return jsonError(
+        "No se pudo aceptar la solicitud. Intentá de nuevo.",
+        500
+      );
     }
 
     return Response.json({ contract: data });
@@ -166,7 +175,10 @@ export async function POST(
     .single();
 
   if (error) {
-    return jsonError("No se pudo rechazar la solicitud. Intentá de nuevo.", 500);
+    return jsonError(
+      "No se pudo rechazar la solicitud. Intentá de nuevo.",
+      500
+    );
   }
 
   return Response.json({ contract: data });

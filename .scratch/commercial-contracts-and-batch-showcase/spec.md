@@ -11,7 +11,7 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
 ## Solution
 
 1. **Rich Batch Showcase in Origin Inspection**:
-   An interactive two-column modal in the catalogue that dynamically loads all database batches for an origin. The left panel showcases the selected batch with a procedural Three.js 3D visualization, detailed chemical metrics ($\ge 99.50\%$ battery grade Li₂CO₃), environmental intensity indicators ($m^3/t$ water, $kg\ CO_2e/t$ carbon), certification badges (ESG approval and EU Battery Regulation assessment), and transparent commercial pricing. The right panel displays categorized batch listings (*Lotes en venta*, *En auditoría*, *Lotes adquiridos*) with sorting controls and public origin geographic references.
+   An interactive two-column modal in the catalogue that dynamically loads all database batches for an origin. The left panel showcases the selected batch with a procedural Three.js 3D visualization, detailed chemical metrics ($\ge 99.50\%$ battery grade Li₂CO₃), environmental intensity indicators ($m^3/t$ water, $kg\ CO_2e/t$ carbon), certification badges (ESG approval and EU Battery Regulation assessment), and transparent commercial pricing. The right panel displays categorized batch listings (_Lotes en venta_, _En auditoría_, _Lotes adquiridos_) with sorting controls and public origin geographic references.
 
 2. **Buyer-Initiated Commercial Contracts**:
    Buyers can initiate commercial supply contract requests with any producer from two discovery surfaces: directly within the origin modal / batch view, or from their company account dashboard. Requests are stored in `company_contracts` in `pending` status.
@@ -28,6 +28,7 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
 ## User Stories
 
 ### Batch Showcase & Technical Due Diligence
+
 1. As a buyer inspecting an origin on the map, I want to see a rich two-column view of all batches produced at that site, so that I can evaluate available supply alongside mine characteristics.
 2. As a buyer evaluating a specific batch, I want to view an interactive procedural 3D representation scaled to batch volume, so that I have an immediate visual understanding of the lot size.
 3. As a buyer with strict battery manufacturing specifications, I want to verify that the chemical purity of a batch meets or exceeds 99.50% Li₂CO₃, so that it qualifies for battery cell cathode synthesis.
@@ -40,6 +41,7 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
 10. As a visitor on a browser with limited WebGL/Three.js support, I want the batch detail card to degrade gracefully without crashing the modal, so that technical metrics remain accessible.
 
 ### Commercial Contract Request & Initiation
+
 11. As an authenticated buyer with a verified wallet, I want to click "Solicitar contrato comercial" from the batch detail view or origin modal, so that I can propose a business relationship to the producer of that lithium.
 12. As an authenticated buyer in my account profile, I want to search or select a registered producer and request a commercial agreement, so that I can establish supply relationships without searching the map.
 13. As a buyer requesting a contract, I want my verified Solana wallet to prompt a signature of the contract terms, so that my request is cryptographically authenticated and tied to my company.
@@ -49,6 +51,7 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
 17. As a buyer holding an active contract with a producer, I want the UI to reflect "Contrato activo", so that I know I am already an approved client.
 
 ### Producer Contract Management & Approval
+
 18. As a producer company signed into my account, I want a dedicated "Contratos comerciales" section showing all incoming contract requests from buyers and auditors, so that I can manage my counterparty network in one place.
 19. As a producer inspecting a pending buyer request, I want to view the buyer's company name, verified wallet address, and request timestamp, so that I can perform counterparty due diligence.
 20. As a producer accepting a buyer contract, I want my verified wallet to prompt an Ed25519 signature confirming acceptance, so that the mutual consent is cryptographically recorded.
@@ -56,16 +59,19 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
 22. As a producer, once I accept a buyer contract, I want that buyer to appear in my client list when registering a new batch (`/batches/new`), so that I can reserve batches exclusively for them.
 
 ### Bilateral Contract Visibility & Transparency
+
 23. As a buyer viewing my account dashboard, I want to see a list of all my commercial contracts, including producer name, origin name, status (Pending, Accepted, Revoked), and signature hashes, so that I can track all active agreements.
 24. As a buyer viewing a reserved batch in the catalogue, if I hold an accepted contract with that producer and the batch is reserved for my wallet, I want the purchase button to be active ("Comprar lote (Reservado)"), so that I can purchase my exclusive allocation.
 25. As a buyer viewing a reserved batch allocated to another company, I want to see an explanatory disabled indicator ("Reservado para otra empresa") while retaining full visibility into the batch showcase and technical metrics, so that public market transparency is maintained without compromising access control.
 
 ### Local Development & Seed Fixtures
+
 26. As a developer running the stack locally, I want seed fixtures to contain pre-populated audited batches with rich metrics and a sample commercial contract, so that I can verify the showcase and purchase workflows immediately without manual multi-party staging.
 
 ## Implementation Decisions
 
 ### Schema & Data Model
+
 - **`company_contracts` Table Enhancement**:
   - Add an `initiator_id` uuid column referencing `companies(id)` indicating which party originated the contract (buyer or producer).
   - Add `initiator_signature` and `counterparty_signature` text columns to record base58/hex Ed25519 wallet signatures.
@@ -77,6 +83,7 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
   - Signatures are produced off-chain using the standard Solana wallet adapter (`wallet.signMessage`) and verified on the server using `@solana/web3.js` / `@noble/ed25519`.
 
 ### Origin Modal & Batch Showcase Component Hierarchy
+
 - The modal layout is split into two panels:
   - **Showcase Panel**:
     - Procedural 3D canvas rendering the batch diorama scaled by volume.
@@ -86,9 +93,10 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
   - **Batch Selection & Origin Reference Panel**:
     - Tabbed/filtered list: Available for sale (`audited`), In audit (`created`), and Purchased (`completed`).
     - Origin reference card citing capacity and source credentials.
-    - Contract status banner with actionable CTA: *"Solicitar contrato comercial"* (if no contract), *"Solicitud enviada (Pendiente)"* (if pending), or *"Cliente habilitado"* (if accepted).
+    - Contract status banner with actionable CTA: _"Solicitar contrato comercial"_ (if no contract), _"Solicitud enviada (Pendiente)"_ (if pending), or _"Cliente habilitado"_ (if accepted).
 
 ### API Contract & Endpoint Design
+
 - **Contract Creation Endpoint (`POST /api/companies/contracts`)**:
   - Authenticated route for buyers or producers.
   - Validates caller company profile and verified wallet.
@@ -103,6 +111,7 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
   - Supports querying contracts by authenticated company to populate the bilateral account views.
 
 ### RLS Policies
+
 - Authenticated users may read contracts where their `company.id` matches either `producer_id` or `counterparty_id`.
 - Mutating contracts (inserting, accepting, revoking) remains restricted to service role operations called by verified API endpoints.
 
@@ -111,6 +120,7 @@ Furthermore, producers and buyers lack a bilateral mechanism to establish mutual
 A high-quality test validates observable external behavior and security constraints rather than internal component implementation.
 
 ### Testing Seams
+
 1. **Seam 1: API Route & Signature Validation (`/api/companies/contracts`)**:
    - Unit and integration tests using Vitest verifying:
      - Rejection of unauthenticated requests (401).

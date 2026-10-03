@@ -11,7 +11,9 @@ export async function GET(request: Request) {
   const service = createServiceClient();
   let query = service
     .from("companies")
-    .select("id, name, company_type, origin_id, wallet_address, wallet_verified_at")
+    .select(
+      "id, name, company_type, origin_id, wallet_address, wallet_verified_at"
+    )
     .not("wallet_address", "is", null);
 
   if (type) {

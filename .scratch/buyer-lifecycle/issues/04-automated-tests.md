@@ -8,6 +8,7 @@
 Provide comprehensive automated test coverage for Web Crypto verification and the simulated purchase completion route.
 
 ## Acceptance Criteria
+
 - [x] Web Crypto SHA-256 verification tests (`app/batch/passport-verification.test.ts`).
 - [x] Validation unit tests for `POST /api/batches/complete` (`app/api/batches/complete/validation.test.ts`) covering:
   - Valid PDA & signature format (base58 regex)

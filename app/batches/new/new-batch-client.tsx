@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { VerifiedWalletGate } from "../../components/verified-wallet-gate";
-import { DEMO_AUDITORS, DEMO_BUYERS, type Counterparty } from "./counterparties";
+import {
+  DEMO_AUDITORS,
+  DEMO_BUYERS,
+  type Counterparty,
+} from "./counterparties";
 import { RegisterBatchForm } from "./register-batch-form";
 
 export type ProducerInfo = {
@@ -28,12 +32,20 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
 
         const realBuyers: Counterparty[] = accepted
           .filter(
-            (c: { counterparty?: { company_type?: string; wallet_address?: string; name?: string } }) =>
+            (c: {
+              counterparty?: {
+                company_type?: string;
+                wallet_address?: string;
+                name?: string;
+              };
+            }) =>
               c.counterparty?.company_type === "buyer" &&
               c.counterparty?.wallet_address
           )
           .map(
-            (c: { counterparty: { name: string; wallet_address: string } }) => ({
+            (c: {
+              counterparty: { name: string; wallet_address: string };
+            }) => ({
               name: c.counterparty.name,
               wallet: c.counterparty.wallet_address,
             })
@@ -41,12 +53,20 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
 
         const realAuditors: Counterparty[] = accepted
           .filter(
-            (c: { counterparty?: { company_type?: string; wallet_address?: string; name?: string } }) =>
+            (c: {
+              counterparty?: {
+                company_type?: string;
+                wallet_address?: string;
+                name?: string;
+              };
+            }) =>
               c.counterparty?.company_type === "auditor" &&
               c.counterparty?.wallet_address
           )
           .map(
-            (c: { counterparty: { name: string; wallet_address: string } }) => ({
+            (c: {
+              counterparty: { name: string; wallet_address: string };
+            }) => ({
               name: c.counterparty.name,
               wallet: c.counterparty.wallet_address,
             })

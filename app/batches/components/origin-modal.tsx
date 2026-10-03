@@ -164,9 +164,7 @@ function BatchStage({ batch }: { batch: BatchRow }) {
 function BatchDetail({ batch }: { batch: BatchRow }) {
   const isBatteryGrade = batch.purity_pct >= 99.5;
   const pricePerTonne =
-    batch.volume_tonnes > 0
-      ? batch.price_usdc / batch.volume_tonnes
-      : 0;
+    batch.volume_tonnes > 0 ? batch.price_usdc / batch.volume_tonnes : 0;
 
   return (
     <div className="space-y-4">
@@ -228,7 +226,11 @@ function BatchDetail({ batch }: { batch: BatchRow }) {
           </span>
           {batch.esg_approved ? (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -243,7 +245,9 @@ function BatchDetail({ batch }: { batch: BatchRow }) {
         </div>
 
         <div className="rounded-lg bg-secondary/50 p-2.5 text-[11px] leading-relaxed text-foreground/80">
-          <p className="font-medium text-foreground">Reglamento UE 2023/1542:</p>
+          <p className="font-medium text-foreground">
+            Reglamento UE 2023/1542:
+          </p>
           <p className="mt-0.5 text-muted">
             {batch.eu_regulation_assessment ||
               "Cumple requisitos de diligencia debida y pasaporte digital."}
@@ -304,7 +308,8 @@ function BatchOption({
   const isReserved = Boolean(
     batch.reserved_buyer_wallet && batch.status !== "completed"
   );
-  const isReservedForMe = isReserved && batch.reserved_buyer_wallet === walletAddress;
+  const isReservedForMe =
+    isReserved && batch.reserved_buyer_wallet === walletAddress;
 
   return (
     <li>
@@ -390,7 +395,9 @@ export function OriginModal({
       if (rows.length > 0) {
         if (filter === "purchased") {
           const purchasedBatch = rows.find((r) => r.status === "completed");
-          setSelectedId(purchasedBatch ? purchasedBatch.batch_id : rows[0].batch_id);
+          setSelectedId(
+            purchasedBatch ? purchasedBatch.batch_id : rows[0].batch_id
+          );
         } else {
           const saleBatch = rows.find((r) => r.status === "audited");
           setSelectedId(saleBatch ? saleBatch.batch_id : rows[0].batch_id);
@@ -445,21 +452,24 @@ export function OriginModal({
 
   const isReservedForOther = Boolean(
     selected?.reserved_buyer_wallet &&
-      wallet?.account?.address !== selected.reserved_buyer_wallet
+    wallet?.account?.address !== selected.reserved_buyer_wallet
   );
   const isReservedForMe = Boolean(
     selected?.reserved_buyer_wallet &&
-      wallet?.account?.address === selected.reserved_buyer_wallet
+    wallet?.account?.address === selected.reserved_buyer_wallet
   );
 
   async function handleRequestContract() {
     if (!producer) {
-      toast.error("No se pudo identificar la empresa productora de este origen.");
+      toast.error(
+        "No se pudo identificar la empresa productora de este origen."
+      );
       return;
     }
     if (!wallet) {
       toast.warning("Billetera no conectada", {
-        description: "Conectá tu billetera para solicitar el contrato comercial.",
+        description:
+          "Conectá tu billetera para solicitar el contrato comercial.",
       });
       return;
     }
@@ -497,7 +507,9 @@ export function OriginModal({
 
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        toast.error(err?.error ?? "No se pudo solicitar el contrato comercial.");
+        toast.error(
+          err?.error ?? "No se pudo solicitar el contrato comercial."
+        );
         return;
       }
 
@@ -529,17 +541,20 @@ export function OriginModal({
     }
     if (isReservedForOther) {
       toast.error("Lote reservado", {
-        description: "Este lote está reservado exclusivamente para otra empresa.",
+        description:
+          "Este lote está reservado exclusivamente para otra empresa.",
       });
       return;
     }
 
     setBuying(true);
     try {
-      const simulatedSignature = Array.from({ length: 88 }, () =>
-        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"[
-          Math.floor(Math.random() * 58)
-        ]
+      const simulatedSignature = Array.from(
+        { length: 88 },
+        () =>
+          "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"[
+            Math.floor(Math.random() * 58)
+          ]
       ).join("");
 
       const res = await fetch("/api/batches/complete", {
@@ -566,7 +581,11 @@ export function OriginModal({
       setBatches((prev) =>
         prev.map((b) =>
           b.batch_id === selected.batch_id
-            ? { ...b, status: "completed", buyer_wallet: wallet.account.address }
+            ? {
+                ...b,
+                status: "completed",
+                buyer_wallet: wallet.account.address,
+              }
             : b
         )
       );
@@ -595,7 +614,8 @@ export function OriginModal({
               {origin.producer} · {origin.shareholders}
             </p>
             <p className="mt-0.5 font-mono text-[11px] text-muted">
-              Planta: {origin.latitude.toFixed(4)}, {origin.longitude.toFixed(4)}
+              Planta: {origin.latitude.toFixed(4)},{" "}
+              {origin.longitude.toFixed(4)}
             </p>
           </div>
           <button
@@ -824,9 +844,7 @@ export function OriginModal({
                     : "btn-primary cursor-pointer"
                 }`}
                 title={
-                  isReservedForOther
-                    ? "Reservado para otra empresa"
-                    : undefined
+                  isReservedForOther ? "Reservado para otra empresa" : undefined
                 }
               >
                 {buying

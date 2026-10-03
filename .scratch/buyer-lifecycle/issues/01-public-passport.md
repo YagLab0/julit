@@ -8,6 +8,7 @@
 Implement the public passport route at `app/batch/[pda]/page.tsx` and client component `app/batch/[pda]/passport-client.tsx`.
 
 ## Acceptance Criteria
+
 - [x] Route loads in under 1 second without 3D map canvas.
 - [x] Displays chemical purity, water footprint, carbon footprint, ESG audit approval, and EU Battery Regulation evaluation.
 - [x] Generates dynamic QR code for public access and mobile scanning.

@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  getAddressDecoder,
-  getBase58Decoder,
-} from "@solana/kit";
+import { getAddressDecoder, getBase58Decoder } from "@solana/kit";
 import {
   buildContractAgreementMessage,
   verifyContractSignature,
@@ -108,7 +105,9 @@ describe("verifyContractSignature", () => {
 
 describe("Regex patterns", () => {
   it("validates UUID pattern", () => {
-    expect(UUID_PATTERN.test("a1a1a1a1-0000-4000-8000-000000000001")).toBe(true);
+    expect(UUID_PATTERN.test("a1a1a1a1-0000-4000-8000-000000000001")).toBe(
+      true
+    );
     expect(UUID_PATTERN.test("invalid-uuid")).toBe(false);
   });
 

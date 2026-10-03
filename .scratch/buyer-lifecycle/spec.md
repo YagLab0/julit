@@ -5,6 +5,7 @@
 ## Problem Statement
 
 In JuLit (Lithium Passport), commercial buyers (such as automotive OEMs and battery cell manufacturers) need to:
+
 1. Discover certified lithium carbonate batches originating from the Argentine Puna.
 2. Independently verify the cryptographic integrity of chemical and ESG laboratory audit certificates without trusting an intermediary (zero-trust architecture).
 3. Execute simulated settlement on Solana Devnet (ADR-0002) for available Spot batches or exclusively Reserved batches.
@@ -13,6 +14,7 @@ In JuLit (Lithium Passport), commercial buyers (such as automotive OEMs and batt
 ## Solution
 
 A complete end-to-end Buyer lifecycle:
+
 1. **Public Passport Route (`/batch/[pda]`)**:
    A lightweight, accessible public page (< 1s load, no 3D rendering) presenting batch metrics, origin, producer, and transaction links.
 2. **Independent Cryptographic Verification**:
@@ -26,15 +28,18 @@ A complete end-to-end Buyer lifecycle:
 ## User Stories
 
 ### Discovery & Public Passport
+
 1. As an unauthenticated buyer or public inspector, I can visit `/batch/<pda>` to inspect batch purity, water footprint, carbon emissions, and compliance declarations.
 2. As a visitor on mobile, I can scan the dynamic QR code on the passport page to view and share the passport.
 3. As a buyer, I can click "Verificar Certificado" on `/batch/<pda>` to have my browser calculate the PDF's SHA-256 hash locally and verify it against Solana Devnet.
 
 ### Purchase & Settlement
+
 4. As an authenticated buyer with a verified wallet, I can purchase an audited spot batch from `/batches`, triggering a simulated settlement transaction.
 5. As an unassigned buyer inspecting a reserved batch, I can view all technical and ESG details, but the purchase control is disabled ("Reservado para otra empresa").
 6. As the designated buyer for a reserved batch, I can complete the purchase using my verified wallet.
 
 ### Post-Purchase Inventory
+
 7. As an authenticated buyer, I can view all my acquired batches in `/account` with total volume in tonnes.
 8. As an authenticated buyer, I can toggle "Mis compras" in `/batches` to view my acquired inventory directly within the catalogue.

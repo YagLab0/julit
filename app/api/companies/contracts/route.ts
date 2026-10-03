@@ -21,7 +21,8 @@ export async function GET() {
   const service = createServiceClient();
   const { data: contracts, error } = await service
     .from("company_contracts")
-    .select(`
+    .select(
+      `
       id,
       producer_id,
       counterparty_id,
@@ -35,7 +36,8 @@ export async function GET() {
       created_at,
       producer:companies!company_contracts_producer_id_fkey(id, name, company_type, wallet_address, origin_id),
       counterparty:companies!company_contracts_counterparty_id_fkey(id, name, company_type, wallet_address)
-    `)
+    `
+    )
     .or(`producer_id.eq.${user.id},counterparty_id.eq.${user.id}`)
     .order("created_at", { ascending: false });
 
@@ -86,7 +88,9 @@ export async function POST(request: Request) {
   // Fetch caller company
   const { data: caller } = await service
     .from("companies")
-    .select("id, name, company_type, wallet_address, wallet_verified_at, origin_id")
+    .select(
+      "id, name, company_type, wallet_address, wallet_verified_at, origin_id"
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -100,7 +104,9 @@ export async function POST(request: Request) {
   // Fetch target company
   const { data: target } = await service
     .from("companies")
-    .select("id, name, company_type, wallet_address, wallet_verified_at, origin_id")
+    .select(
+      "id, name, company_type, wallet_address, wallet_verified_at, origin_id"
+    )
     .eq("id", targetCompanyId)
     .maybeSingle();
 
@@ -124,7 +130,10 @@ export async function POST(request: Request) {
     }
     producer = caller;
     counterparty = target;
-  } else if (caller.company_type === "buyer" || caller.company_type === "auditor") {
+  } else if (
+    caller.company_type === "buyer" ||
+    caller.company_type === "auditor"
+  ) {
     if (target.company_type !== "producer") {
       return jsonError(
         "Un comprador o auditor sólo puede solicitar contratos a productores.",

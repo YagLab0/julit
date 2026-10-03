@@ -143,11 +143,7 @@ export function AccountClient({
   );
 }
 
-function BuyerPortfolioCard({
-  batches,
-}: {
-  batches: AcquiredBatch[];
-}) {
+function BuyerPortfolioCard({ batches }: { batches: AcquiredBatch[] }) {
   const { cluster } = useCluster();
   const totalVolume = batches.reduce(
     (sum, b) => sum + Number(b.volume_tonnes || 0),
@@ -162,9 +158,12 @@ function BuyerPortfolioCard({
     <section className="rounded-2xl border border-border-low bg-card p-5">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Portafolio de Lotes Adquiridos</h2>
+          <h2 className="text-sm font-semibold">
+            Portafolio de Lotes Adquiridos
+          </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Lotes adjudicados a tu empresa mediante liquidación simulada en Devnet.
+            Lotes adjudicados a tu empresa mediante liquidación simulada en
+            Devnet.
           </p>
         </div>
         <span className="font-mono text-xs text-muted">
@@ -178,7 +177,8 @@ function BuyerPortfolioCard({
             Volumen total
           </p>
           <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
-            {totalVolume.toLocaleString("es-AR")} <span className="text-xs font-normal text-muted">t</span>
+            {totalVolume.toLocaleString("es-AR")}{" "}
+            <span className="text-xs font-normal text-muted">t</span>
           </p>
         </div>
         <div className="rounded-xl border border-border-low bg-secondary/50 p-3">
@@ -186,7 +186,8 @@ function BuyerPortfolioCard({
             Inversión total
           </p>
           <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
-            {totalUsdc.toLocaleString("es-AR")} <span className="text-xs font-normal text-muted">USDC</span>
+            {totalUsdc.toLocaleString("es-AR")}{" "}
+            <span className="text-xs font-normal text-muted">USDC</span>
           </p>
         </div>
         <div className="rounded-xl border border-border-low bg-secondary/50 p-3 col-span-2 sm:col-span-1">
@@ -205,9 +206,13 @@ function BuyerPortfolioCard({
             Tu empresa todavía no tiene lotes adquiridos.
           </p>
           <p className="mt-1 text-xs text-muted">
-            Navegá el catálogo de lotes auditados para iniciar la compra simulada.
+            Navegá el catálogo de lotes auditados para iniciar la compra
+            simulada.
           </p>
-          <Link href="/batches" className="btn-primary mt-3 inline-block text-xs">
+          <Link
+            href="/batches"
+            className="btn-primary mt-3 inline-block text-xs"
+          >
             Ir al catálogo
           </Link>
         </div>
@@ -228,7 +233,9 @@ function BuyerPortfolioCard({
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
-                  {batch.volume_tonnes} t · {Number(batch.purity_pct).toFixed(2)} % Li₂CO₃ · Origen: {originName(batch.origin_id)}
+                  {batch.volume_tonnes} t ·{" "}
+                  {Number(batch.purity_pct).toFixed(2)} % Li₂CO₃ · Origen:{" "}
+                  {originName(batch.origin_id)}
                 </p>
               </div>
 
@@ -241,7 +248,10 @@ function BuyerPortfolioCard({
                 </Link>
                 {batch.completion_tx_signature && (
                   <a
-                    href={getExplorerUrl(`/tx/${batch.completion_tx_signature}`, cluster)}
+                    href={getExplorerUrl(
+                      `/tx/${batch.completion_tx_signature}`,
+                      cluster
+                    )}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
@@ -264,7 +274,12 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [producers, setProducers] = useState<
-    Array<{ id: string; name: string; origin_id: string; wallet_address: string }>
+    Array<{
+      id: string;
+      name: string;
+      origin_id: string;
+      wallet_address: string;
+    }>
   >([]);
   const [selectedProducerId, setSelectedProducerId] = useState<string>("");
   const [requesting, setRequesting] = useState(false);
@@ -310,7 +325,8 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
     }
     if (!wallet || !signMessage) {
       toast.warning("Billetera no disponible", {
-        description: "Conectá una billetera que permita firmar mensajes (signMessage).",
+        description:
+          "Conectá una billetera que permita firmar mensajes (signMessage).",
       });
       return;
     }
@@ -331,7 +347,9 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
         timestamp,
       });
 
-      const signatureBytes = await signMessage(new TextEncoder().encode(message));
+      const signatureBytes = await signMessage(
+        new TextEncoder().encode(message)
+      );
       const signature = getBase58Decoder().decode(signatureBytes);
 
       const res = await fetch("/api/companies/contracts", {
@@ -373,9 +391,12 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
     <section className="rounded-2xl border border-border-low bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Contratos comerciales de suministro</h2>
+          <h2 className="text-sm font-semibold">
+            Contratos comerciales de suministro
+          </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Acuerdos bilaterales con productoras mineras para reservar y adquirir lotes.
+            Acuerdos bilaterales con productoras mineras para reservar y
+            adquirir lotes.
           </p>
         </div>
         <button
@@ -393,7 +414,8 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
             Nueva solicitud de contrato de suministro
           </p>
           <p className="mt-0.5 text-[11px] text-muted">
-            Al solicitar el contrato firmarás criptográficamente con tu billetera verificada.
+            Al solicitar el contrato firmarás criptográficamente con tu
+            billetera verificada.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <select
@@ -414,7 +436,9 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
               onClick={() => void handleCreateContract()}
               className="btn-primary text-xs px-4 py-2 cursor-pointer"
             >
-              {requesting ? "Firmando solicitud…" : "Firmar y solicitar con wallet"}
+              {requesting
+                ? "Firmando solicitud…"
+                : "Firmar y solicitar con wallet"}
             </button>
 
             <button
@@ -437,7 +461,8 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
               Tu empresa todavía no tiene contratos comerciales registrados.
             </p>
             <p className="mt-1 text-[11px] text-muted">
-              Podés solicitar acuerdos desde el catálogo de lotes o con el botón superior.
+              Podés solicitar acuerdos desde el catálogo de lotes o con el botón
+              superior.
             </p>
           </div>
         ) : (
@@ -459,16 +484,20 @@ function BuyerContractsCard({ company }: { company: AccountCompany }) {
                     )}
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-muted">
-                    Wallet productora: {ellipsify(c.producer?.wallet_address ?? "", 6)}
+                    Wallet productora:{" "}
+                    {ellipsify(c.producer?.wallet_address ?? "", 6)}
                   </p>
                   <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted font-mono">
                     <span>
                       Firma iniciador:{" "}
-                      {c.initiator_signature ? ellipsify(c.initiator_signature, 8) : "—"}
+                      {c.initiator_signature
+                        ? ellipsify(c.initiator_signature, 8)
+                        : "—"}
                     </span>
                     {c.counterparty_signature && (
                       <span>
-                        Firma aceptación: {ellipsify(c.counterparty_signature, 8)}
+                        Firma aceptación:{" "}
+                        {ellipsify(c.counterparty_signature, 8)}
                       </span>
                     )}
                   </div>
@@ -525,13 +554,15 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
   async function handleAccept(contract: ContractWithParties) {
     if (!wallet || !signMessage) {
       toast.warning("Billetera no disponible", {
-        description: "Conectá una billetera que permita firmar mensajes (signMessage).",
+        description:
+          "Conectá una billetera que permita firmar mensajes (signMessage).",
       });
       return;
     }
     if (wallet.account.address !== company.walletAddress) {
       toast.error("Billetera no coincide", {
-        description: "Conectá la billetera verificada de tu productora para firmar la aceptación.",
+        description:
+          "Conectá la billetera verificada de tu productora para firmar la aceptación.",
       });
       return;
     }
@@ -541,8 +572,8 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
       const timestamp = new Date().toISOString();
       const initiatorWallet =
         contract.initiator_id === contract.producer_id
-          ? contract.producer?.wallet_address ?? wallet.account.address
-          : contract.counterparty?.wallet_address ?? "";
+          ? (contract.producer?.wallet_address ?? wallet.account.address)
+          : (contract.counterparty?.wallet_address ?? "");
 
       const message = buildContractAgreementMessage({
         producerWallet: company.walletAddress!,
@@ -551,18 +582,23 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
         timestamp,
       });
 
-      const signatureBytes = await signMessage(new TextEncoder().encode(message));
+      const signatureBytes = await signMessage(
+        new TextEncoder().encode(message)
+      );
       const signature = getBase58Decoder().decode(signatureBytes);
 
-      const res = await fetch(`/api/companies/contracts/${contract.id}/respond`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "accepted",
-          signature,
-          timestamp,
-        }),
-      });
+      const res = await fetch(
+        `/api/companies/contracts/${contract.id}/respond`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "accepted",
+            signature,
+            timestamp,
+          }),
+        }
+      );
 
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -589,11 +625,14 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
   async function handleRevoke(contract: ContractWithParties) {
     setProcessingId(contract.id);
     try {
-      const res = await fetch(`/api/companies/contracts/${contract.id}/respond`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "revoked" }),
-      });
+      const res = await fetch(
+        `/api/companies/contracts/${contract.id}/respond`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "revoked" }),
+        }
+      );
 
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -618,9 +657,12 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
   return (
     <section className="rounded-2xl border border-border-low bg-card p-5 space-y-6">
       <div>
-        <h2 className="text-sm font-semibold">Contratos comerciales y de auditoría</h2>
+        <h2 className="text-sm font-semibold">
+          Contratos comerciales y de auditoría
+        </h2>
         <p className="mt-0.5 text-xs text-muted">
-          Gestioná tus relaciones comerciales bilaterales con compradores y laboratorios auditores.
+          Gestioná tus relaciones comerciales bilaterales con compradores y
+          laboratorios auditores.
         </p>
       </div>
 
@@ -648,14 +690,19 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
                       {c.counterparty?.name ?? "Contraparte"}
                     </span>
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-foreground">
-                      {c.counterparty?.company_type === "buyer" ? "Comprador" : "Auditor"}
+                      {c.counterparty?.company_type === "buyer"
+                        ? "Comprador"
+                        : "Auditor"}
                     </span>
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-muted">
                     Wallet: {ellipsify(c.counterparty?.wallet_address ?? "", 6)}
                   </p>
                   <p className="mt-0.5 font-mono text-[10px] text-muted">
-                    Firma solicitante: {c.initiator_signature ? ellipsify(c.initiator_signature, 8) : "—"}
+                    Firma solicitante:{" "}
+                    {c.initiator_signature
+                      ? ellipsify(c.initiator_signature, 8)
+                      : "—"}
                   </p>
                 </div>
 
@@ -705,15 +752,27 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
                       {c.counterparty?.name ?? "Contraparte"}
                     </span>
                     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted">
-                      {c.counterparty?.company_type === "buyer" ? "Comprador" : "Auditor"}
+                      {c.counterparty?.company_type === "buyer"
+                        ? "Comprador"
+                        : "Auditor"}
                     </span>
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-muted">
                     Wallet: {ellipsify(c.counterparty?.wallet_address ?? "", 6)}
                   </p>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[10px] text-muted">
-                    <span>Iniciador: {c.initiator_signature ? ellipsify(c.initiator_signature, 8) : "—"}</span>
-                    <span>Aceptación: {c.counterparty_signature ? ellipsify(c.counterparty_signature, 8) : "—"}</span>
+                    <span>
+                      Iniciador:{" "}
+                      {c.initiator_signature
+                        ? ellipsify(c.initiator_signature, 8)
+                        : "—"}
+                    </span>
+                    <span>
+                      Aceptación:{" "}
+                      {c.counterparty_signature
+                        ? ellipsify(c.counterparty_signature, 8)
+                        : "—"}
+                    </span>
                   </div>
                 </div>
 

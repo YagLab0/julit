@@ -127,4 +127,3 @@ _Avoid_: On-chain escrow, paper signature
 **Batch Showcase**:
 The interactive technical preview within an origin modal displaying procedural 3D representations, chemical purity, ESG indicators, and commercial pricing for a selected lithium batch.
 _Avoid_: Static thumbnail, photo gallery
-

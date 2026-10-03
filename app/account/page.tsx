@@ -38,7 +38,9 @@ export default async function AccountPage() {
   if (company?.companyType === "buyer" && company.walletAddress) {
     const { data: batches } = await supabase
       .from("batches")
-      .select("batch_id, pda_address, volume_tonnes, purity_pct, price_usdc, completion_tx_signature, origin_id, indexed_at")
+      .select(
+        "batch_id, pda_address, volume_tonnes, purity_pct, price_usdc, completion_tx_signature, origin_id, indexed_at"
+      )
       .eq("buyer_wallet", company.walletAddress)
       .eq("status", "completed")
       .order("indexed_at", { ascending: false });

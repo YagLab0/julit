@@ -15,15 +15,25 @@ describe("Cryptographic Passport Zero-Trust Verification", () => {
   });
 
   it("detects tampering when comparing document hash with on-chain digest", async () => {
-    const authenticBytes = new TextEncoder().encode("Authentic Laboratory Audit Report");
-    const tamperedBytes = new TextEncoder().encode("Tampered Laboratory Audit Report");
+    const authenticBytes = new TextEncoder().encode(
+      "Authentic Laboratory Audit Report"
+    );
+    const tamperedBytes = new TextEncoder().encode(
+      "Tampered Laboratory Audit Report"
+    );
 
-    const authHashBuffer = await crypto.subtle.digest("SHA-256", authenticBytes);
+    const authHashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      authenticBytes
+    );
     const authHex = Array.from(new Uint8Array(authHashBuffer))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    const tamperedHashBuffer = await crypto.subtle.digest("SHA-256", tamperedBytes);
+    const tamperedHashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      tamperedBytes
+    );
     const tamperedHex = Array.from(new Uint8Array(tamperedHashBuffer))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
