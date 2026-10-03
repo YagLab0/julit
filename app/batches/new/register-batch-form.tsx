@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ellipsify } from "../../lib/explorer";
-import { ORIGINS } from "./origins";
+import type { Counterparty } from "./counterparties";
+import type { ProducerInfo } from "./new-batch-client";
 import {
   validateBatchForm,
   type BatchFormValues,
@@ -16,7 +17,6 @@ const INPUT_CLASS =
 
 const INITIAL: BatchFormValues = {
   batchId: "",
-  originId: ORIGINS[0].id,
   volumeTonnes: "",
   purityPct: "",
   waterM3PerTonne: "",
@@ -55,9 +55,13 @@ function Field({
 }
 
 export function RegisterBatchForm({
-  producerWallet,
+  producer,
+  auditors,
+  buyers,
 }: {
-  producerWallet: string;
+  producer: ProducerInfo;
+  auditors: Counterparty[];
+  buyers: Counterparty[];
 }) {
   const [values, setValues] = useState<BatchFormValues>(INITIAL);
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
@@ -69,7 +73,12 @@ export function RegisterBatchForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const { errors, payload } = validateBatchForm(values, producerWallet);
+    const { errors, payload } = validateBatchForm(values, {
+      producerWallet: producer.walletAddress,
+      originId: producer.originId,
+      contractedAuditors: auditors.map((a) => a.wallet),
+      contractedBuyers: buyers.map((b) => b.wallet),
+    });
     setErrors(errors);
     if (!payload) {
       toast.error("Revisá los campos marcados.");
@@ -103,50 +112,58 @@ export function RegisterBatchForm({
               maxLength={64}
             />
           </Field>
-          <Field label="Origen" error={errors.originId}>
+          <Field label="Origen" hint="Del perfil de tu empresa.">
+            <p className="rounded-lg border border-border-low bg-cream/50 px-3 py-2 text-sm font-medium">
+              {producer.originName}
+            </p>
+          </Field>
+          <Field
+            label="Auditores contratados"
+            hint={
+              auditors.length > 0
+                ? "Laboratorio que certificará el lote."
+                : "No tenés auditores con contrato aceptado."
+            }
+            error={errors.auditorWallet}
+            span
+          >
             <select
               className={INPUT_CLASS}
-              value={values.originId}
-              onChange={(e) => update("originId")(e.target.value)}
+              value={values.auditorWallet}
+              onChange={(e) => update("auditorWallet")(e.target.value)}
             >
-              {ORIGINS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
+              <option value="" disabled>
+                Elegí un auditor…
+              </option>
+              {auditors.map((a) => (
+                <option key={a.wallet} value={a.wallet}>
+                  {a.name} · {ellipsify(a.wallet, 4)}
                 </option>
               ))}
             </select>
           </Field>
           <Field
-            label="Wallet del auditor designado"
-            hint="Laboratorio que certificará el lote."
-            error={errors.auditorWallet}
-            span
-          >
-            <input
-              className={`${INPUT_CLASS} font-mono`}
-              value={values.auditorWallet}
-              onChange={(e) => update("auditorWallet")(e.target.value)}
-              placeholder="Base58, 32–44 caracteres"
-              spellCheck={false}
-            />
-          </Field>
-          <Field
-            label="Wallet del comprador reservado (opcional)"
+            label="Mis clientes (opcional)"
             hint={
               isReserved
-                ? "Lote reservado: solo ese comprador podrá adquirirlo."
-                : "Vacío = lote spot, disponible para cualquier comprador."
+                ? "Lote reservado: solo ese cliente podrá adquirirlo."
+                : "Sin cliente = lote spot, disponible para cualquier comprador."
             }
             error={errors.reservedBuyerWallet}
             span
           >
-            <input
-              className={`${INPUT_CLASS} font-mono`}
+            <select
+              className={INPUT_CLASS}
               value={values.reservedBuyerWallet}
               onChange={(e) => update("reservedBuyerWallet")(e.target.value)}
-              placeholder="Base58, 32–44 caracteres"
-              spellCheck={false}
-            />
+            >
+              <option value="">Lote spot (sin comprador reservado)</option>
+              {buyers.map((b) => (
+                <option key={b.wallet} value={b.wallet}>
+                  {b.name} · {ellipsify(b.wallet, 4)}
+                </option>
+              ))}
+            </select>
           </Field>
         </div>
       </div>
@@ -230,8 +247,10 @@ export function RegisterBatchForm({
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted">
-          Firma como productora:{" "}
-          <span className="font-mono">{ellipsify(producerWallet, 4)}</span>
+          Firma como {producer.name}:{" "}
+          <span className="font-mono">
+            {ellipsify(producer.walletAddress, 4)}
+          </span>
         </p>
         <div className="flex gap-2">
           <Link href="/batches" className="btn-secondary">

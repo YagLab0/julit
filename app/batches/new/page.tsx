@@ -1,26 +1,57 @@
-"use client";
-
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { SessionMenu } from "../../components/session-menu";
 import { ThemeToggle } from "../../components/theme-toggle";
-import { ClusterSelect } from "../../components/cluster-select";
 import { WalletButton } from "../../components/wallet-button";
-import { useWallet } from "../../lib/wallet/context";
-import { RegisterBatchForm } from "./register-batch-form";
+import { originName } from "../../lib/origins";
+import { createClient } from "../../lib/supabase/server";
+import { NewBatchClient } from "./new-batch-client";
 
-export default function NewBatchPage() {
-  const { wallet, status } = useWallet();
-  const connected = status === "connected" && wallet != null;
+function GateCard({
+  body,
+  href = "/account",
+  linkLabel = "Ir a mi cuenta",
+}: {
+  body: string;
+  href?: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
+      <p className="text-sm text-muted">{body}</p>
+      <Link href={href} className="btn-secondary mt-4 inline-block">
+        {linkLabel}
+      </Link>
+    </div>
+  );
+}
+
+export default async function NewBatchPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("name, company_type, wallet_address, wallet_verified_at, origin_id")
+    .eq("id", user.id)
+    .maybeSingle();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
+      <header className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-4">
         <Link href="/batches" className="text-sm font-bold tracking-tight">
           JuLit
         </Link>
         <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <ClusterSelect />
+          <SessionMenu />
           <WalletButton />
+          <ThemeToggle />
         </div>
       </header>
 
@@ -31,25 +62,26 @@ export default function NewBatchPage() {
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
           Dá de alta un lote de carbonato de litio grado batería en Solana
-          Devnet. La wallet conectada firma como productora.
+          Devnet. La wallet verificada de tu empresa firma como productora.
         </p>
 
-        <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50/95 px-3 py-2 text-[11px] leading-snug text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
-          <strong>Demo frontend.</strong> La verificación del rol de productora
-          y la transacción on-chain llegan con la API y el programa Anchor.
-        </div>
-
-        {connected ? (
-          <RegisterBatchForm producerWallet={wallet.account.address} />
+        {!company ? (
+          <GateCard body="Registrá tu empresa antes de dar de alta lotes." />
+        ) : company.company_type !== "producer" ? (
+          <GateCard body="El alta de lotes es exclusiva de empresas productoras." />
+        ) : !company.wallet_verified_at ? (
+          <GateCard body="Vinculá la wallet verificada de tu empresa para poder firmar lotes." />
+        ) : !company.origin_id ? (
+          <GateCard body="Asigná el origen de producción de tu empresa desde tu cuenta." />
         ) : (
-          <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted">
-              Conectá la wallet de tu empresa productora para registrar un lote.
-            </p>
-            <div className="mt-4 inline-block">
-              <WalletButton />
-            </div>
-          </div>
+          <NewBatchClient
+            producer={{
+              name: company.name,
+              walletAddress: company.wallet_address!,
+              originId: company.origin_id,
+              originName: originName(company.origin_id) ?? company.origin_id,
+            }}
+          />
         )}
       </main>
     </div>

@@ -9,7 +9,6 @@ const DECIMAL_RE = /^([0-9]+)(?:\.([0-9]+))?$/;
 
 export type BatchFormValues = {
   batchId: string;
-  originId: string;
   volumeTonnes: string;
   purityPct: string;
   waterM3PerTonne: string;
@@ -21,6 +20,17 @@ export type BatchFormValues = {
 
 export type FieldKey = keyof BatchFormValues;
 export type FieldErrors = Partial<Record<FieldKey, string>>;
+
+export type BatchFormContext = {
+  /** The producer's verified company wallet. */
+  producerWallet: string;
+  /** The producer's bound origin (from the company profile, not user input). */
+  originId: string;
+  /** Wallets of auditors holding an accepted contract with the producer. */
+  contractedAuditors: string[];
+  /** Wallets of buyers holding an accepted contract with the producer. */
+  contractedBuyers: string[];
+};
 
 /** Exact decimal-string payload for a future create_batch instruction. */
 export type CreateBatchPayload = {
@@ -52,7 +62,7 @@ function scaledInt(raw: string, decimals: number): bigint | null {
 
 export function validateBatchForm(
   values: BatchFormValues,
-  producerWallet: string
+  ctx: BatchFormContext
 ): { errors: FieldErrors; payload: CreateBatchPayload | null } {
   const errors: FieldErrors = {};
 
@@ -61,10 +71,6 @@ export function validateBatchForm(
     errors.batchId = "Ingresá un identificador de lote.";
   } else if (new TextEncoder().encode(batchId).length > 32) {
     errors.batchId = "El identificador no puede superar los 32 bytes.";
-  }
-
-  if (!values.originId) {
-    errors.originId = "Elegí un origen.";
   }
 
   const volume = INTEGER_RE.test(values.volumeTonnes.trim())
@@ -108,18 +114,28 @@ export function validateBatchForm(
   }
 
   const auditorWallet = values.auditorWallet.trim();
-  if (!BASE58_RE.test(auditorWallet)) {
+  if (!auditorWallet) {
+    errors.auditorWallet = "Elegí un auditor contratado.";
+  } else if (
+    !BASE58_RE.test(auditorWallet) ||
+    !ctx.contractedAuditors.includes(auditorWallet)
+  ) {
     errors.auditorWallet =
-      "Ingresá la wallet del auditor designado (32–44 caracteres base58).";
+      "El auditor debe tener un contrato aceptado con tu empresa.";
   }
 
   const reservedBuyerWallet = values.reservedBuyerWallet.trim() || null;
-  if (reservedBuyerWallet && !BASE58_RE.test(reservedBuyerWallet)) {
+  if (
+    reservedBuyerWallet &&
+    (!BASE58_RE.test(reservedBuyerWallet) ||
+      !ctx.contractedBuyers.includes(reservedBuyerWallet))
+  ) {
     errors.reservedBuyerWallet =
-      "Ingresá una wallet válida (32–44 caracteres base58) o dejalo vacío.";
+      "El cliente debe tener un contrato aceptado con tu empresa.";
   } else if (
-    reservedBuyerWallet === auditorWallet ||
-    reservedBuyerWallet === producerWallet
+    reservedBuyerWallet &&
+    (reservedBuyerWallet === auditorWallet ||
+      reservedBuyerWallet === ctx.producerWallet)
   ) {
     errors.reservedBuyerWallet =
       "El comprador reservado no puede ser la productora ni el auditor.";
@@ -129,13 +145,13 @@ export function validateBatchForm(
     Object.keys(errors).length === 0
       ? {
           batchId,
-          originId: values.originId,
+          originId: ctx.originId,
           volumeTonnes: values.volumeTonnes.trim(),
           purityBasisPoints: purity!.toString(),
           waterM3PerTonneScaled: water!.toString(),
           carbonKgCo2ePerTonneScaled: carbon!.toString(),
           priceUsdcScaled: price!.toString(),
-          producerWallet,
+          producerWallet: ctx.producerWallet,
           auditorWallet,
           reservedBuyerWallet,
         }
