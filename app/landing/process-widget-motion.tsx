@@ -58,6 +58,7 @@ export function ProcessWidgetMotion({
       }
     }
     function mount() {
+      if (!root) return;
       for (const animation of animations) animation.cancel();
       animations.length = 0;
       root
