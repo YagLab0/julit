@@ -1,7 +1,7 @@
 // Mirrors the seeded `origins` table (docs/database.md). Fetch from Supabase
 // once a directory read is needed.
 export const ORIGINS = [
-  { id: "olaroz", name: "Salar de Olaroz" },
+  { id: "olaroz", name: "Olaroz" },
   { id: "cauchari_olaroz", name: "Cauchari-Olaroz" },
 ] as const;
 

@@ -3,10 +3,9 @@
 import {
   COMPANY_TYPE_DESCRIPTIONS,
   COMPANY_TYPE_LABELS,
-  COMPANY_TYPES,
+  SELF_SERVICE_COMPANY_TYPES,
   type CompanyType,
 } from "../lib/company";
-import { ORIGINS } from "../lib/origins";
 import { inputClass, labelClass } from "./form-styles";
 
 type CompanyFieldsProps = {
@@ -14,8 +13,6 @@ type CompanyFieldsProps = {
   onNameChange: (name: string) => void;
   companyType: CompanyType;
   onCompanyTypeChange: (companyType: CompanyType) => void;
-  originId: string;
-  onOriginIdChange: (originId: string) => void;
 };
 
 export function CompanyFields({
@@ -23,8 +20,6 @@ export function CompanyFields({
   onNameChange,
   companyType,
   onCompanyTypeChange,
-  originId,
-  onOriginIdChange,
 }: CompanyFieldsProps) {
   return (
     <div className="space-y-4">
@@ -45,7 +40,7 @@ export function CompanyFields({
       <fieldset>
         <legend className={labelClass}>Tipo de empresa</legend>
         <div className="mt-2 grid gap-2">
-          {COMPANY_TYPES.map((type) => (
+          {SELF_SERVICE_COMPANY_TYPES.map((type) => (
             <label
               key={type}
               className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 transition ${
@@ -74,30 +69,6 @@ export function CompanyFields({
           ))}
         </div>
       </fieldset>
-
-      {companyType === "producer" && (
-        <div>
-          <label htmlFor="company-origin" className={labelClass}>
-            Origen de producción
-          </label>
-          <select
-            id="company-origin"
-            value={originId}
-            onChange={(event) => onOriginIdChange(event.target.value)}
-            required
-            className={inputClass}
-          >
-            {ORIGINS.map((origin) => (
-              <option key={origin.id} value={origin.id}>
-                {origin.name}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-muted">
-            Una productora opera un único origen. Queda fijo una vez asignado.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

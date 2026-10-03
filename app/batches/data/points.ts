@@ -1,313 +1,18 @@
-// JuLit visual data — single source for the /app map demo.
+// JuLit geographic reference data for the batches map demo.
 //
-// Renamed from lithium-passport (Mine -> Origin, Lot -> Batch, mineId ->
-// originId, operator -> producer) following GLOSSARY.md. All batches,
-// audits and prices are SIMULATED demo data.
-// New vs lithium: `carbonKgPerTonne` (Carbon Footprint entity).
-
-export type BatchStatus = "Created" | "Audited" | "Completed";
-
-type EventBase = {
-  /** ISO 8601. */
-  at: string;
-  /** Wallet that signed (if any). */
-  by?: string;
-  /** Transaction signature. Only exists with the on-chain program. */
-  signature?: string;
-};
-
-export type BatchEvent =
-  | (EventBase & { type: "created" })
-  | (EventBase & { type: "audited"; reportSha256: string })
-  | (EventBase & { type: "completed" });
-
-export type Batch = {
-  batchId: string;
-  originId: string;
-  status: BatchStatus;
-  volumeTonnes: number;
-  /** In % with 2 decimals. */
-  purityPct: number;
-  /** m³ per tonne. */
-  waterM3PerTonne: number;
-  /** kg CO₂e per tonne (Carbon Footprint). Simulated. */
-  carbonKgPerTonne: number;
-  /** USDC per tonne. */
-  priceUsdcPerTonne: number;
-  /** SHA-256 of the auditor report (64 hex). From Audited. */
-  reportSha256?: string;
-  reportUrl?: string;
-  history: BatchEvent[];
-  pdaAddress?: string;
-  reservedBuyerWallet?: string;
-  buyerWallet?: string;
-};
-
-export type OriginInfo = {
-  id: string;
-  code: string;
-  salar: string;
-  name: string;
-  /** Producer entity (GLOSSARY): mining company operating the origin. */
-  producer: string;
-  shareholders: string;
-  /** [lng, lat] of the processing plant. */
-  coordinates: [number, number];
-  reference: {
-    capacityTpa: number;
-    altitudeM?: number;
-    waterM3PerTonne?: number;
-    note: string;
-    source: { label: string; url: string };
-  };
-};
-
-export type Origin = OriginInfo & { batches: Batch[] };
-
-export function eventOf<T extends BatchEvent["type"]>(
-  batch: Batch,
-  type: T
-): Extract<BatchEvent, { type: T }> | undefined {
-  return batch.history.find((e) => e.type === type) as
-    | Extract<BatchEvent, { type: T }>
-    | undefined;
-}
+// Real public sources only (OSM/Overpass 2026-10-01, SEC filings, World
+// Bank): salar polygons, context salares and export routes/ports. The origin
+// catalogue itself comes from the Supabase `origins` table (see origins.ts).
 
 export const JUJUY_PUNA_CENTER: [number, number] = [-66.74, -23.57];
 
-/** Minimum battery-grade purity, to compare each batch against. */
-export const BATTERY_GRADE_PURITY_PCT = 99.5;
-
-export const ORIGIN_INFOS: OriginInfo[] = [
-  {
-    id: "olaroz",
-    code: "OLZ",
-    salar: "Salar de Olaroz",
-    name: "Olaroz",
-    producer: "Sales de Jujuy",
-    shareholders: "Rio Tinto 66,5 % · Toyota Tsusho 25 % · JEMSE 8,5 %",
-    // 23°27'46.54"S 66°42'08.94"O
-    coordinates: [-66.70248, -23.46293],
-    reference: {
-      capacityTpa: 42_500,
-      altitudeM: 3_900,
-      waterM3PerTonne: 51.0,
-      note: "Huella hídrica publicada: 51,0 m³/t Li₂CO₃ (Díaz Paz et al., Heliyon 2025).",
-      source: {
-        label: "Rio Tinto 20-F FY2025",
-        url: "https://www.sec.gov/Archives/edgar/data/863064/000162828026009531/rio-20251231.htm",
-      },
-    },
-  },
-  {
-    id: "cauchari-olaroz",
-    code: "EXAR",
-    salar: "Salar de Cauchari",
-    name: "Cauchari-Olaroz",
-    producer: "Minera Exar",
-    shareholders: "Ganfeng Lithium · Lithium Argentina · JEMSE",
-    // Processing plant: 23°40'26.20"S 66°46'23.84"O
-    coordinates: [-66.77329, -23.67394],
-    reference: {
-      capacityTpa: 40_000,
-      note: "Producción 2025: ~34.100 t de carbonato de litio. Sin huella hídrica publicada con la misma metodología.",
-      source: {
-        label: "Cauchari-Olaroz SK 1300 Technical Report 2026",
-        url: "https://www.sec.gov/Archives/edgar/data/1440972/000110465926032465/tm269254d1_ex99-1.htm",
-      },
-    },
-  },
-];
-
-const report = (batchId: string) => `/demo-informes/${batchId}.pdf`;
-
-export const SEED_BATCHES: Batch[] = [
-  {
-    batchId: "LIT-2026-OLZ-01",
-    originId: "olaroz",
-    status: "Completed",
-    volumeTonnes: 420,
-    purityPct: 99.55,
-    waterM3PerTonne: 50.8,
-    carbonKgPerTonne: 8200,
-    priceUsdcPerTonne: 19_620,
-    reportSha256:
-      "d0c134b8b2dedb77bb37ba838f9171adff44324b3f1a6c0e436d5d6a0e197f62",
-    reportUrl: report("LIT-2026-OLZ-01"),
-    history: [
-      { type: "created", at: "2026-08-05T13:20:00Z" },
-      {
-        type: "audited",
-        at: "2026-08-14T15:05:00Z",
-        reportSha256:
-          "d0c134b8b2dedb77bb37ba838f9171adff44324b3f1a6c0e436d5d6a0e197f62",
-      },
-      { type: "completed", at: "2026-08-28T11:40:00Z" },
-    ],
-  },
-  {
-    batchId: "LIT-2026-OLZ-02",
-    originId: "olaroz",
-    status: "Audited",
-    volumeTonnes: 360,
-    purityPct: 99.58,
-    waterM3PerTonne: 51.2,
-    carbonKgPerTonne: 8350,
-    priceUsdcPerTonne: 19_750,
-    reportSha256:
-      "c581310635287efdfe6872356227cd25f037c6c173e9c7ee807575ab4ef61a5f",
-    reportUrl: report("LIT-2026-OLZ-02"),
-    history: [
-      { type: "created", at: "2026-08-25T12:10:00Z" },
-      {
-        type: "audited",
-        at: "2026-09-03T16:30:00Z",
-        reportSha256:
-          "c581310635287efdfe6872356227cd25f037c6c173e9c7ee807575ab4ef61a5f",
-      },
-    ],
-  },
-  {
-    batchId: "LIT-2026-OLZ-03",
-    originId: "olaroz",
-    status: "Audited",
-    volumeTonnes: 510,
-    purityPct: 99.52,
-    waterM3PerTonne: 49.6,
-    carbonKgPerTonne: 7980,
-    priceUsdcPerTonne: 19_580,
-    reportSha256:
-      "1bd436b90b3341838dca3d49f79cec9e2f31986a6d6e64582b304757e6b7c46f",
-    reportUrl: report("LIT-2026-OLZ-03"),
-    history: [
-      { type: "created", at: "2026-09-08T14:00:00Z" },
-      {
-        type: "audited",
-        at: "2026-09-18T13:45:00Z",
-        reportSha256:
-          "1bd436b90b3341838dca3d49f79cec9e2f31986a6d6e64582b304757e6b7c46f",
-      },
-    ],
-  },
-  {
-    batchId: "LIT-2026-OLZ-04",
-    originId: "olaroz",
-    status: "Created",
-    volumeTonnes: 280,
-    purityPct: 99.61,
-    waterM3PerTonne: 52.0,
-    carbonKgPerTonne: 8410,
-    priceUsdcPerTonne: 19_800,
-    history: [{ type: "created", at: "2026-09-26T10:15:00Z" }],
-  },
-  {
-    batchId: "LIT-2026-EXAR-01",
-    originId: "cauchari-olaroz",
-    status: "Audited",
-    volumeTonnes: 500,
-    purityPct: 99.52,
-    waterM3PerTonne: 53.4,
-    carbonKgPerTonne: 8620,
-    priceUsdcPerTonne: 19_700,
-    reportSha256:
-      "98cf47904188e4fd53d0285399efbaa83243afa87b179a5c92b6245c3e4bdbf2",
-    reportUrl: report("LIT-2026-EXAR-01"),
-    history: [
-      { type: "created", at: "2026-08-30T12:00:00Z" },
-      {
-        type: "audited",
-        at: "2026-09-10T17:20:00Z",
-        reportSha256:
-          "98cf47904188e4fd53d0285399efbaa83243afa87b179a5c92b6245c3e4bdbf2",
-      },
-    ],
-  },
-  {
-    batchId: "LIT-2026-EXAR-02",
-    originId: "cauchari-olaroz",
-    status: "Audited",
-    volumeTonnes: 240,
-    purityPct: 99.6,
-    waterM3PerTonne: 54.9,
-    carbonKgPerTonne: 8790,
-    priceUsdcPerTonne: 19_850,
-    reportSha256:
-      "57b5af31fbd80d2006aac0f3b4ebef453dc66bdabf8714f5ebe45da3ec83795f",
-    reportUrl: report("LIT-2026-EXAR-02"),
-    history: [
-      { type: "created", at: "2026-09-12T09:30:00Z" },
-      {
-        type: "audited",
-        at: "2026-09-22T14:10:00Z",
-        reportSha256:
-          "57b5af31fbd80d2006aac0f3b4ebef453dc66bdabf8714f5ebe45da3ec83795f",
-      },
-    ],
-  },
-  {
-    batchId: "LIT-2026-EXAR-03",
-    originId: "cauchari-olaroz",
-    status: "Created",
-    volumeTonnes: 600,
-    purityPct: 99.5,
-    waterM3PerTonne: 55.8,
-    carbonKgPerTonne: 8900,
-    priceUsdcPerTonne: 19_500,
-    history: [{ type: "created", at: "2026-09-28T11:00:00Z" }],
-  },
-];
-
-export function mergeOrigins(batches: Batch[] = SEED_BATCHES): Origin[] {
-  return ORIGIN_INFOS.map((info) => ({
-    ...info,
-    batches: batches.filter((b) => b.originId === info.id),
-  }));
-}
-
-/** Batches ready for sale (audited). Mirrors Spot Batch glossary entity. */
-export function batchesForSale(origin: Origin): Batch[] {
-  return origin.batches.filter((b) => b.status === "Audited");
-}
-
-export function tonnesForSale(origin: Origin): number {
-  return batchesForSale(origin).reduce((sum, b) => sum + b.volumeTonnes, 0);
-}
-
-/** Total quoted price for a whole batch (Batch Price), in USDC. */
-export function batchTotal(batch: Batch): number {
-  return batch.volumeTonnes * batch.priceUsdcPerTonne;
-}
-
 // ---------------------------------------------------------------------------
-// Formatting (es-AR, per FRONTEND.md). Kept here so points.ts is the only
-// data file the visual demo needs.
+// Formatting (es-AR, per FRONTEND.md).
 // ---------------------------------------------------------------------------
 
-const usdc = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 const num = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
-const delta = new Intl.NumberFormat("es-AR", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 2,
-  signDisplay: "exceptZero",
-});
-const dateTime = new Intl.DateTimeFormat("es-AR", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
 
-export const formatUsdc = (value: number) => usdc.format(value);
 export const formatNumber = (value: number) => num.format(value);
-export const formatDelta = (value: number) => delta.format(value);
-export const formatDateTime = (iso: string) => dateTime.format(new Date(iso));
-export const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("es-AR");
-
-export function shortHash(hash: string, head = 8, tail = 6) {
-  return `${hash.slice(0, head)}…${hash.slice(-tail)}`;
-}
 
 // ---------------------------------------------------------------------------
 // Map geo data (from lithium-passport, OSM/Overpass 2026-10-01).
@@ -388,7 +93,7 @@ export const SALARES: SalarCollection = {
       type: "Feature",
       properties: {
         name: "Salar de Cauchari",
-        originId: "cauchari-olaroz",
+        originId: "cauchari_olaroz",
         osmId: "way/209387927",
       },
       geometry: {
@@ -1046,7 +751,7 @@ export const EXPORT_ROUTES: ExportRoute[] = [
   {
     id: "cauchari-antofagasta",
     corridor: "pacific",
-    originId: "cauchari-olaroz",
+    originId: "cauchari_olaroz",
     label: "Cauchari-Olaroz → Antofagasta",
     km: 543,
     hours: 7.1,

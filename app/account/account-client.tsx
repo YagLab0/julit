@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getBase58Decoder } from "@solana/kit";
 import { COMPANY_TYPE_LABELS, type CompanyType } from "../lib/company";
-import { ORIGINS, originName } from "../lib/origins";
+import { originName } from "../lib/origins";
 import { ellipsify, getExplorerUrl } from "../lib/explorer";
 import { useWallet } from "../lib/wallet/context";
 import { useCluster } from "../components/cluster-context";
@@ -42,7 +42,9 @@ const NEXT_STEPS: Record<
   },
   auditor: {
     title: "Certificar lotes",
-    body: "Próximamente vas a poder subir el certificado de auditoría y firmar la certificación de tus lotes asignados.",
+    body: "Subí el certificado de auditoría y declará los hallazgos ESG y de la regulación europea de tus lotes asignados.",
+    href: "/audit",
+    linkLabel: "Certificar lotes",
   },
   buyer: {
     title: "Comprar lotes",
@@ -62,8 +64,6 @@ export function AccountClient({
   acquiredBatches?: AcquiredBatch[];
 }) {
   const nextStep = NEXT_STEPS[company.companyType];
-  const needsOrigin =
-    company.companyType === "producer" && company.originId == null;
 
   return (
     <div className="space-y-6">
@@ -85,8 +85,6 @@ export function AccountClient({
         walletVerifiedAt={company.walletVerifiedAt}
       />
 
-      {needsOrigin && <OriginSetupCard />}
-
       {company.companyType === "buyer" && (
         <BuyerPortfolioCard batches={acquiredBatches} />
       )}
@@ -97,7 +95,7 @@ export function AccountClient({
           <p className="mt-1 text-xs leading-relaxed text-muted">
             {nextStep.body}
           </p>
-          {nextStep.href && !needsOrigin && (
+          {nextStep.href && (
             <Link
               href={nextStep.href}
               className="btn-secondary mt-3 inline-block"
@@ -218,71 +216,6 @@ function BuyerPortfolioCard({
             </div>
           ))}
         </div>
-      )}
-    </section>
-  );
-}
-
-function OriginSetupCard() {
-  const router = useRouter();
-  const [originId, setOriginId] = useState<string>(ORIGINS[0].id);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function saveOrigin() {
-    setBusy(true);
-    setError(null);
-
-    const response = await fetch("/api/companies/origin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ origin_id: originId }),
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      setError(payload?.error ?? "No se pudo asignar el origen.");
-      setBusy(false);
-      return;
-    }
-
-    router.refresh();
-  }
-
-  return (
-    <section className="rounded-2xl border border-amber-300 bg-amber-50/60 p-5 dark:border-amber-800 dark:bg-amber-950/40">
-      <h2 className="text-sm font-semibold">Origen de producción</h2>
-      <p className="mt-1 text-xs leading-relaxed text-muted">
-        Tu empresa productora todavía no tiene origen asignado. Elegilo una vez:
-        queda fijo y es el origen de todos tus lotes.
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <select
-          value={originId}
-          onChange={(event) => setOriginId(event.target.value)}
-          className="rounded-lg border border-border-low bg-background px-3 py-2 text-sm text-foreground"
-        >
-          {ORIGINS.map((origin) => (
-            <option key={origin.id} value={origin.id}>
-              {origin.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={() => void saveOrigin()}
-          disabled={busy}
-          className="btn-primary"
-        >
-          {busy ? "Asignando…" : "Asignar origen"}
-        </button>
-      </div>
-      {error && (
-        <p role="alert" className="mt-2 text-xs text-destructive">
-          {error}
-        </p>
       )}
     </section>
   );
