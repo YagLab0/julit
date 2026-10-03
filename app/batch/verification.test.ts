@@ -3,6 +3,7 @@ import { BatchStatus, JULIT_PROGRAM_ADDRESS } from "../generated/julit";
 import {
   certificateVerdict,
   contrastBatchRecord,
+  passportPath,
   scaledDecimal,
   type ContrastField,
   type IndexedBatch,
@@ -234,5 +235,13 @@ describe("certificateVerdict", () => {
     expect(certificateVerdict(hexA, hexA.slice(0, 63))).toBe("mismatch");
     expect(certificateVerdict(hexA, `${hexA}ff`)).toBe("mismatch");
     expect(certificateVerdict(hexA, "")).toBe("mismatch");
+  });
+});
+
+describe("passportPath", () => {
+  it("derives the passport route from the batch PDA", () => {
+    expect(passportPath(INDEXED.pda_address)).toBe(
+      `/batch/${INDEXED.pda_address}`
+    );
   });
 });

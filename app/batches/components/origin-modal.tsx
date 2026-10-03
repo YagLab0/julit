@@ -1,9 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { passportPath } from "../../batch/verification";
 import { useCluster } from "../../components/cluster-context";
+import { PassportQr } from "../../components/passport-qr";
 import { formatNumber } from "../data/points";
 import { batchCertificateUrl, type Batch } from "../data/batches";
 import type { Origin } from "../data/origins";
@@ -127,6 +130,28 @@ function BatchDetail({ batch, origin }: { batch: Batch; origin: Origin }) {
             </span>
           </p>
         )}
+      </div>
+
+      <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-medium tracking-wide text-muted uppercase">
+            Pasaporte público
+          </p>
+          <Link
+            href={passportPath(batch.pda_address)}
+            target="_blank"
+            className="text-[11px] font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+          >
+            Ver pasaporte
+          </Link>
+        </div>
+        <div className="mt-3">
+          <PassportQr
+            pda={batch.pda_address}
+            batchId={batch.batch_id}
+            compact
+          />
+        </div>
       </div>
     </div>
   );

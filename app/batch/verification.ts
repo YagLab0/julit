@@ -148,3 +148,12 @@ export function certificateVerdict(
   if (!HEX_64.test(recorded) || !HEX_64.test(computed)) return "mismatch";
   return recorded === computed ? "match" : "mismatch";
 }
+
+/**
+ * The batch's passport route. The public URL the QR encodes is always derived
+ * per view — the request origin plus this path — so it can never drift apart
+ * from the record (database contract).
+ */
+export function passportPath(pda: string): string {
+  return `/batch/${pda}`;
+}

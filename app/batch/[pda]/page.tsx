@@ -7,6 +7,7 @@ import {
   StatusBadge,
   dateFmt,
 } from "../../batches/components/batch-display";
+import { PassportQr } from "../../components/passport-qr";
 import { ThemeToggle } from "../../components/theme-toggle";
 import { batchCertificateUrl } from "../../batches/data/batches";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
@@ -173,6 +174,15 @@ export default async function BatchPassportPage({
               Contraste con Solana
             </h2>
             <RecordContrast batch={batch} />
+          </section>
+
+          <section aria-labelledby="passport-share">
+            <h2 id="passport-share" className="eyebrow">
+              Compartir
+            </h2>
+            <div className="mt-2 rounded-xl border border-border bg-card px-4 py-5">
+              <PassportQr pda={batch.pda_address} batchId={batch.batch_id} />
+            </div>
           </section>
         </div>
       </main>
