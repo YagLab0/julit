@@ -89,10 +89,11 @@ select throws_ok($$insert into public.batches (
 select lives_ok($$insert into public.batches (
     pda_address, batch_id, producer_wallet, auditor_wallet, origin_id,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc
+    carbon_footprint_kg_co2e_per_tonne, price_usdc, creation_tx_signature,
+    observed_slot
   ) values (
     repeat('6', 44), 'LIT-T3', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    'olaroz', 10, 99.5, 50, 8000, 1000
+    'olaroz', 10, 99.5, 50, 8000, 1000, repeat('6', 63) || '8', 2000
   )$$,
   'A batch with an accepted auditor contract and matching origin is indexed');
 
@@ -109,10 +110,12 @@ select throws_ok($$insert into public.batches (
 select lives_ok($$insert into public.batches (
     pda_address, batch_id, producer_wallet, auditor_wallet, reserved_buyer_wallet,
     origin_id, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc
+    carbon_footprint_kg_co2e_per_tonne, price_usdc, creation_tx_signature,
+    observed_slot
   ) values (
     repeat('7', 44), 'LIT-T5', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    repeat('4', 31) || '4', 'olaroz', 10, 99.5, 50, 8000, 1000
+    repeat('4', 31) || '4', 'olaroz', 10, 99.5, 50, 8000, 1000,
+    repeat('7', 63) || '8', 2001
   )$$,
   'A reserved buyer holding an accepted contract is indexed');
 
