@@ -1,0 +1,376 @@
+.container {
+  max-width: 1152px;
+  margin-inline: auto;
+  padding: 96px 40px;
+}
+
+.passportLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 68px;
+}
+
+.passportCopy,
+.passportFigure,
+.faqIntro,
+.questions {
+  min-width: 0;
+}
+
+.heading {
+  font-size: clamp(2rem, 3.6vw, 2.875rem);
+  font-weight: 400;
+  line-height: 1.13;
+  letter-spacing: -0.055em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.passportCopy .heading {
+  margin-top: 22px;
+  max-width: 430px;
+}
+
+.description {
+  margin-top: 22px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+
+.integrityNote {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.8;
+}
+
+.passportFigure {
+  margin: 0;
+  padding: 24px 0 0 24px;
+}
+
+.widgetFrame {
+  min-width: 0;
+}
+
+.document {
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--primary);
+  border-radius: 2px;
+  background: var(--card);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+.documentMasthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 28px;
+  padding: 20px 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.widgetBrand {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.06em;
+}
+
+.documentEdition {
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: -0.02em;
+  text-align: right;
+}
+
+.documentHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px 28px 24px;
+}
+
+.documentTitle {
+  min-width: 0;
+  font-size: clamp(24px, 2.4vw, 30px);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.055em;
+}
+
+.documentMaterial {
+  padding-bottom: 3px;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+
+.fields {
+  margin: 0;
+  padding: 0 28px;
+  list-style: none;
+}
+
+.field {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-low);
+}
+
+.fieldAccent {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: -14px;
+  width: 2px;
+  background: var(--primary);
+  opacity: 0;
+}
+
+.fieldNumber {
+  padding-top: 2px;
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.fieldContent {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldTitle {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+}
+
+.fieldDescription {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.documentFooter {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 6px;
+  padding: 16px 28px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.conceptCaption {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.faqLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  align-items: start;
+  gap: 80px;
+  padding-top: 88px;
+  padding-bottom: 100px;
+}
+
+.faqIntro .heading {
+  max-width: 340px;
+}
+
+.questions {
+  border-top: 1px solid var(--border);
+}
+
+.question {
+  border-bottom: 1px solid var(--border);
+}
+
+.question summary {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: -0.02em;
+  list-style: none;
+  overflow-wrap: break-word;
+}
+
+.question summary > span:first-child {
+  min-width: 0;
+}
+
+.question summary::-webkit-details-marker {
+  display: none;
+}
+
+.question summary:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--ring);
+  outline-offset: 5px;
+}
+
+.disclosureMarker {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--color-brand-700);
+}
+
+.disclosureMarker::before,
+.disclosureMarker::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  background: currentColor;
+}
+
+.disclosureMarker::before {
+  width: 10px;
+  height: 1px;
+}
+
+.disclosureMarker::after {
+  width: 1px;
+  height: 10px;
+}
+
+.question[open] .disclosureMarker::after {
+  display: none;
+}
+
+.answer {
+  margin: 0;
+  padding: 0 52px 26px 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.8;
+  overflow-wrap: break-word;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .question summary:hover .disclosureMarker {
+    border-color: var(--color-brand-700);
+    background: var(--secondary);
+  }
+}
+
+@media (max-width: 1023px) {
+  .passportLayout {
+    gap: 36px;
+  }
+
+  .passportFigure {
+    padding: 16px 0 0 16px;
+  }
+
+  .faqLayout {
+    gap: 48px;
+  }
+}
+
+@media (max-width: 859px) {
+  .passportLayout,
+  .faqLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .passportCopy .heading,
+  .faqIntro .heading {
+    max-width: 560px;
+  }
+
+  .passportFigure {
+    width: 100%;
+    max-width: 540px;
+    justify-self: center;
+  }
+}
+
+@media (max-width: 767px) {
+  .container {
+    padding: 80px 28px;
+  }
+
+  .passportFigure {
+    padding: 12px 0 0 12px;
+  }
+
+  .documentMasthead {
+    margin-inline: 20px;
+  }
+
+  .documentHeader {
+    padding: 24px 20px;
+  }
+
+  .fields {
+    padding-inline: 20px;
+  }
+
+  .documentFooter {
+    padding-inline: 20px;
+  }
+
+  .question summary {
+    gap: 16px;
+  }
+
+  .answer {
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  .passportFigure {
+    padding-left: 0;
+  }
+
+  .documentHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .documentEdition {
+    max-width: 100px;
+  }
+
+  .field {
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 8px;
+  }
+}

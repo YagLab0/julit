@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { ellipsify } from "../lib/explorer";
 import { Metric, Findings, numberFmt, percentFmt } from "./batch-display";
-import { demoBatches, type DemoBatch } from "./demo-data";
+import type { AuditBatch } from "./batches";
 
-function BatchCard({ batch }: { batch: DemoBatch }) {
+function BatchCard({ batch }: { batch: AuditBatch }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -53,46 +53,26 @@ function BatchCard({ batch }: { batch: DemoBatch }) {
         />
       </div>
 
-      {batch.status === "audited" && <Findings batch={batch} />}
+      {batch.status !== "created" && <Findings batch={batch} />}
     </div>
   );
 }
 
-export function AssignedBatches() {
-  const pending = demoBatches.filter((b) => b.status === "created");
-  const certified = demoBatches.filter((b) => b.status === "audited");
-
+export function BatchCards({
+  batches,
+  emptyMessage,
+}: {
+  batches: AuditBatch[];
+  emptyMessage: string;
+}) {
+  if (batches.length === 0) {
+    return <p className="text-sm text-muted">{emptyMessage}</p>;
+  }
   return (
-    <>
-      <section className="rounded-2xl border border-border bg-card p-6">
-        <p className="eyebrow">Pendientes de certificar</p>
-        {pending.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">
-            No tenés lotes esperando certificación.
-          </p>
-        ) : (
-          <div className="mt-3 space-y-3">
-            {pending.map((batch) => (
-              <BatchCard key={batch.pdaAddress} batch={batch} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-border bg-card p-6">
-        <p className="eyebrow">Certificados</p>
-        {certified.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">
-            Todavía no certificaste ningún lote.
-          </p>
-        ) : (
-          <div className="mt-3 space-y-3">
-            {certified.map((batch) => (
-              <BatchCard key={batch.pdaAddress} batch={batch} />
-            ))}
-          </div>
-        )}
-      </section>
-    </>
+    <div className="space-y-3">
+      {batches.map((batch) => (
+        <BatchCard key={batch.pdaAddress} batch={batch} />
+      ))}
+    </div>
   );
 }

@@ -34,31 +34,42 @@ export type AcquiredBatch = {
   indexed_at: string;
 };
 
-type ContractWithParties = {
+const CONTRACT_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  accepted: "Aceptado",
+  revoked: "Rechazado",
+};
+
+const CONTRACT_STATUS_STYLES: Record<string, string> = {
+  pending:
+    "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+  accepted:
+    "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  revoked: "border-border-low bg-secondary text-muted",
+};
+
+type ContractRow = {
   id: string;
-  producer_id: string;
-  counterparty_id: string;
-  initiator_id: string;
   status: "pending" | "accepted" | "revoked";
-  initiator_signature: string | null;
-  counterparty_signature: string | null;
-  initiator_signed_at: string | null;
-  counterparty_signed_at: string | null;
-  responded_at: string | null;
-  created_at: string;
+  initiator_signature?: string | null;
+  counterparty_signature?: string | null;
+  respondedAt?: string | null;
+  createdAt?: string;
   producer?: {
     id: string;
     name: string;
-    company_type: string;
-    wallet_address: string;
+    company_type?: CompanyType;
+    wallet_address?: string;
     origin_id?: string;
-  };
+  } | null;
   counterparty?: {
     id: string;
     name: string;
-    company_type: string;
-    wallet_address: string;
-  };
+    company_type?: CompanyType;
+    wallet_address?: string;
+  } | null;
+  role?: "producer" | "counterparty";
+  posture?: "initiator" | "responder" | null;
 };
 
 const NEXT_STEPS: Record<
@@ -123,9 +134,11 @@ export function AccountClient({
         </>
       )}
 
-      {company.companyType === "producer" && (
-        <ProducerContractsCard company={company} />
+      {company.companyType !== "buyer" && (
+        <ContractsCard companyType={company.companyType} />
       )}
+
+      {company.companyType === "producer" && <BuyerOffersCard />}
 
       <section className="rounded-2xl border border-border-low bg-card p-5">
         <h2 className="text-sm font-semibold">{nextStep.title}</h2>
@@ -274,7 +287,7 @@ function BuyerContractsCard() {
   const { wallet, signMessage } = useWallet();
   const { send: sendTransaction } = useSendTransaction();
   const { cluster } = useCluster();
-  const [contracts, setContracts] = useState<ContractWithParties[]>([]);
+  const [contracts, setContracts] = useState<ContractRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [producers, setProducers] = useState<
@@ -391,20 +404,19 @@ function BuyerContractsCard() {
           },
         });
       } else {
-        toast.success("Solicitud de contrato enviada con éxito", {
-          description: `Tu solicitud fue enviada a ${producer.name}. El productor podrá aceptarla en su panel.`,
+        toast.success("Solicitud enviada", {
+          description: `Acuerdo solicitado a ${producer.name}.`,
         });
       }
+
       setShowModal(false);
       void loadContracts();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/reject|cancel|denied/i.test(msg)) {
-        toast.info("Transacción cancelada", {
-          description: "Cancelaste la firma en tu billetera.",
-        });
+        toast.info("Transacción cancelada");
       } else {
-        toast.error("Error al registrar la solicitud en la red.");
+        toast.error("Error al registrar la solicitud.");
       }
     } finally {
       setRequesting(false);
@@ -532,300 +544,6 @@ function BuyerContractsCard() {
                     </span>
                     {c.counterparty_signature && (
                       <span className="flex items-center gap-1.5">
-                        Firma aceptación:{" "}
-                        <span>{ellipsify(c.counterparty_signature, 8)}</span>
-                        <a
-                          href={getExplorerUrl(`/tx/${c.counterparty_signature}`, cluster)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
-                        >
-                          Explorer ↗
-                        </a>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  {c.status === "accepted" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Cliente habilitado
-                    </span>
-                  ) : c.status === "pending" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                      Solicitud enviada (Pendiente)
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted">
-                      Rechazado
-                    </span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function ProducerContractsCard({ company }: { company: AccountCompany }) {
-  const { wallet, signMessage } = useWallet();
-  const { cluster } = useCluster();
-  const [contracts, setContracts] = useState<ContractWithParties[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [processingId, setProcessingId] = useState<string | null>(null);
-
-  async function loadContracts() {
-    try {
-      const res = await fetch("/api/companies/contracts");
-      if (res.ok) {
-        const data = await res.json();
-        setContracts(data.contracts ?? []);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadContracts();
-  }, []);
-
-  async function handleAccept(contract: ContractWithParties) {
-    if (!wallet || !signMessage) {
-      toast.warning("Billetera no disponible", {
-        description:
-          "Conectá una billetera que permita firmar mensajes (signMessage).",
-      });
-      return;
-    }
-    if (wallet.account.address !== company.walletAddress) {
-      toast.error("Billetera no coincide", {
-        description:
-          "Conectá la billetera verificada de tu productora para firmar la aceptación.",
-      });
-      return;
-    }
-
-    setProcessingId(contract.id);
-    try {
-      const timestamp = new Date().toISOString();
-      const initiatorWallet =
-        contract.initiator_id === contract.producer_id
-          ? (contract.producer?.wallet_address ?? wallet.account.address)
-          : (contract.counterparty?.wallet_address ?? "");
-
-      const message = buildContractAgreementMessage({
-        producerWallet: company.walletAddress!,
-        counterpartyWallet: contract.counterparty?.wallet_address ?? "",
-        initiatorWallet,
-        timestamp,
-      });
-
-      const signatureBytes = await signMessage(
-        new TextEncoder().encode(message)
-      );
-      const signature = getBase58Decoder().decode(signatureBytes);
-
-      const res = await fetch(
-        `/api/companies/contracts/${contract.id}/respond`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: "accepted",
-            signature,
-            timestamp,
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        toast.error(err?.error ?? "No se pudo aceptar la solicitud.");
-        return;
-      }
-
-      toast.success("Contrato aceptado", {
-        description: `Acuerdo con ${contract.counterparty?.name} confirmado y firmado criptográficamente.`,
-      });
-      void loadContracts();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (/reject|cancel|denied/i.test(msg)) {
-        toast.info("Firma cancelada");
-      } else {
-        toast.error("Error al procesar la firma de aceptación.");
-      }
-    } finally {
-      setProcessingId(null);
-    }
-  }
-
-  async function handleRevoke(contract: ContractWithParties) {
-    setProcessingId(contract.id);
-    try {
-      const res = await fetch(
-        `/api/companies/contracts/${contract.id}/respond`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "revoked" }),
-        }
-      );
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        toast.error(err?.error ?? "No se pudo rechazar la solicitud.");
-        return;
-      }
-
-      toast.info("Solicitud rechazada");
-      void loadContracts();
-    } catch {
-      toast.error("Error al rechazar la solicitud.");
-    } finally {
-      setProcessingId(null);
-    }
-  }
-
-  const incomingRequests = contracts.filter(
-    (c) => c.status === "pending" && c.counterparty_id === c.initiator_id
-  );
-  const activeContracts = contracts.filter((c) => c.status === "accepted");
-
-  return (
-    <section className="rounded-2xl border border-border-low bg-card p-5 space-y-6">
-      <div>
-        <h2 className="text-sm font-semibold">
-          Contratos comerciales y de auditoría
-        </h2>
-        <p className="mt-0.5 text-xs text-muted">
-          Gestioná tus relaciones comerciales bilaterales con compradores y
-          laboratorios auditores.
-        </p>
-      </div>
-
-      {/* Incoming Requests */}
-      <div>
-        <h3 className="text-xs font-bold text-foreground">
-          Solicitudes entrantes ({incomingRequests.length})
-        </h3>
-        {loading ? (
-          <p className="mt-2 text-xs text-muted">Cargando solicitudes…</p>
-        ) : incomingRequests.length === 0 ? (
-          <p className="mt-2 rounded-xl border border-dashed border-border-low p-4 text-xs text-muted">
-            No tenés solicitudes pendientes de aprobación.
-          </p>
-        ) : (
-          <ul className="mt-2 space-y-2">
-            {incomingRequests.map((c) => (
-              <li
-                key={c.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-50/30 dark:bg-amber-950/20 p-3.5 text-xs"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">
-                      {c.counterparty?.name ?? "Contraparte"}
-                    </span>
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-foreground">
-                      {c.counterparty?.company_type === "buyer"
-                        ? "Comprador"
-                        : "Auditor"}
-                    </span>
-                  </div>
-                  <p className="mt-1 font-mono text-[11px] text-muted">
-                    Wallet: {ellipsify(c.counterparty?.wallet_address ?? "", 6)}
-                  </p>
-                  <p className="mt-0.5 font-mono text-[10px] text-muted">
-                    Firma solicitante:{" "}
-                    {c.initiator_signature
-                      ? ellipsify(c.initiator_signature, 8)
-                      : "—"}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={processingId === c.id}
-                    onClick={() => void handleAccept(c)}
-                    className="btn-primary text-xs px-3 py-1.5 cursor-pointer"
-                  >
-                    {processingId === c.id ? "Firmando…" : "Aceptar solicitud"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={processingId === c.id}
-                    onClick={() => void handleRevoke(c)}
-                    className="btn-secondary text-xs px-3 py-1.5 cursor-pointer text-muted hover:text-foreground"
-                  >
-                    Rechazar
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Active Contracts */}
-      <div>
-        <h3 className="text-xs font-bold text-foreground">
-          Contratos activos ({activeContracts.length})
-        </h3>
-        {activeContracts.length === 0 ? (
-          <p className="mt-2 rounded-xl border border-dashed border-border-low p-4 text-xs text-muted">
-            No tenés contratos activos en este momento.
-          </p>
-        ) : (
-          <ul className="mt-2 space-y-2">
-            {activeContracts.map((c) => (
-              <li
-                key={c.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-low bg-background p-3.5 text-xs"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">
-                      {c.counterparty?.name ?? "Contraparte"}
-                    </span>
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted">
-                      {c.counterparty?.company_type === "buyer"
-                        ? "Comprador"
-                        : "Auditor"}
-                    </span>
-                  </div>
-                  <p className="mt-1 font-mono text-[11px] text-muted">
-                    Wallet: {ellipsify(c.counterparty?.wallet_address ?? "", 6)}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 font-mono text-[10px] text-muted">
-                    <span className="flex items-center gap-1.5">
-                      Iniciador:{" "}
-                      {c.initiator_signature ? (
-                        <>
-                          <span>{ellipsify(c.initiator_signature, 8)}</span>
-                          <a
-                            href={getExplorerUrl(`/tx/${c.initiator_signature}`, cluster)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
-                          >
-                            Explorer ↗
-                          </a>
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </span>
-                    {c.counterparty_signature && (
-                      <span className="flex items-center gap-1.5">
                         Aceptación:{" "}
                         <span>{ellipsify(c.counterparty_signature, 8)}</span>
                         <a
@@ -841,15 +559,338 @@ function ProducerContractsCard({ company }: { company: AccountCompany }) {
                   </div>
                 </div>
 
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Activo
+                <span
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${CONTRACT_STATUS_STYLES[c.status]}`}
+                >
+                  {CONTRACT_STATUS_LABELS[c.status]}
                 </span>
               </li>
             ))}
           </ul>
         )}
       </div>
+    </section>
+  );
+}
+
+function ContractsCard({ companyType }: { companyType: CompanyType }) {
+  const [contracts, setContracts] = useState<ContractRow[] | null>(null);
+  const [directory, setDirectory] = useState<
+    { id: string; name: string }[] | null
+  >(null);
+  const [counterpartyId, setCounterpartyId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+
+  const isProducer = companyType === "producer";
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/companies/contracts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { contracts?: ContractRow[] } | null) => {
+        if (!cancelled) setContracts(data?.contracts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setContracts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
+
+  useEffect(() => {
+    if (!isProducer) return;
+    let cancelled = false;
+    fetch("/api/companies/directory?type=auditor")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { companies?: { id: string; name: string }[] } | null) => {
+        if (!cancelled) setDirectory(data?.companies ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setDirectory([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reload, isProducer]);
+
+  async function offerContract() {
+    if (!counterpartyId) return;
+    setBusy(true);
+    setError(null);
+
+    const response = await fetch("/api/companies/contracts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ counterparty_id: counterpartyId }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error ?? "No se pudo ofrecer el contrato.");
+      setBusy(false);
+      return;
+    }
+
+    setCounterpartyId("");
+    setBusy(false);
+    setReload((n) => n + 1);
+  }
+
+  async function respond(id: string, action: "accept" | "decline") {
+    setBusy(true);
+    setError(null);
+
+    const response = await fetch(`/api/companies/contracts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error ?? "No se pudo responder el contrato.");
+      setBusy(false);
+      return;
+    }
+
+    setBusy(false);
+    setReload((n) => n + 1);
+  }
+
+  const pendingIncoming = (contracts ?? []).filter(
+    (c) => !isProducer && c.posture === "responder" && c.status === "pending"
+  );
+
+  return (
+    <section className="rounded-2xl border border-border-low bg-card p-5">
+      <h2 className="text-sm font-semibold">
+        {isProducer
+          ? "Contratos de auditoría"
+          : "Contratos con productoras"}
+      </h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted">
+        {isProducer
+          ? "Ofrecé un contrato a una auditora para poder asignarla a tus lotes."
+          : "Aceptá contratos de productoras para certificar sus lotes."}
+      </p>
+
+      {isProducer && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void offerContract();
+          }}
+          className="mt-4 flex flex-wrap gap-2"
+        >
+          <select
+            value={counterpartyId}
+            onChange={(e) => setCounterpartyId(e.target.value)}
+            disabled={busy || directory === null}
+            aria-label="Auditora"
+            className="rounded-lg border border-border-low bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+          >
+            <option value="">Elegir auditora…</option>
+            {(directory ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={busy || !counterpartyId}
+            className="btn-primary"
+          >
+            {busy ? "Enviando…" : "Ofrecer contrato"}
+          </button>
+        </form>
+      )}
+
+      {pendingIncoming.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {pendingIncoming.map((c) => (
+            <div
+              key={c.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
+            >
+              <p className="text-xs">
+                <span className="font-medium">{c.producer?.name}</span>{" "}
+                <span className="text-muted">te ofrece un contrato</span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "accept")}
+                  disabled={busy}
+                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
+                >
+                  Aceptar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "decline")}
+                  disabled={busy}
+                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {contracts !== null && contracts.length > 0 && (
+        <ul className="mt-4 space-y-1.5">
+          {contracts.map((c) => {
+            const other = c.role === "producer" ? c.counterparty : c.producer;
+            return (
+              <li
+                key={c.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border-low px-3 py-2"
+              >
+                <p className="text-xs">
+                  <span className="font-medium">{other?.name}</span>{" "}
+                  <span className="text-muted">
+                    (
+                    {COMPANY_TYPE_LABELS[
+                      other?.company_type ?? "auditor"
+                    ].toLowerCase()}
+                    {c.posture === "responder"
+                      ? " · oferta recibida"
+                      : " · oferta enviada"}
+                    )
+                  </span>
+                </p>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${CONTRACT_STATUS_STYLES[c.status]}`}
+                >
+                  {CONTRACT_STATUS_LABELS[c.status]}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {contracts !== null && contracts.length === 0 && (
+        <p className="mt-3 text-xs text-muted">Todavía no hay contratos.</p>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function BuyerOffersCard() {
+  const [offers, setOffers] = useState<ContractRow[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/companies/contracts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { contracts?: ContractRow[] } | null) => {
+        if (!cancelled) setOffers(data?.contracts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setOffers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
+
+  async function respond(id: string, action: "accept" | "decline") {
+    setBusy(true);
+    setError(null);
+
+    const response = await fetch(`/api/companies/contracts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error ?? "No se pudo responder el contrato.");
+      setBusy(false);
+      return;
+    }
+
+    setBusy(false);
+    setReload((n) => n + 1);
+  }
+
+  const pending = (offers ?? []).filter(
+    (c) => c.posture === "responder" && c.status === "pending"
+  );
+
+  return (
+    <section className="rounded-2xl border border-border-low bg-card p-5">
+      <h2 className="text-sm font-semibold">Ofertas de compradoras</h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted">
+        Las compradoras te ofrecen contratos para reservar tus lotes. Aceptalas
+        para habilitarlas como clientes.
+      </p>
+
+      {offers === null ? (
+        <p className="mt-3 text-xs text-muted">Cargando ofertas…</p>
+      ) : pending.length === 0 ? (
+        <p className="mt-3 text-xs text-muted">
+          No hay ofertas pendientes de compradoras.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {pending.map((c) => (
+            <div
+              key={c.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
+            >
+              <p className="text-xs">
+                <span className="font-medium">{c.counterparty?.name}</span>{" "}
+                <span className="text-muted">quiere comprar tu producción</span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "accept")}
+                  disabled={busy}
+                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
+                >
+                  Aceptar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "decline")}
+                  disabled={busy}
+                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

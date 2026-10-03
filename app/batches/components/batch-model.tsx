@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { BRAND_SCALE } from "./brand";
-
-/** Tonnes represented by one big bag in the model (visual scale only). */
-export const TONNES_PER_BAG = 40;
+import { bagCount, MAX_BAGS } from "./batch-display";
+export { bagCount, TONNES_PER_BAG } from "./batch-display";
 
 const BAG = { w: 0.62, h: 0.72, gap: 0.08 };
 const GRID = 3; // bags per row/column in one layer
@@ -19,12 +18,7 @@ const DROP_DURATION = 0.55;
 const DROP_STAGGER = 0.07;
 
 function prefersReducedMotion() {
-  if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-export function bagCount(volumeTonnes: number) {
-  return Math.max(1, Math.round(volumeTonnes / TONNES_PER_BAG));
 }
 
 /** Bag slots: fill 3×3 layers bottom-up, centered on the pallet. */
@@ -41,31 +35,27 @@ function bagSlots(count: number): THREE.Vector3[] {
   });
 }
 
-function createShadowTexture() {
-  if (typeof document === "undefined") return new THREE.Texture();
-  const size = 128;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return new THREE.Texture();
-  const g = ctx.createRadialGradient(
-    size / 2,
-    size / 2,
-    0,
-    size / 2,
-    size / 2,
-    size / 2
-  );
-  g.addColorStop(0, "rgba(0,0,0,0.45)");
-  g.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, size, size);
-  return new THREE.CanvasTexture(canvas);
-}
-
 /** Soft radial shadow under the pallet (cheap contact shadow). */
 function useShadowTexture() {
-  const [texture] = useState(() => createShadowTexture());
+  const texture = useMemo(() => {
+    const size = 128;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    const g = ctx.createRadialGradient(
+      size / 2,
+      size / 2,
+      0,
+      size / 2,
+      size / 2,
+      size / 2
+    );
+    g.addColorStop(0, "rgba(0,0,0,0.45)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(canvas);
+  }, []);
   useEffect(() => () => texture.dispose(), [texture]);
   return texture;
 }
@@ -251,6 +241,10 @@ function Controls({
     c.maxPolarAngle = Math.PI / 2.2;
     c.autoRotate = !prefersReducedMotion();
     c.autoRotateSpeed = 0.8;
+    // OrbitControls sets touch-action:none, which kills touch scrolling.
+    // pan-y hands vertical swipes back to the modal scroll while horizontal
+    // drags still orbit the stack.
+    c.domElement?.style.setProperty("touch-action", "pan-y");
     return c;
   }, [camera, dom]);
 
@@ -275,7 +269,7 @@ function Scene({
   batchId: string;
   volumeTonnes: number;
 }) {
-  const count = bagCount(volumeTonnes);
+  const count = Math.min(bagCount(volumeTonnes), MAX_BAGS);
   const layers = Math.ceil(count / (GRID * GRID));
   const stackTop = BASE_H + layers * (BAG.h + 0.02);
   const target = useMemo<[number, number, number]>(

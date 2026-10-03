@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useState, type ReactNode } from "react";
 import { VerifiedWalletGate } from "../../components/verified-wallet-gate";
-import {
-  DEMO_AUDITORS,
-  DEMO_BUYERS,
-  type Counterparty,
-} from "./counterparties";
-import { RegisterBatchForm } from "./register-batch-form";
+import { RegisterBatchForm, type Counterparty } from "./register-batch-form";
 
 export type ProducerInfo = {
   name: string;
@@ -17,83 +13,83 @@ export type ProducerInfo = {
 };
 
 export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
-  const [buyers, setBuyers] = useState<Counterparty[]>(DEMO_BUYERS);
-  const [auditors, setAuditors] = useState<Counterparty[]>(DEMO_AUDITORS);
+  const [counterparties, setCounterparties] = useState<{
+    auditors: Counterparty[];
+    buyers: Counterparty[];
+  } | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    let active = true;
-    fetch("/api/companies/contracts")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active || !data?.contracts) return;
-        const accepted = data.contracts.filter(
-          (c: { status: string }) => c.status === "accepted"
-        );
+    let cancelled = false;
 
-        const realBuyers: Counterparty[] = accepted
-          .filter(
-            (c: {
-              counterparty?: {
-                company_type?: string;
-                wallet_address?: string;
-                name?: string;
-              };
-            }) =>
-              c.counterparty?.company_type === "buyer" &&
-              c.counterparty?.wallet_address
-          )
-          .map(
-            (c: {
-              counterparty: { name: string; wallet_address: string };
-            }) => ({
-              name: c.counterparty.name,
-              wallet: c.counterparty.wallet_address,
-            })
-          );
-
-        const realAuditors: Counterparty[] = accepted
-          .filter(
-            (c: {
-              counterparty?: {
-                company_type?: string;
-                wallet_address?: string;
-                name?: string;
-              };
-            }) =>
-              c.counterparty?.company_type === "auditor" &&
-              c.counterparty?.wallet_address
-          )
-          .map(
-            (c: {
-              counterparty: { name: string; wallet_address: string };
-            }) => ({
-              name: c.counterparty.name,
-              wallet: c.counterparty.wallet_address,
-            })
-          );
-
-        if (realBuyers.length > 0) {
-          setBuyers((prev) => {
-            const map = new Map<string, Counterparty>();
-            [...realBuyers, ...prev].forEach((b) => map.set(b.wallet, b));
-            return Array.from(map.values());
-          });
+    Promise.all([
+      fetch("/api/companies/contracts/counterparties?type=auditor").then((r) =>
+        r.ok ? r.json() : Promise.reject(r.status)
+      ),
+      fetch("/api/companies/contracts/counterparties?type=buyer").then((r) =>
+        r.ok ? r.json() : Promise.reject(r.status)
+      ),
+    ])
+      .then(
+        ([auditors, buyers]: [
+          { counterparties: Counterparty[] },
+          { counterparties: Counterparty[] },
+        ]) => {
+          if (!cancelled) {
+            setCounterparties({
+              auditors: auditors.counterparties,
+              buyers: buyers.counterparties,
+            });
+          }
         }
-
-        if (realAuditors.length > 0) {
-          setAuditors((prev) => {
-            const map = new Map<string, Counterparty>();
-            [...realAuditors, ...prev].forEach((a) => map.set(a.wallet, a));
-            return Array.from(map.values());
-          });
-        }
-      })
-      .catch(() => {});
+      )
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      });
 
     return () => {
-      active = false;
+      cancelled = true;
     };
   }, []);
+
+  let content: ReactNode;
+  if (loadError) {
+    content = (
+      <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
+        <p className="text-sm text-destructive">
+          No se pudieron cargar tus contrapartes contratadas. Recargá la página.
+        </p>
+      </div>
+    );
+  } else if (!counterparties) {
+    content = (
+      <div className="mt-8 rounded-2xl border border-border bg-card p-8 text-center">
+        <p className="text-sm text-muted">
+          Cargando auditores y clientes contratados…
+        </p>
+      </div>
+    );
+  } else if (counterparties.auditors.length === 0) {
+    content = (
+      <div className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/60 p-8 text-center dark:border-amber-800 dark:bg-amber-950/40">
+        <p className="text-sm text-amber-900 dark:text-amber-200">
+          Necesitás un contrato aceptado con una auditora para registrar un
+          lote. Ofrecelo desde tu cuenta y esperá a que lo acepten.
+        </p>
+        <Link href="/account" className="btn-secondary mt-4 inline-block">
+          Gestionar contratos
+        </Link>
+      </div>
+    );
+  } else {
+    content = (
+      <RegisterBatchForm
+        producer={producer}
+        auditors={counterparties.auditors}
+        buyers={counterparties.buyers}
+      />
+    );
+  }
 
   return (
     <VerifiedWalletGate
@@ -102,11 +98,7 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
       action="registrar un lote"
       signAs="firmar como productora"
     >
-      <RegisterBatchForm
-        producer={producer}
-        auditors={auditors}
-        buyers={buyers}
-      />
+      {content}
     </VerifiedWalletGate>
   );
 }

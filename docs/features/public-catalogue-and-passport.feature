@@ -5,11 +5,11 @@ Feature: Public catalogue, passport and access control
   and clients never write to the index or the certificate bucket.
 
   @db @ui
-  Scenario: Catalogue shows only audited Batches
+  Scenario: Catalogue shows the indexed Batches of each Origin
     Given indexed Batches in statuses "created", "audited" and "completed"
     When an anonymous visitor loads the catalogue
-    Then only "audited" Batches are returned
-    And negative ESG or EU findings are displayed explicitly
+    Then each Origin shows its Batches, newest first, with their status
+    And negative ESG or EU findings are displayed explicitly when audited
 
   @ui
   Scenario: Mock data is labelled

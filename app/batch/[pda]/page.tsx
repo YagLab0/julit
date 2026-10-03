@@ -1,228 +1,190 @@
-import { createClient } from "@/app/lib/supabase/server";
-import { notFound } from "next/navigation";
-import { PassportClient } from "./passport-client";
-import { getExplorerUrl, ellipsify } from "@/app/lib/explorer";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ThemeToggle } from "@/app/components/theme-toggle";
-import { SessionMenu } from "@/app/components/session-menu";
+import { notFound } from "next/navigation";
+import {
+  BatchFindings,
+  BatchMetrics,
+  StatusBadge,
+  dateFmt,
+} from "../../batches/components/batch-display";
+import { PassportQr } from "../../components/passport-qr";
+import { ThemeToggle } from "../../components/theme-toggle";
+import { batchCertificateUrl } from "../../batches/data/batches";
+import { ellipsify, getExplorerUrl } from "../../lib/explorer";
+import { getPassportRecord } from "../data/passport";
+import { CertificateVerification } from "./certificate-verification";
+import { RecordContrast } from "./record-contrast";
 
+type PassportParams = { pda: string };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<PassportParams>;
+}): Promise<Metadata> {
+  const { pda } = await params;
+  const record = await getPassportRecord(pda);
+  if (!record) notFound();
+  return {
+    title: `Lote ${record.batch.batch_id} · Pasaporte JuLit`,
+    description: `Registro público del lote ${record.batch.batch_id} de Li₂CO₃: origen, métricas declaradas y certificación.`,
+  };
+}
+
+/**
+ * Public passport: the batch's product record from the public index. No
+ * session, no wallet, no 3D — the Explorer links stay pinned to Devnet
+ * regardless of the visitor's catalogue cluster.
+ */
 export default async function BatchPassportPage({
   params,
 }: {
-  params: Promise<{ pda: string }>;
+  params: Promise<PassportParams>;
 }) {
   const { pda } = await params;
-  const supabase = await createClient();
-  const { data: batch } = await supabase
-    .from("batches")
-    .select("*")
-    .eq("pda_address", pda)
-    .single();
+  const record = await getPassportRecord(pda);
+  if (!record) notFound();
+  const { batch, origin } = record;
 
-  if (!batch) {
-    notFound();
-  }
-
-  const purityFormatted = Number(batch.purity_pct).toFixed(2) + " %";
-  const waterFormatted = Number(batch.water_footprint_m3_per_tonne).toFixed(2);
-  const carbonFormatted = Number(
-    batch.carbon_footprint_kg_co2e_per_tonne
-  ).toFixed(2);
-  const priceFormatted = batch.price_usdc
-    ? Number(batch.price_usdc).toLocaleString("es-AR", {
-        style: "currency",
-        currency: "USD",
-      })
-    : "N/A";
-
-  const formatter = new Intl.NumberFormat("es-AR");
-  const volumeFormatted = formatter.format(batch.volume_tonnes);
-
-  const explorerUrlPda = getExplorerUrl(
-    `/address/${batch.pda_address}`,
+  const certificate = batchCertificateUrl(batch);
+  const addressUrl = getExplorerUrl(`/address/${batch.pda_address}`, "devnet");
+  const creationTxUrl = getExplorerUrl(
+    `/tx/${batch.creation_tx_signature}`,
     "devnet"
   );
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl min-h-screen">
-      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Link
-            href="/batches"
-            className="text-xs font-semibold text-brand-700 dark:text-brand-400 hover:underline mb-2 inline-block"
-          >
-            ← Volver al catálogo
-          </Link>
-          <h1 className="text-2xl font-bold text-foreground">
-            Pasaporte de Lote
-          </h1>
-          <p className="text-muted">ID: {batch.batch_id}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <SessionMenu />
-          <ThemeToggle />
-        </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-6 py-4">
+        <Link href="/batches" className="text-sm font-bold tracking-tight">
+          JuLit
+        </Link>
+        <ThemeToggle />
       </header>
 
-      <main className="space-y-6">
-        <section className="bg-card border border-border-low rounded-lg p-6 shadow-sm">
-          <h2 className="eyebrow mb-4">Detalles del Lote</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted block">Volumen (Toneladas)</span>
-              <span className="text-foreground font-medium">
-                {volumeFormatted}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted block">Pureza</span>
-              <span className="text-foreground font-medium">
-                {purityFormatted}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted block">Huella Hídrica (m³/t)</span>
-              <span className="text-foreground font-medium">
-                {waterFormatted}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted block">
-                Huella de Carbono (kg CO₂e/t)
-              </span>
-              <span className="text-foreground font-medium">
-                {carbonFormatted}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted block">Precio</span>
-              <span className="text-foreground font-medium">
-                {priceFormatted}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted block">Estado</span>
-              <span className="text-foreground font-medium capitalize">
-                {batch.status}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted block">Aprobado por ESG</span>
-              <span className="text-foreground font-medium">
-                {batch.esg_approved ? "Sí" : "No"}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted block">Evaluación Regulación UE</span>
-              <span className="text-foreground font-medium">
-                {batch.eu_regulation_assessment === "non_conformant"
-                  ? "No conforme"
-                  : batch.eu_regulation_assessment}
-              </span>
-            </div>
-          </div>
-        </section>
+      <main className="mx-auto max-w-2xl px-6 pb-16">
+        <p className="eyebrow">Pasaporte de lote</p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground">
+            {batch.batch_id}
+          </h1>
+          <StatusBadge status={batch.status} />
+        </div>
+        <p className="mt-2 text-sm text-muted">
+          {origin.salar} · {origin.producer}
+        </p>
 
-        <section className="bg-card border border-border-low rounded-lg p-6 shadow-sm">
-          <h2 className="eyebrow mb-4">Participantes y Transacciones</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted block">PDA</span>
-              <a
-                href={explorerUrlPda}
-                target="_blank"
-                rel="noreferrer"
-                className="text-brand-700 hover:underline"
-              >
-                {ellipsify(batch.pda_address)}
-              </a>
+        <div className="mt-6 space-y-6">
+          <section aria-labelledby="passport-metrics">
+            <h2 id="passport-metrics" className="eyebrow">
+              Métricas declaradas
+            </h2>
+            <div className="mt-2">
+              <BatchMetrics batch={batch} origin={origin} />
             </div>
-            <div>
-              <span className="text-muted block">Productor</span>
-              <span className="text-foreground">
-                {ellipsify(batch.producer_wallet)}
-              </span>
-            </div>
-            {batch.auditor_wallet && (
-              <div>
-                <span className="text-muted block">Auditor</span>
-                <span className="text-foreground">
-                  {ellipsify(batch.auditor_wallet)}
-                </span>
-              </div>
-            )}
-            {batch.buyer_wallet && (
-              <div>
-                <span className="text-muted block">Comprador</span>
-                <span className="text-foreground">
-                  {ellipsify(batch.buyer_wallet)}
-                </span>
-              </div>
-            )}
-            {batch.reserved_buyer_wallet && (
-              <div>
-                <span className="text-muted block">Comprador Reservado</span>
-                <span className="text-foreground">
-                  {ellipsify(batch.reserved_buyer_wallet)}
-                </span>
-              </div>
-            )}
-            {batch.creation_tx_signature && (
-              <div>
-                <span className="text-muted block">Tx Creación</span>
-                <a
-                  href={getExplorerUrl(
-                    `/tx/${batch.creation_tx_signature}`,
-                    "devnet"
-                  )}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-brand-700 hover:underline"
-                >
-                  {ellipsify(batch.creation_tx_signature)}
-                </a>
-              </div>
-            )}
-            {batch.audit_tx_signature && (
-              <div>
-                <span className="text-muted block">Tx Auditoría</span>
-                <a
-                  href={getExplorerUrl(
-                    `/tx/${batch.audit_tx_signature}`,
-                    "devnet"
-                  )}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-brand-700 hover:underline"
-                >
-                  {ellipsify(batch.audit_tx_signature)}
-                </a>
-              </div>
-            )}
-            {batch.completion_tx_signature && (
-              <div>
-                <span className="text-muted block">Tx Finalización</span>
-                <a
-                  href={getExplorerUrl(
-                    `/tx/${batch.completion_tx_signature}`,
-                    "devnet"
-                  )}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-brand-700 hover:underline"
-                >
-                  {ellipsify(batch.completion_tx_signature)}
-                </a>
-              </div>
-            )}
-          </div>
-        </section>
+          </section>
 
-        <PassportClient
-          auditSha256={batch.audit_sha256}
-          auditCertificatePath={batch.audit_certificate_path}
-          pda={batch.pda_address}
-        />
+          <section aria-labelledby="passport-certification">
+            <h2 id="passport-certification" className="eyebrow">
+              Certificación
+            </h2>
+            {batch.status === "created" ? (
+              <div className="mt-2 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 px-4 py-4 dark:border-amber-800 dark:bg-amber-950/40">
+                <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                  Certificación pendiente
+                </p>
+                <p className="mt-1 text-[11px] leading-snug text-amber-800 dark:text-amber-300">
+                  Este lote todavía no fue auditado: no hay hallazgos ni
+                  certificado.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-2 space-y-3">
+                <BatchFindings batch={batch} />
+                {certificate !== null && batch.audit_sha256 !== null && (
+                  <div className="space-y-2 rounded-xl border border-border bg-card px-3.5 py-3 text-[11px] text-muted">
+                    <p>
+                      <a
+                        href={certificate}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                      >
+                        Certificado de auditoría (PDF)
+                      </a>
+                    </p>
+                    <p>
+                      SHA-256 indexado:{" "}
+                      <span className="font-mono text-foreground/75">
+                        {batch.audit_sha256.slice(0, 8)}…
+                        {batch.audit_sha256.slice(-6)}
+                      </span>
+                    </p>
+                    <CertificateVerification
+                      certificateUrl={certificate}
+                      recordedHex={batch.audit_sha256}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section aria-labelledby="passport-provenance">
+            <h2 id="passport-provenance" className="eyebrow">
+              Procedencia
+            </h2>
+            <div className="mt-2 space-y-1.5 rounded-xl border border-border bg-card px-3.5 py-3 text-[11px] text-muted">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <span>
+                  Indexado el{" "}
+                  <span className="text-foreground/75">
+                    {dateFmt.format(new Date(batch.indexed_at))}
+                  </span>
+                </span>
+                <span>Solana Devnet</span>
+              </div>
+              <p className="font-mono break-all">{batch.pda_address}</p>
+              <p className="flex flex-wrap gap-x-4 gap-y-1">
+                <a
+                  href={addressUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                >
+                  Dirección en Explorer
+                </a>
+                <a
+                  href={creationTxUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                >
+                  Transacción de creación{" "}
+                  <span className="font-mono">
+                    {ellipsify(batch.creation_tx_signature)}
+                  </span>
+                </a>
+              </p>
+            </div>
+          </section>
+
+          <section aria-labelledby="passport-contrast">
+            <h2 id="passport-contrast" className="eyebrow">
+              Contraste con Solana
+            </h2>
+            <RecordContrast batch={batch} />
+          </section>
+
+          <section aria-labelledby="passport-share">
+            <h2 id="passport-share" className="eyebrow">
+              Compartir
+            </h2>
+            <div className="mt-2 rounded-xl border border-border bg-card px-4 py-5">
+              <PassportQr pda={batch.pda_address} batchId={batch.batch_id} />
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );
