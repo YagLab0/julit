@@ -1,7 +1,8 @@
 begin;
 
--- Origins become the mine catalogue: one row per real origin, carrying the
--- mine's published metadata and its reference source. Public read is unchanged.
+-- Origins become the mine catalogue: one row per demo mine, carrying the
+-- site's plant coordinates, capacity and water-footprint reference plus the
+-- fictional producer's reference block. Public read is unchanged.
 alter table public.origins
   add column code text,
   add column salar text,
@@ -17,36 +18,36 @@ alter table public.origins
   add column source_url text;
 
 update public.origins set
-  name = 'Olaroz',
-  code = 'OLZ',
-  salar = 'Salar de Olaroz',
-  producer = 'Sales de Jujuy',
-  shareholders = 'Rio Tinto 66,5 % · Toyota Tsusho 25 % · JEMSE 8,5 %',
+  name = 'Salar de Peña Blanca',
+  code = 'PBL',
+  salar = 'Salar de Peña Blanca',
+  producer = 'Sales del Altiplano S.A.',
+  shareholders = 'Altiplano Holding 60 % · Fondo Puna 25 % · Minera Jujeña 15 %',
   longitude = -66.70248,
   latitude = -23.46293,
   capacity_tpa = 42500,
   altitude_m = 3900,
   water_m3_per_tonne = 51.00,
-  note = 'Huella hídrica publicada: 51,0 m³/t Li₂CO₃ (Díaz Paz et al., Heliyon 2025).',
-  source_label = 'Rio Tinto 20-F FY2025',
-  source_url = 'https://www.sec.gov/Archives/edgar/data/863064/000162828026009531/rio-20251231.htm'
-where id = 'olaroz';
+  note = 'Huella hídrica de referencia: 51,0 m³/t Li₂CO₃. Datos de demostración: empresa y proyecto son ficticios.',
+  source_label = 'Informe técnico Peña Blanca 2025',
+  source_url = 'https://example.com/informes/pena-blanca-2025'
+where id = 'pena_blanca';
 
 update public.origins set
-  name = 'Cauchari-Olaroz',
-  code = 'EXAR',
-  salar = 'Salar de Cauchari',
-  producer = 'Minera Exar',
-  shareholders = 'Ganfeng Lithium · Lithium Argentina · JEMSE',
+  name = 'Salar del Cóndor',
+  code = 'CNR',
+  salar = 'Salar del Cóndor',
+  producer = 'Minera Cóndor S.A.',
+  shareholders = 'Cóndor Holding 70 % · Fondo Puna 30 %',
   longitude = -66.77329,
   latitude = -23.67394,
   capacity_tpa = 40000,
   altitude_m = null,
   water_m3_per_tonne = null,
-  note = 'Producción 2025: ~34.100 t de carbonato de litio. Sin huella hídrica publicada con la misma metodología.',
-  source_label = 'Cauchari-Olaroz SK 1300 Technical Report 2026',
-  source_url = 'https://www.sec.gov/Archives/edgar/data/1440972/000110465926032465/tm269254d1_ex99-1.htm'
-where id = 'cauchari_olaroz';
+  note = 'Producción de referencia 2025: ~34.100 t de carbonato de litio; sin huella hídrica publicada. Datos de demostración: empresa y proyecto son ficticios.',
+  source_label = 'Informe técnico Cóndor 2026',
+  source_url = 'https://example.com/informes/condor-2026'
+where id = 'condor';
 
 alter table public.origins
   alter column code set not null,
@@ -71,8 +72,8 @@ alter table public.origins
 comment on column public.origins.producer is
   'Display name of the Producer company operating this origin.';
 comment on column public.origins.altitude_m is
-  'Published site altitude; null when no published value exists.';
+  'Reference site altitude used by the demo catalogue; null when absent.';
 comment on column public.origins.water_m3_per_tonne is
-  'Published reference water footprint; null when no published value exists.';
+  'Reference water footprint used by the demo catalogue; null when absent.';
 
 commit;
