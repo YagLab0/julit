@@ -9,9 +9,10 @@ with identity derived from the verified session.
 
 **Blocked by:** None (schema already applied — `20261003010000`)
 
-**Status:** deferred — backend scope, not frontend
+**Status:** partial — respond endpoint landed for the auditor inbox; offer
+creation and the counterparty directory remain
 
 - [ ] `POST /api/companies/contracts` — producer creates an offer; rejects duplicate (producer_id, counterparty_id) and non-auditor/buyer counterparties
-- [ ] Counterparty `POST /api/companies/contracts/:id/respond` — accept → `accepted` + `responded_at`, decline → `revoked`; only the counterparty's own session may respond
+- [x] Counterparty `POST /api/companies/contracts/:id/respond` — accept → `accepted` + `responded_at`, decline → `revoked`; only the counterparty's own session may respond
 - [ ] `GET /api/companies/contracts/counterparties?type=auditor|buyer` — returns `{ wallet, name }[]` of accepted counterparties for the session's company
-- [ ] No anonymous access; companies table stays non-browser-readable
+- [x] No anonymous access; companies table stays non-browser-readable

@@ -1,7 +1,8 @@
 "use client";
 
 import type { Origin } from "../data/origins";
-import { NoLotes, OriginReference } from "./assets-panel";
+import { OriginReference } from "./assets-panel";
+import { OriginBatches } from "./origin-batches";
 
 /**
  * List view without the map: fallback if WebGL fails on the demo machine
@@ -45,7 +46,7 @@ export function AssetsListView({ origins }: { origins: Origin[] }) {
             <div className="mt-3 grid gap-4 md:grid-cols-[280px_1fr]">
               <OriginReference origin={origin} />
               <div>
-                <NoLotes />
+                <OriginBatches originId={origin.id} />
               </div>
             </div>
           </section>

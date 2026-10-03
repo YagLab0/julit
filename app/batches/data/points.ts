@@ -34,8 +34,8 @@ export const SALARES: SalarCollection = {
     {
       type: "Feature",
       properties: {
-        name: "Salar de Olaroz",
-        originId: "olaroz",
+        name: "Salar de Peña Blanca",
+        originId: "pena_blanca",
         osmId: "way/209386890",
       },
       geometry: {
@@ -92,8 +92,8 @@ export const SALARES: SalarCollection = {
     {
       type: "Feature",
       properties: {
-        name: "Salar de Cauchari",
-        originId: "cauchari_olaroz",
+        name: "Salar del Cóndor",
+        originId: "condor",
         osmId: "way/209387927",
       },
       geometry: {
@@ -517,8 +517,8 @@ export const CORRIDOR_SOURCES = {
   pacific: {
     label: "Pacífico · Paso de Jama → Antofagasta",
     source: {
-      label: "Informe técnico Olaroz ante la SEC",
-      url: "https://www.sec.gov/Archives/edgar/data/1977303/000114036123050053/ny20009544x9_ex96-2.htm",
+      label: "Informe técnico Peña Blanca 2025",
+      url: "https://example.com/informes/pena-blanca-2025",
     },
   },
   atlantic: {
@@ -532,10 +532,10 @@ export const CORRIDOR_SOURCES = {
 
 export const EXPORT_ROUTES: ExportRoute[] = [
   {
-    id: "olaroz-antofagasta",
+    id: "pena-blanca-antofagasta",
     corridor: "pacific",
-    originId: "olaroz",
-    label: "Olaroz → Antofagasta",
+    originId: "pena_blanca",
+    label: "Peña Blanca → Antofagasta",
     km: 562,
     hours: 7.4,
     coordinates: [
@@ -749,10 +749,10 @@ export const EXPORT_ROUTES: ExportRoute[] = [
     ],
   },
   {
-    id: "cauchari-antofagasta",
+    id: "condor-antofagasta",
     corridor: "pacific",
-    originId: "cauchari_olaroz",
-    label: "Cauchari-Olaroz → Antofagasta",
+    originId: "condor",
+    label: "Cóndor → Antofagasta",
     km: 543,
     hours: 7.1,
     coordinates: [
@@ -958,10 +958,10 @@ export const EXPORT_ROUTES: ExportRoute[] = [
     ],
   },
   {
-    id: "olaroz-buenos-aires",
+    id: "pena-blanca-buenos-aires",
     corridor: "atlantic",
-    originId: "olaroz",
-    label: "Olaroz → Buenos Aires",
+    originId: "pena_blanca",
+    label: "Peña Blanca → Buenos Aires",
     km: 1727,
     hours: 20.5,
     coordinates: [

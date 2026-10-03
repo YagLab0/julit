@@ -2,9 +2,8 @@
 
 3D map dApp: the user picks a point on a 3D map of the region and sees its
 on-chain assets for sale. Same pattern as the reference lithium project, but
-with JuLit data. Origins come from the public Supabase catalogue; batch
-surfaces stay empty until the Devnet index exists, and no simulated batch data
-ships (ADR-0007).
+with JuLit data. Origins and the indexed batches come from the public Supabase
+catalogue through anonymous reads; no simulated batch data ships (ADR-0007).
 
 ## 1. Stack
 
@@ -58,11 +57,17 @@ ships (ADR-0007).
 app/<feature>/
 ├── page.tsx              # layout: map (dynamic, ssr:false) + header + notice + panel
 ├── data/origins.ts       # Supabase origins row type + ORIGIN_COLUMNS + helpers
+├── data/batches.ts       # Supabase batch index row type + BATCH_COLUMNS
+├── data/use-origin-batches.ts  # anonymous per-origin batch read hook
 ├── data/points.ts        # geographic reference only (salar polygons, routes, ports)
 └── components/
     ├── region-map.tsx    # MapLibre: style, terrain, camera, markers
     ├── point-glow-overlay.tsx  # vgpu glow layer
     ├── assets-panel.tsx  # side panel / bottom sheet
+    ├── origin-batches.tsx  # per-origin batch section (loading, retry, empty, cards)
+    ├── batch-card.tsx    # compact public batch fiche (list view)
+    ├── batch-display.tsx # batch formatters, status badge, metric chips, rows
+    ├── batch-model.tsx   # r3f big-bag 3D stack (visual scale, 1 bag ≈ 40 t)
     ├── mine-geometry.ts  # procedural lithium-brine diorama (ponds, plant, tanks)
     └── mine-layer.ts     # Three.js custom MapLibre layer, rigid terrain anchors
 app/generated/             # Codama TS client — never edit by hand
@@ -77,6 +82,11 @@ app/lib/                   # wallet, hooks, solana-client, errors, explorer
   Their exaggerated dimensions are fixed: batch availability and tonnes do not
   resize or hide the site. Each model shares one terrain elevation at the plant
   coordinate, so ponds and buildings cannot drift apart on uneven ground.
+- The origin fiche renders the selected batch as a 3D big-bag stack in the
+  modal (single canvas, r3f, client-only). Visual scale only: 1 bag ≈ 40 t,
+  rendered bags capped at 60 so a probe row cannot stall the scene. It lists
+  every indexed batch (Creado/Auditado/Completado) and shows audit findings
+  explicitly; the 3D stack never replaces the numeric metrics.
 - Mine cards sit above their ground-level pins to leave the dioramas visible.
   The custom layer follows map rendering rather than running an animation loop;
   it disposes its geometries, materials, and renderer when the map is removed.

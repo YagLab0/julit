@@ -41,7 +41,7 @@ export function Modal({
       />
       <div
         style={{ width: `min(${maxWidth}px, 100%)` }}
-        className="relative flex max-h-[92dvh] animate-modal-in flex-col overflow-hidden rounded-t-2xl border border-border bg-background shadow-2xl ring-1 ring-black/5 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl"
+        className="relative flex max-h-[92dvh] animate-modal-in flex-col overflow-hidden overscroll-contain rounded-t-2xl border border-border bg-background pb-[env(safe-area-inset-bottom)] shadow-2xl ring-1 ring-black/5 sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl sm:pb-0"
       >
         {children}
       </div>

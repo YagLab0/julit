@@ -24,8 +24,8 @@ create table public.origins (
 );
 
 insert into public.origins (id, name) values
-  ('olaroz', 'Salar de Olaroz'),
-  ('cauchari_olaroz', 'Cauchari-Olaroz');
+  ('pena_blanca', 'Salar de Peña Blanca'),
+  ('condor', 'Salar del Cóndor');
 
 -- Unconstrained numeric plus checks rejects excess precision instead of rounding it.
 -- Scaled values retain the entire unsigned u64 range used by the program.

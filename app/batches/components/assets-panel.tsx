@@ -33,7 +33,7 @@ export function OriginReference({ origin }: { origin: Origin }) {
   );
 }
 
-/** The demo has no batch registry yet: an honest empty state, never a fake count. */
+/** Honest empty state: an origin with no indexed batches, never a fake count. */
 export function NoLotes() {
   return (
     <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-muted">
