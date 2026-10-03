@@ -35,9 +35,9 @@ export const demoBatches: DemoBatch[] = [
   {
     pdaAddress: "BatchPdaOlaroz1111111111111111111111111111",
     batchId: "LIT-2026-EXAR-02",
-    producerName: "Sales de Jujuy S.A.",
+    producerName: "Sales de Jujuy",
     producerWallet: "ProdSalesdeJujuy1111111111111111111111111",
-    originName: "Salar de Olaroz",
+    originName: "Olaroz",
     volumeTonnes: 100,
     purityPct: 99.52,
     waterM3PerTonne: 125.5,
@@ -61,9 +61,9 @@ export const demoBatches: DemoBatch[] = [
   {
     pdaAddress: "BatchPdaAuditado333333333333333333333333333",
     batchId: "LIT-2026-EXAR-01",
-    producerName: "Sales de Jujuy S.A.",
+    producerName: "Sales de Jujuy",
     producerWallet: "ProdSalesdeJujuy1111111111111111111111111",
-    originName: "Salar de Olaroz",
+    originName: "Olaroz",
     volumeTonnes: 80,
     purityPct: 99.61,
     waterM3PerTonne: 118.2,
@@ -80,7 +80,7 @@ export const demoBatches: DemoBatch[] = [
 export const demoContractOffers: DemoContractOffer[] = [
   {
     id: "offer-1",
-    producerName: "Sales de Jujuy S.A.",
+    producerName: "Sales de Jujuy",
     producerWallet: "ProdSalesdeJujuy1111111111111111111111111",
     status: "pending",
   },
