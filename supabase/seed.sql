@@ -100,15 +100,14 @@ insert into public.companies (id, name, company_type, origin_id, wallet_address,
   ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', 'ProdSaLesdeLALtipLano111111111111111111111', now()),
   ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor', 'ProdMineraCondor222222222222222222222222', now()),
   ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null, 'AuditAnd1noLabCert111111111111111111111111', now()),
-  ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, 'C1ienteTesaEnergy3333333333333333333333333', now())
+  ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, null, null)
 on conflict (id) do update set
   wallet_address = excluded.wallet_address,
   wallet_verified_at = excluded.wallet_verified_at;
 
 insert into public.company_contracts (producer_id, counterparty_id, initiator_id, status, responded_at) values
   ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000003', 'a1a1a1a1-0000-4000-8000-000000000001', 'accepted', now()),
-  ('a1a1a1a1-0000-4000-8000-000000000002', 'a1a1a1a1-0000-4000-8000-000000000003', 'a1a1a1a1-0000-4000-8000-000000000002', 'accepted', now()),
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000004', 'a1a1a1a1-0000-4000-8000-000000000004', 'accepted', now())
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'a1a1a1a1-0000-4000-8000-000000000003', 'a1a1a1a1-0000-4000-8000-000000000002', 'accepted', now())
 on conflict (producer_id, counterparty_id) do update set
   status = excluded.status,
   responded_at = excluded.responded_at;
@@ -145,7 +144,7 @@ insert into public.batches (
     'LIT-2026-PBL-02',
     'ProdSaLesdeLALtipLano111111111111111111111',
     'AuditAnd1noLabCert111111111111111111111111',
-    'C1ienteTesaEnergy3333333333333333333333333',
+    null,
     'pena_blanca',
     150,
     99.65,

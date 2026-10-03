@@ -82,8 +82,6 @@ async function main() {
 
   const pbl02 = batches.find((b) => b.batch_id === "LIT-2026-PBL-02");
   if (!pbl02) throw new Error("Batch LIT-2026-PBL-02 not found");
-  if (!pbl02.reserved_buyer_wallet)
-    throw new Error("LIT-2026-PBL-02 should be reserved");
 
   // 1b. Verify OriginModal query by origin_id ordered by indexed_at
   console.log(
@@ -113,8 +111,8 @@ async function main() {
     `✓ Salar del Cóndor loaded correctly: ${cnrBatch.batch_id} (${cnrBatch.volume_tonnes} t, ${cnrBatch.purity_pct}% Li2CO3, status: ${cnrBatch.status})`
   );
 
-  // 2. Verify Buyer account and contracts
-  console.log("\n2. Verifying Buyer account and accepted contract...");
+  // 2. Verify Buyer account and dynamic wallet binding
+  console.log("\n2. Verifying Buyer account and dynamic wallet binding...");
   const buyerEmail = "comprador@julit.dev";
   const { data: authData, error: authErr } = await anon.auth.signInWithPassword(
     {
@@ -127,54 +125,7 @@ async function main() {
   }
   console.log(`✓ Buyer signed in: ${authData.user.id}`);
 
-  const { data: buyerCompany } = await service
-    .from("companies")
-    .select("id, name, wallet_address, company_type")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (!buyerCompany || !buyerCompany.wallet_address) {
-    throw new Error("Buyer company or wallet not found");
-  }
-  console.log(
-    `✓ Buyer company: ${buyerCompany.name}, wallet: ${buyerCompany.wallet_address}`
-  );
-
-  // Check buyer contract with Producer 1
-  const { data: contracts, error: contractErr } = await service
-    .from("company_contracts")
-    .select(
-      `
-      id,
-      producer_id,
-      counterparty_id,
-      initiator_id,
-      status,
-      producer:companies!company_contracts_producer_id_fkey(name, wallet_address, origin_id)
-    `
-    )
-    .eq("counterparty_id", buyerCompany.id);
-
-  if (contractErr || !contracts) {
-    throw new Error(`Failed to load contracts: ${contractErr?.message}`);
-  }
-  console.log(`✓ Buyer has ${contracts.length} contract(s):`);
-  contracts.forEach((c) => {
-    console.log(
-      `  - Contract with ${c.producer.name} (${c.producer.origin_id}): status ${c.status}`
-    );
-  });
-
-  const acceptedContract = contracts.find((c) => c.status === "accepted");
-  if (!acceptedContract) {
-    throw new Error("Expected accepted contract between Buyer and Producer");
-  }
-  console.log(
-    "✓ Contract is accepted, authorizing purchase of reserved batch."
-  );
-
-  // 3. Cryptographic signature verification test
-  console.log("\n3. Testing Ed25519 bilateral contract signing...");
+  // Generate dynamic Ed25519 keypair for test buyer wallet
   const keyPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
     "sign",
     "verify",
@@ -183,10 +134,39 @@ async function main() {
     await crypto.subtle.exportKey("raw", keyPair.publicKey)
   );
   const testWallet = getAddressDecoder().decode(pubRaw);
-  const timestamp = new Date().toISOString();
+  console.log(`✓ Generated dynamic buyer wallet: ${testWallet}`);
 
+  // Dynamically link test buyer wallet to buyer company
+  const { data: buyerCompany, error: bindErr } = await service
+    .from("companies")
+    .update({
+      wallet_address: testWallet,
+      wallet_verified_at: new Date().toISOString(),
+    })
+    .eq("id", authData.user.id)
+    .select("id, name, wallet_address, company_type")
+    .single();
+
+  if (bindErr || !buyerCompany || !buyerCompany.wallet_address) {
+    throw new Error(`Failed to bind buyer wallet: ${bindErr?.message}`);
+  }
+  console.log(
+    `✓ Buyer company: ${buyerCompany.name}, bound wallet: ${buyerCompany.wallet_address}`
+  );
+
+  // 3. Testing Ed25519 bilateral contract signing with producer
+  console.log("\n3. Testing Ed25519 bilateral contract signing with producer...");
+  const { data: producer } = await service
+    .from("companies")
+    .select("id, name, wallet_address, origin_id")
+    .eq("origin_id", "pena_blanca")
+    .single();
+
+  if (!producer) throw new Error("Producer company not found");
+
+  const timestamp = new Date().toISOString();
   const msg = buildContractAgreementMessage({
-    producerWallet: acceptedContract.producer.wallet_address,
+    producerWallet: producer.wallet_address,
     counterpartyWallet: testWallet,
     initiatorWallet: testWallet,
     timestamp,
@@ -207,9 +187,29 @@ async function main() {
     `✓ Generated and verified Ed25519 signature: ${sigB58.slice(0, 16)}...`
   );
 
+  // Insert contract as accepted
+  const { data: insertedContract, error: insertContractErr } = await service
+    .from("company_contracts")
+    .upsert({
+      producer_id: producer.id,
+      counterparty_id: buyerCompany.id,
+      initiator_id: buyerCompany.id,
+      status: "accepted",
+      initiator_signature: sigB58,
+      initiator_signed_at: timestamp,
+      responded_at: timestamp,
+    })
+    .select()
+    .single();
+
+  if (insertContractErr || !insertedContract) {
+    throw new Error(`Failed to insert contract: ${insertContractErr?.message}`);
+  }
+  console.log(`✓ Bilateral contract established with ${producer.name} (status: accepted)`);
+
   // 4. Test Simulated Settlement Purchase
   console.log(
-    "\n4. Testing simulated purchase settlement for reserved batch..."
+    "\n4. Testing simulated purchase settlement..."
   );
   const simulatedSignature = Array.from(
     { length: 88 },

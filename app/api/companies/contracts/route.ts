@@ -1,3 +1,4 @@
+import { isAddress } from "@solana/kit";
 import { jsonError, readJsonBody } from "../../../lib/server/api";
 import {
   CONTRACT_SIGNATURE_PATTERN,
@@ -67,6 +68,11 @@ export async function POST(request: Request) {
     typeof body?.signature === "string" ? body.signature : undefined;
   const timestamp =
     typeof body?.timestamp === "string" ? body.timestamp : undefined;
+  const initiatorWalletInput =
+    typeof body?.initiator_wallet === "string" &&
+    isAddress(body.initiator_wallet)
+      ? body.initiator_wallet
+      : undefined;
 
   if (
     !targetCompanyId ||
@@ -94,10 +100,16 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!caller || !caller.wallet_address || !caller.wallet_verified_at) {
+  if (!caller) {
+    return jsonError("Tu empresa no está registrada.", 403);
+  }
+
+  const initiatorWallet = initiatorWalletInput ?? caller.wallet_address;
+
+  if (!initiatorWallet) {
     return jsonError(
-      "Debés vincular y verificar tu wallet antes de solicitar contratos.",
-      403
+      "Debés conectar una wallet antes de solicitar contratos.",
+      400
     );
   }
 
@@ -120,6 +132,8 @@ export async function POST(request: Request) {
   // Determine roles: one party must be producer, the other buyer or auditor
   let producer = caller;
   let counterparty = target;
+  let producerWallet = caller.wallet_address ?? initiatorWallet;
+  let counterpartyWallet = target.wallet_address;
 
   if (caller.company_type === "producer") {
     if (target.company_type !== "buyer" && target.company_type !== "auditor") {
@@ -130,6 +144,8 @@ export async function POST(request: Request) {
     }
     producer = caller;
     counterparty = target;
+    producerWallet = caller.wallet_address ?? initiatorWallet;
+    counterpartyWallet = target.wallet_address;
   } else if (
     caller.company_type === "buyer" ||
     caller.company_type === "auditor"
@@ -142,20 +158,22 @@ export async function POST(request: Request) {
     }
     producer = target;
     counterparty = caller;
+    producerWallet = target.wallet_address;
+    counterpartyWallet = initiatorWallet;
   } else {
     return jsonError("Tipo de empresa no autorizada para contratos.", 403);
   }
 
   // Rebuild canonical agreement message
   const message = buildContractAgreementMessage({
-    producerWallet: producer.wallet_address,
-    counterpartyWallet: counterparty.wallet_address,
-    initiatorWallet: caller.wallet_address,
+    producerWallet,
+    counterpartyWallet,
+    initiatorWallet,
     timestamp,
   });
 
   const validSignature = await verifyContractSignature(
-    caller.wallet_address,
+    initiatorWallet,
     message,
     signature
   );
@@ -165,6 +183,20 @@ export async function POST(request: Request) {
       "La firma del contrato no es válida para la wallet vinculada.",
       400
     );
+  }
+
+  // Bind or update the caller's verified wallet if caller is buyer/auditor
+  if (
+    caller.company_type !== "producer" &&
+    caller.wallet_address !== initiatorWallet
+  ) {
+    await service
+      .from("companies")
+      .update({
+        wallet_address: initiatorWallet,
+        wallet_verified_at: new Date().toISOString(),
+      })
+      .eq("id", caller.id);
   }
 
   // Check if an existing contract exists between the two companies
