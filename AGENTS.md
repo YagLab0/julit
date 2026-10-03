@@ -15,7 +15,7 @@
 
 ## Frontend
 
-Las reglas del frontend están en `FRONTEND.md`. Léelo antes de tocar `app/`.
+Las reglas del frontend están en `FRONTEND.md`. Leelo antes de tocar `app/`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
