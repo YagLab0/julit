@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SessionMenu } from "../../components/session-menu";
 import { ThemeToggle } from "../../components/theme-toggle";
-import { WalletButton } from "../../components/wallet-button";
 import { originName } from "../../lib/origins";
 import { createClient } from "../../lib/supabase/server";
 import { NewBatchClient } from "./new-batch-client";
@@ -50,7 +49,6 @@ export default async function NewBatchPage() {
         </Link>
         <div className="flex items-center gap-3">
           <SessionMenu />
-          <WalletButton />
           <ThemeToggle />
         </div>
       </header>

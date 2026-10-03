@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { ellipsify } from "../../lib/explorer";
 import { useWallet } from "../../lib/wallet/context";
-import { WalletButton } from "../../components/wallet-button";
 import { DEMO_AUDITORS, DEMO_BUYERS } from "./counterparties";
 import { RegisterBatchForm } from "./register-batch-form";
 
@@ -26,9 +26,9 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
           </span>
           ) para registrar un lote.
         </p>
-        <div className="mt-4 inline-block">
-          <WalletButton />
-        </div>
+        <Link href="/account" className="btn-secondary mt-4 inline-block">
+          Conectar desde mi cuenta
+        </Link>
       </div>
     );
   }
@@ -47,9 +47,9 @@ export function NewBatchClient({ producer }: { producer: ProducerInfo }) {
           </span>{" "}
           para firmar como productora.
         </p>
-        <div className="mt-4 inline-block">
-          <WalletButton />
-        </div>
+        <Link href="/account" className="btn-secondary mt-4 inline-block">
+          Cambiar desde mi cuenta
+        </Link>
       </div>
     );
   }
