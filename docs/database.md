@@ -86,7 +86,7 @@ Use `supabase db reset --local` only for a disposable local database: it deletes
 
 The demo accounts — two producers (Sales de Jujuy → `olaroz`, Minera Exar → `cauchari_olaroz`), one auditor (Auditor Demo) and one buyer (Comprador Demo) — are provisioned by the seed file (`supabase/seed.sql`), which `db reset` applies. Credentials are demo-only: `productor.olaroz@julit.dev`, `productor.cauchari-olaroz@julit.dev`, `auditor@julit.dev` and `comprador@julit.dev`, all with password `julit-demo-2026`. Verify the local demo by code with `pnpm smoke` (with `pnpm dev` running against the local stack): it proves the four demo logins, the producer-registration rejection, a fresh auditor registration, the public origins read, and that re-running the seed changes nothing.
 
-This migration set is deployed to the linked project `sixusybflhwjtoikrecn` (`JuLit`, Postgres 17.11, PostgREST v14.18) through explicit, separately reviewed pushes (`supabase db push --linked`, previewed with `--dry-run`). The provisioned demo producers travel through the same reviewed path with `--include-seed`.
+This migration set is deployed to the linked project `sixusybflhwjtoikrecn` (`JuLit`, Postgres 17.11, PostgREST v14.18) through explicit, separately reviewed pushes (`supabase db push --linked`, previewed with `--dry-run`). The provisioned demo producers travel through the same reviewed path with `--include-seed`. A full linked reset (`supabase db reset --linked`) wipes public objects, truncates auth data, reapplies every migration and applies the seed; it does not clear the `storage` schema, so delete the empty `audit-certificates` bucket through the Storage API first or the replay fails on the existing bucket row.
 
 ## References
 
