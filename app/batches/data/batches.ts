@@ -20,12 +20,13 @@ export type Batch = {
   eu_regulation_assessment: EuAssessment | null;
   audit_sha256: string | null;
   audit_certificate_path: string | null;
+  reserved_buyer_wallet?: string | null;
   indexed_at: string;
 };
 
 /** Columns the origin fiche needs, in one place for the per-origin query. */
 export const BATCH_COLUMNS =
-  "pda_address, batch_id, origin_id, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, esg_approved, eu_regulation_assessment, audit_sha256, audit_certificate_path, indexed_at" as const;
+  "pda_address, batch_id, origin_id, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, esg_approved, eu_regulation_assessment, audit_sha256, audit_certificate_path, reserved_buyer_wallet, indexed_at" as const;
 
 /** Public URL of the audited certificate PDF, content-addressed by digest. */
 export function batchCertificateUrl(
