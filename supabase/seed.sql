@@ -96,14 +96,88 @@ values
   )
 on conflict do nothing;
 
-insert into public.companies (id, name, company_type, origin_id) values
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca'),
-  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor'),
-  ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null),
-  ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null)
-on conflict (id) do nothing;
+insert into public.companies (id, name, company_type, origin_id, wallet_address, wallet_verified_at) values
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', 'ProdSalesdelAltiplano111111111111111111111', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor', 'ProdMineraCondor222222222222222222222222', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null, 'AuditAnd1noLabCert111111111111111111111111', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, 'C1ienteTesaEnergy3333333333333333333333333', now())
+on conflict (id) do update set
+  wallet_address = excluded.wallet_address,
+  wallet_verified_at = excluded.wallet_verified_at;
 
 insert into public.company_contracts (producer_id, counterparty_id, status, responded_at) values
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000003', 'pending', null),
-  ('a1a1a1a1-0000-4000-8000-000000000002', 'a1a1a1a1-0000-4000-8000-000000000003', 'accepted', now())
-on conflict do nothing;
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000003', 'accepted', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'a1a1a1a1-0000-4000-8000-000000000003', 'accepted', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000004', 'accepted', now())
+on conflict (producer_id, counterparty_id) do update set
+  status = excluded.status,
+  responded_at = excluded.responded_at;
+
+insert into public.batches (
+  pda_address, batch_id, producer_wallet, auditor_wallet, reserved_buyer_wallet,
+  origin_id, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
+  carbon_footprint_kg_co2e_per_tonne, price_usdc, status, audit_sha256,
+  esg_approved, eu_regulation_assessment, creation_tx_signature, audit_tx_signature,
+  observed_slot
+) values
+  (
+    'BatchPdaPenaBlanca1111111111111111111111',
+    'LIT-2026-PBL-01',
+    'ProdSalesdelAltiplano111111111111111111111',
+    'AuditAnd1noLabCert111111111111111111111111',
+    null,
+    'pena_blanca',
+    420,
+    99.55,
+    50.80,
+    8200.00,
+    12000.500000,
+    'audited',
+    'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+    true,
+    'conformant',
+    '5VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    '3VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    1000
+  ),
+  (
+    'BatchPdaPenaBlanca2222222222222222222222',
+    'LIT-2026-PBL-02',
+    'ProdSalesdelAltiplano111111111111111111111',
+    'AuditAnd1noLabCert111111111111111111111111',
+    'C1ienteTesaEnergy3333333333333333333333333',
+    'pena_blanca',
+    150,
+    99.65,
+    48.20,
+    7950.00,
+    15500.000000,
+    'audited',
+    'b1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+    true,
+    'conformant',
+    '4VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    '2VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    1005
+  ),
+  (
+    'BatchPdaCondor1111111111111111111111111111',
+    'LIT-2026-CNR-01',
+    'ProdMineraCondor222222222222222222222222',
+    'AuditAnd1noLabCert111111111111111111111111',
+    null,
+    'condor',
+    500,
+    99.58,
+    52.10,
+    8400.00,
+    13200.000000,
+    'audited',
+    'c1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+    true,
+    'conformant',
+    '6VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    '1VERv8NMvzbJMEdV8xnrLkEaWRtSz9CosKDYjCJjBRnbJLgp8uirBgmQpjKhoR4tjF3ZpRzrFmBV6UjKdiSZkQUc',
+    1010
+  )
+on conflict (pda_address) do nothing;
