@@ -4,13 +4,13 @@
 
 **Blocked by:** 03: API de contratos comerciales con verificación de firma Ed25519, 04: Interfaz de solicitud de contrato comercial en el catálogo y modal de lotes
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] In `/account` for Buyer:
+- [x] In `/account` for Buyer:
   - Add "Contratos comerciales" section listing contracts with producers, status, timestamps, and signature hashes.
   - Add modal/select to initiate a contract directly with any registered producer.
-- [ ] In `/account` for Producer:
+- [x] In `/account` for Producer:
   - Add "Contratos comerciales y de auditoría" section showing buyer requests and auditor agreements.
   - Interactive "Aceptar solicitud" action prompting wallet `signMessage` and submitting response.
   - Interactive "Rechazar solicitud" action.
-- [ ] Update `/batches/new` client dropdown to include newly accepted buyers immediately.
+- [x] Update `/batches/new` client dropdown to include newly accepted buyers immediately.
