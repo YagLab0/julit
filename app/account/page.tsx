@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SessionMenu } from "../components/session-menu";
 import { ThemeToggle } from "../components/theme-toggle";
-import { WalletButton } from "../components/wallet-button";
 import { isCompanyType } from "../lib/company";
 import { createClient } from "../lib/supabase/server";
 import { AccountClient } from "./account-client";
@@ -46,7 +45,6 @@ export default async function AccountPage() {
         </Link>
         <div className="flex items-center gap-3">
           <SessionMenu />
-          <WalletButton />
           <ThemeToggle />
         </div>
       </header>

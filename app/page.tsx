@@ -2,7 +2,6 @@
 
 import { ThemeToggle } from "./components/theme-toggle";
 import { ClusterSelect } from "./components/cluster-select";
-import { WalletButton } from "./components/wallet-button";
 import { SessionMenu } from "./components/session-menu";
 
 export default function Home() {
@@ -17,7 +16,6 @@ export default function Home() {
             <SessionMenu />
             <ThemeToggle />
             <ClusterSelect />
-            <WalletButton />
           </div>
         </header>
 
