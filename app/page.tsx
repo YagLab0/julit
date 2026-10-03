@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CommerceSection, ParticipantsSection } from "./landing/commerce";
 import { FaqSection, PassportSection } from "./landing/passport-faq";
 import { LandingMotion } from "./landing/landing-motion";
+import { ProcessWidget } from "./landing/process-widgets";
 import styles from "./landing/landing.module.css";
 
 export const metadata: Metadata = {
@@ -201,6 +202,9 @@ export default function Home() {
             </div>
             <p className={styles.sectionDescription}>
               Así se organiza el flujo propuesto por JuLit.
+              <span className={styles.processCaption}>
+                Representación ilustrativa del proceso.
+              </span>
             </p>
           </div>
           <ol className={styles.steps}>
@@ -211,6 +215,7 @@ export default function Home() {
                 data-landing-reveal
                 data-landing-delay={index * 50}
               >
+                <ProcessWidget stage={index} />
                 <span className={styles.stepNumber} aria-hidden="true">
                   {step.number}
                 </span>

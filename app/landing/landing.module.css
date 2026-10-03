@@ -286,18 +286,23 @@
 .processIntro .sectionDescription {
   max-width: 260px;
 }
+.processCaption {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+}
 .steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 36px;
+  gap: 20px;
   margin-top: 52px;
 }
 .step {
-  border-top: 1px solid var(--border);
-  padding-top: 24px;
+  min-width: 0;
 }
 .stepNumber {
   display: inline-flex;
+  margin-top: 22px;
   align-items: center;
   justify-content: center;
   width: 42px;

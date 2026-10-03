@@ -76,7 +76,7 @@ export function LandingMotion() {
     window.addEventListener("pointerup", release);
     window.addEventListener("pointercancel", release);
     window.addEventListener("blur", release);
-    root.addEventListener("keydown", stopKeyboardMotion);
+    document.addEventListener("keydown", stopKeyboardMotion);
     reducedMotion.addEventListener("change", stopMotion);
 
     return () => {
@@ -86,7 +86,7 @@ export function LandingMotion() {
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);
       window.removeEventListener("blur", release);
-      root.removeEventListener("keydown", stopKeyboardMotion);
+      document.removeEventListener("keydown", stopKeyboardMotion);
       reducedMotion.removeEventListener("change", stopMotion);
     };
   }, []);
