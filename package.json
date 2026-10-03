@@ -6,6 +6,8 @@
     "build": "next build",
     "ci": "pnpm build && pnpm lint && pnpm format:check",
     "codama:js": "codama run js",
+    "db:reset": "supabase db reset --local",
+    "db:seed": "node scripts/seed-local.mjs",
     "dev": "next dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

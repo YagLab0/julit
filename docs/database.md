@@ -82,7 +82,7 @@ supabase test db
 supabase db advisors --local --level warn --fail-on warn
 ```
 
-Use `supabase db reset --local` only for a disposable local database: it deletes local data and replays all migrations.
+Use `supabase db reset --local` only for a disposable local database: it deletes local data and replays all migrations. The package scripts wrap the local database tasks: `pnpm db:reset` deletes local data, replays every migration and applies the seed; `pnpm db:seed` re-applies the idempotent seed on its own.
 
 The two demo producer accounts are provisioned by the seed file (`supabase/seed.sql`), which `db reset` applies; its credentials are demo-only and documented in the file. Verify the local demo by code with `pnpm smoke` (with `pnpm dev` running against the local stack): it proves both producer logins, the producer-registration rejection, a fresh auditor registration, the public origins read, and that re-running the seed changes nothing.
 
