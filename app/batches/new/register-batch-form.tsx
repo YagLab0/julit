@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { address } from "@solana/kit";
 import { getCreateBatchInstructionAsync } from "../../generated/julit";
+import { Field } from "../../components/form-field";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
 import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
 import { useWallet } from "../../lib/wallet/context";
@@ -31,34 +32,6 @@ const INITIAL: BatchFormValues = {
   auditorWallet: "",
   reservedBuyerWallet: "",
 };
-
-function Field({
-  label,
-  hint,
-  error,
-  span = false,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  error?: string;
-  span?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className={`block ${span ? "sm:col-span-2" : ""}`}>
-      <span className="mb-1 block text-xs font-semibold text-foreground/80">
-        {label}
-      </span>
-      {children}
-      {error ? (
-        <span className="mt-1 block text-xs text-destructive">{error}</span>
-      ) : hint ? (
-        <span className="mt-1 block text-xs text-muted">{hint}</span>
-      ) : null}
-    </label>
-  );
-}
 
 export function RegisterBatchForm({
   producer,
