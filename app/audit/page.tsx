@@ -5,6 +5,7 @@ import { SessionMenu } from "../components/session-menu";
 import { ThemeToggle } from "../components/theme-toggle";
 import { createClient } from "../lib/supabase/server";
 import { AuditClient } from "./audit-client";
+import { loadAuditorContracts } from "./contracts";
 
 export default async function AuditPage() {
   const supabase = await createClient();
@@ -21,6 +22,11 @@ export default async function AuditPage() {
     .select("name, company_type, wallet_address, wallet_verified_at")
     .eq("id", user.id)
     .maybeSingle();
+
+  const contracts =
+    company?.company_type === "auditor" && company.wallet_verified_at
+      ? await loadAuditorContracts(user.id)
+      : [];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -57,6 +63,7 @@ export default async function AuditPage() {
               name: company.name,
               walletAddress: company.wallet_address!,
             }}
+            contracts={contracts}
           />
         )}
       </main>
