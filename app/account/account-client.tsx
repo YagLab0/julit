@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getBase58Decoder } from "@solana/kit";
 import { COMPANY_TYPE_LABELS, type CompanyType } from "../lib/company";
 import { originName } from "../lib/origins";
@@ -72,6 +72,8 @@ export function AccountClient({
         walletVerifiedAt={company.walletVerifiedAt}
       />
 
+      <ContractsCard companyType={company.companyType} />
+
       <section className="rounded-2xl border border-border-low bg-card p-5">
         <h2 className="text-sm font-semibold">{nextStep.title}</h2>
         <p className="mt-1 text-xs leading-relaxed text-muted">
@@ -87,6 +89,271 @@ export function AccountClient({
         )}
       </section>
     </div>
+  );
+}
+
+const CONTRACT_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  accepted: "Aceptado",
+  revoked: "Rechazado",
+};
+
+const CONTRACT_STATUS_STYLES: Record<string, string> = {
+  pending:
+    "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+  accepted:
+    "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  revoked: "border-border-low bg-secondary text-muted",
+};
+
+type ContractRow = {
+  id: string;
+  status: "pending" | "accepted" | "revoked";
+  respondedAt: string | null;
+  createdAt: string;
+  producer: { id: string; name: string; company_type: CompanyType } | null;
+  counterparty: { id: string; name: string; company_type: CompanyType } | null;
+  role: "producer" | "counterparty";
+};
+
+function ContractsCard({ companyType }: { companyType: CompanyType }) {
+  const [contracts, setContracts] = useState<ContractRow[] | null>(null);
+  const [directory, setDirectory] = useState<{
+    type: "auditor" | "buyer";
+    companies: { id: string; name: string }[];
+  } | null>(null);
+  const [offerType, setOfferType] = useState<"auditor" | "buyer">("auditor");
+  const [counterpartyId, setCounterpartyId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+
+  const isProducer = companyType === "producer";
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/companies/contracts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { contracts?: ContractRow[] } | null) => {
+        if (!cancelled) setContracts(data?.contracts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setContracts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
+
+  useEffect(() => {
+    if (!isProducer) return;
+    let cancelled = false;
+    fetch(`/api/companies/directory?type=${offerType}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { companies?: { id: string; name: string }[] } | null) => {
+        if (!cancelled) {
+          setDirectory({
+            type: offerType,
+            companies: data?.companies ?? [],
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDirectory({ type: offerType, companies: [] });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [offerType, reload, isProducer]);
+
+  async function offerContract() {
+    if (!counterpartyId) return;
+    setBusy(true);
+    setError(null);
+
+    const response = await fetch("/api/companies/contracts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ counterparty_id: counterpartyId }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error ?? "No se pudo ofrecer el contrato.");
+      setBusy(false);
+      return;
+    }
+
+    setCounterpartyId("");
+    setBusy(false);
+    setReload((n) => n + 1);
+  }
+
+  async function respond(id: string, action: "accept" | "decline") {
+    setBusy(true);
+    setError(null);
+
+    const response = await fetch(`/api/companies/contracts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error ?? "No se pudo responder el contrato.");
+      setBusy(false);
+      return;
+    }
+
+    setBusy(false);
+    setReload((n) => n + 1);
+  }
+
+  const pendingIncoming = (contracts ?? []).filter(
+    (c) => c.role === "counterparty" && c.status === "pending"
+  );
+
+  return (
+    <section className="rounded-2xl border border-border-low bg-card p-5">
+      <h2 className="text-sm font-semibold">Contratos comerciales</h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted">
+        {isProducer
+          ? "Ofrecé contratos a auditoras y compradoras. Solo las contrapartes que acepten aparecen como opciones al registrar un lote."
+          : "Las productoras te ofrecen contratos comerciales. Aceptalos para aparecer como auditora designada o cliente de sus lotes."}
+      </p>
+
+      {isProducer && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <select
+            value={offerType}
+            onChange={(event) => {
+              setOfferType(event.target.value as "auditor" | "buyer");
+              setCounterpartyId("");
+            }}
+            className="rounded-lg border border-border-low bg-background px-3 py-2 text-sm text-foreground"
+          >
+            <option value="auditor">Auditora</option>
+            <option value="buyer">Compradora</option>
+          </select>
+          <select
+            value={counterpartyId}
+            onChange={(event) => setCounterpartyId(event.target.value)}
+            className="rounded-lg border border-border-low bg-background px-3 py-2 text-sm text-foreground"
+          >
+            <option value="">
+              {directory?.type !== offerType
+                ? "Cargando empresas…"
+                : directory.companies.length === 0
+                  ? "Sin empresas registradas"
+                  : "Elegí una empresa…"}
+            </option>
+            {(directory?.type === offerType
+              ? directory.companies
+              : []
+            ).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => void offerContract()}
+            disabled={busy || !counterpartyId}
+            className="btn-primary"
+          >
+            {busy ? "Enviando…" : "Ofrecer contrato"}
+          </button>
+        </div>
+      )}
+
+      {pendingIncoming.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-semibold text-foreground/80">
+            Ofertas pendientes
+          </p>
+          {pendingIncoming.map((c) => (
+            <div
+              key={c.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
+            >
+              <p className="text-xs">
+                <span className="font-medium">{c.producer?.name}</span>{" "}
+                <span className="text-muted">
+                  quiere contratarte como{" "}
+                  {COMPANY_TYPE_LABELS[
+                    c.counterparty?.company_type ?? "auditor"
+                  ].toLowerCase()}
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "accept")}
+                  disabled={busy}
+                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
+                >
+                  Aceptar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "decline")}
+                  disabled={busy}
+                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {contracts !== null && contracts.length > 0 && (
+        <ul className="mt-4 space-y-1.5">
+          {contracts.map((c) => {
+            const other = c.role === "producer" ? c.counterparty : c.producer;
+            return (
+              <li
+                key={c.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border-low px-3 py-2"
+              >
+                <p className="text-xs">
+                  <span className="font-medium">{other?.name}</span>{" "}
+                  <span className="text-muted">
+                    (
+                    {COMPANY_TYPE_LABELS[
+                      other?.company_type ?? "auditor"
+                    ].toLowerCase()}
+                    {c.role === "producer" ? "" : " · oferta recibida"})
+                  </span>
+                </p>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${CONTRACT_STATUS_STYLES[c.status]}`}
+                >
+                  {CONTRACT_STATUS_LABELS[c.status]}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {contracts !== null && contracts.length === 0 && (
+        <p className="mt-3 text-xs text-muted">Todavía no hay contratos.</p>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 
