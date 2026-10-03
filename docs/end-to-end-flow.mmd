@@ -1,0 +1,54 @@
+%% End-to-end flow: JuLit / Lithium Passport.
+%% Actors, systems and the five stages from company onboarding to public passport verification.
+%% Render: pnpm dlx @mermaid-js/mermaid-cli@12 -i docs/end-to-end-flow.mmd -o docs/end-to-end-flow.pdf
+sequenceDiagram
+  autonumber
+  actor PROD as Productor
+  actor AUD as Auditor designado
+  actor BUY as Comprador
+  participant FE as Frontend Next
+  participant API as API Next (route handlers)
+  participant SB as Supabase Auth + DB + Storage
+  participant SC as Programa Anchor (Devnet)
+
+  Note over PROD,SC: 1 · Alta de empresa y vinculación de wallet (una vez)
+  PROD->>FE: Login Supabase Auth
+  FE->>API: POST companies (nombre + tipo)
+  API->>SB: INSERT companies con id = auth.uid, sin wallet
+  PROD->>FE: Firma mensaje domain-bound con signMessage
+  FE->>API: POST companies/wallet (mensaje + firma)
+  API->>API: Verifica firma ed25519, dominio, expiración y replay
+  API->>SB: UPDATE wallet_address + wallet_verified_at (queda fijo)
+
+  Note over PROD,SC: 2 · Productor crea el lote (on-chain y luego índice)
+  PROD->>FE: Formulario de métricas, origen, auditor y reservado opcional
+  FE->>SC: tx create_batch (firma la wallet)
+  SC-->>FE: PDA confirmada + creation_tx_signature
+  FE->>API: POST batches (pda + tx)
+  API->>SC: Verifica owner, discriminador, PDA, tx confirmada y slot
+  API->>SB: service_role upsert batches status created
+
+  Note over AUD,SB: 3 · Auditor certifica (una sola vez por lote)
+  AUD->>FE: SHA-256 local del PDF
+  FE->>API: POST certificates (PDF + digest)
+  API->>API: Verifica auditor designado y recomputa el digest
+  API->>SB: Storage en ruta pda/sha256.pdf, sin upsert
+  AUD->>FE: Firma tx certify_batch (sha256, ESG, evaluación EU)
+  FE->>SC: certify_batch
+  SC-->>FE: confirmada + audit_tx_signature
+  FE->>API: POST batches audit (firma de tx)
+  API->>SB: status audited + hallazgos, pueden ser negativos
+
+  Note over BUY,SB: 4 · Compra simulada, sin transferencia de USDC
+  BUY->>FE: Comprar (reservado solo el designado, spot cualquier buyer)
+  FE->>SC: tx complete_purchase
+  SC-->>FE: confirmada + completion_tx_signature
+  FE->>API: POST batches complete
+  API->>SB: status completed + buyer_wallet + firma de tx
+
+  Note over FE,SC: 5 · Pasaporte público batch/PDA, sin cuenta
+  BUY->>FE: Abre catálogo o QR
+  FE->>SB: anon SELECT batches status audited + origins
+  FE->>SB: Descarga PDF público del bucket
+  FE->>SC: Lee PDA y digest on-chain
+  FE->>FE: SHA-256 del PDF descargado = digest on-chain
