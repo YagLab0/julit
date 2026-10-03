@@ -83,3 +83,15 @@ _Avoid_: Automatic legal compliance, official EU certification
 **Audited Batch**:
 A batch whose designated auditor has completed its evaluation, with positive or negative findings.
 _Avoid_: Automatically approved batch, legally compliant batch
+
+**Company Contract**:
+A mutual-consent relationship between a producer and an auditor or buyer company, created by the producer and accepted by the counterparty, scoping which counterparties a producer may designate on its batches.
+_Avoid_: Partnership, membership, supply agreement
+
+**Contracted Auditor**:
+An auditor company holding an accepted company contract with the producer.
+_Avoid_: Any registered auditor, inspector
+
+**Client**:
+A buyer company holding an accepted company contract with the producer.
+_Avoid_: Customer, any registered buyer
