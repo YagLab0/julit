@@ -1,10 +1,14 @@
+import { contractDirection } from "../../../../lib/company-contracts";
+import type { CompanyType } from "../../../../lib/company";
 import { jsonError, readJsonBody } from "../../../../lib/server/api";
 import { createClient } from "../../../../lib/supabase/server";
 import { createServiceClient } from "../../../../lib/supabase/service";
 
 /**
- * The contract counterparty responds to a pending offer:
+ * The contract responder accepts or declines a pending offer:
  * { action: "accept" } → accepted, { action: "decline" } → revoked.
+ * The responder is the counterparty for producer→auditor offers and the
+ * producer for buyer→producer offers (ADR-0008).
  */
 export async function PATCH(
   request: Request,
@@ -28,16 +32,36 @@ export async function PATCH(
   const service = createServiceClient();
   const { data: contract } = await service
     .from("company_contracts")
-    .select("id, counterparty_id, status")
+    .select("id, producer_id, counterparty_id, status")
     .eq("id", id)
     .maybeSingle();
 
   if (!contract) {
     return jsonError("Contrato no encontrado.", 404);
   }
-  if (contract.counterparty_id !== user.id) {
+
+  const callerRole =
+    contract.producer_id === user.id
+      ? ("producer" as const)
+      : contract.counterparty_id === user.id
+        ? ("counterparty" as const)
+        : null;
+  if (!callerRole) {
+    return jsonError("Este contrato no involucra a tu empresa.", 403);
+  }
+
+  const { data: counterparty } = await service
+    .from("companies")
+    .select("company_type")
+    .eq("id", contract.counterparty_id)
+    .single();
+
+  const direction = counterparty
+    ? contractDirection(counterparty.company_type as CompanyType)
+    : null;
+  if (direction?.responder !== callerRole) {
     return jsonError(
-      "Solo la empresa contraparte puede responder esta oferta.",
+      "Solo la empresa que recibe la oferta puede responderla.",
       403
     );
   }
