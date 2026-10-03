@@ -97,8 +97,16 @@ A batch whose designated auditor has completed its evaluation, with positive or 
 _Avoid_: Automatically approved batch, legally compliant batch
 
 **Company Contract**:
-A mutual-consent relationship between a producer and an auditor or buyer company, created by the producer and accepted by the counterparty, scoping which counterparties a producer may designate on its batches.
+A mutual-consent relationship between a producer and an auditor or buyer company, initiated by a fixed party per pair — the producer offers to auditors, the buyer offers to the producer (ADR-0008) — and accepted by the responder, scoping which counterparties a producer may designate on its batches.
 _Avoid_: Partnership, membership, supply agreement
+
+**Contract Initiator**:
+The company that creates a contract offer: the producer for auditor contracts, the buyer for producer contracts. Never a submitted field — derived from the pair's company types.
+_Avoid_: Offer sender, contract owner
+
+**Contract Responder**:
+The company that accepts or declines a pending offer: the counterparty for producer→auditor offers, the producer for buyer→producer offers.
+_Avoid_: Recipient, invitee
 
 **Contracted Auditor**:
 An auditor company holding an accepted company contract with the producer.
