@@ -10,10 +10,10 @@ errors.
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Unauthenticated → 401; non-auditor or unverified wallet → rejected
-- [ ] Batch missing, not `created`, or not designated to this auditor → rejected
-- [ ] Non-PDF or >50 MiB → 400
-- [ ] Digest recomputed server-side; stored at `<pda>/<lowercase digest>.pdf`, no upsert
-- [ ] Existing object for that digest → 409
+- [x] Unauthenticated → 401; non-auditor or unverified wallet → rejected
+- [x] Batch missing, not `created`, or not designated to this auditor → rejected
+- [x] Non-PDF or >50 MiB → 400
+- [x] Digest recomputed server-side; stored at `<pda>/<lowercase digest>.pdf`, no upsert
+- [x] Existing object for that digest → 409
