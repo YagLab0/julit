@@ -1,13 +1,9 @@
 "use client";
 
-import { useReducer } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { ellipsify } from "../lib/explorer";
-import {
-  demoContractOffers,
-  type ContractStatus,
-  type DemoContractOffer,
-} from "./demo-data";
+import type { ContractOffer, ContractStatus } from "./contracts";
 
 const STATUS_LABELS: Record<ContractStatus, string> = {
   pending: "Pendiente",
@@ -24,23 +20,28 @@ const STATUS_STYLES: Record<ContractStatus, string> = {
 
 function OfferRow({
   offer,
+  responding,
   onRespond,
 }: {
-  offer: DemoContractOffer;
+  offer: ContractOffer;
+  responding: boolean;
   onRespond: (id: string, status: ContractStatus) => void;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-low p-4">
       <div>
         <p className="text-sm font-semibold">{offer.producerName}</p>
-        <p className="mt-0.5 font-mono text-xs text-muted">
-          {ellipsify(offer.producerWallet, 4)}
-        </p>
+        {offer.producerWallet && (
+          <p className="mt-0.5 font-mono text-xs text-muted">
+            {ellipsify(offer.producerWallet, 4)}
+          </p>
+        )}
       </div>
       {offer.status === "pending" ? (
         <div className="flex gap-2">
           <button
             type="button"
+            disabled={responding}
             onClick={() => onRespond(offer.id, "revoked")}
             className="btn-secondary"
           >
@@ -48,6 +49,7 @@ function OfferRow({
           </button>
           <button
             type="button"
+            disabled={responding}
             onClick={() => onRespond(offer.id, "accepted")}
             className="btn-primary"
           >
@@ -65,31 +67,55 @@ function OfferRow({
   );
 }
 
-export function ContractsInbox() {
-  // Responses mutate the demo store like certifications do; the reducer
-  // version just re-renders after each mutation.
-  const [, bumpVersion] = useReducer((v: number) => v + 1, 0);
+export function ContractsInbox({
+  offers: initialOffers,
+}: {
+  offers: ContractOffer[];
+}) {
+  const [offers, setOffers] = useState(initialOffers);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
 
-  const respond = (id: string, status: ContractStatus) => {
-    const offer = demoContractOffers.find((o) => o.id === id);
+  const respond = async (id: string, status: ContractStatus) => {
+    const offer = offers.find((o) => o.id === id);
     if (!offer) return;
-    offer.status = status;
-    bumpVersion();
-    if (status === "accepted") {
-      toast.success(`Contrato con ${offer.producerName} aceptado.`);
-    } else {
-      toast.info("Oferta rechazada.");
+
+    setRespondingId(id);
+    try {
+      const response = await fetch(`/api/companies/contracts/${id}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const body = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        toast.error(body?.error ?? "No se pudo responder la oferta.");
+        return;
+      }
+
+      setOffers((current) =>
+        current.map((o) => (o.id === id ? { ...o, status } : o))
+      );
+      if (status === "accepted") {
+        toast.success(`Contrato con ${offer.producerName} aceptado.`);
+      } else {
+        toast.info("Oferta rechazada.");
+      }
+    } catch {
+      toast.error("No se pudo responder la oferta. Intentá de nuevo.");
+    } finally {
+      setRespondingId(null);
     }
   };
 
-  const pending = demoContractOffers.filter((o) => o.status === "pending");
-  const history = demoContractOffers.filter((o) => o.status !== "pending");
+  const pending = offers.filter((o) => o.status === "pending");
+  const history = offers.filter((o) => o.status !== "pending");
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6">
       <p className="eyebrow">Contratos con productoras</p>
 
-      {demoContractOffers.length === 0 ? (
+      {offers.length === 0 ? (
         <p className="mt-3 text-sm text-muted">
           Todavía no recibiste ofertas de contrato.
         </p>
@@ -102,7 +128,12 @@ export function ContractsInbox() {
           ) : (
             <div className="mt-3 space-y-3">
               {pending.map((offer) => (
-                <OfferRow key={offer.id} offer={offer} onRespond={respond} />
+                <OfferRow
+                  key={offer.id}
+                  offer={offer}
+                  responding={respondingId === offer.id}
+                  onRespond={respond}
+                />
               ))}
             </div>
           )}
@@ -112,7 +143,12 @@ export function ContractsInbox() {
               <p className="mt-5 text-xs font-semibold text-muted">Historial</p>
               <div className="mt-2 space-y-3">
                 {history.map((offer) => (
-                  <OfferRow key={offer.id} offer={offer} onRespond={respond} />
+                  <OfferRow
+                    key={offer.id}
+                    offer={offer}
+                    responding={respondingId === offer.id}
+                    onRespond={respond}
+                  />
                 ))}
               </div>
             </>

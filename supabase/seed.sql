@@ -1,6 +1,8 @@
 -- Demo-only accounts: the two producers (one per origin) plus an auditor and
--- a buyer for the demo flow. Applied locally by `supabase db reset` and to the
--- linked project by the reviewed `supabase db push --include-seed` runbook.
+-- a buyer for the demo flow, plus two contract offers to the auditor (one
+-- pending, one accepted) so the auditor inbox has real rows. Applied locally
+-- by `supabase db reset` and to the linked project by the reviewed
+-- `supabase db push --include-seed` runbook.
 -- Idempotent: re-running never duplicates or overwrites. Producer and mine
 -- names are fictional; the site coordinates and capacity figures are the
 -- reference values the demo uses.
@@ -100,3 +102,8 @@ insert into public.companies (id, name, company_type, origin_id) values
   ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null),
   ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null)
 on conflict (id) do nothing;
+
+insert into public.company_contracts (producer_id, counterparty_id, status, responded_at) values
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000003', 'pending', null),
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'a1a1a1a1-0000-4000-8000-000000000003', 'accepted', now())
+on conflict do nothing;
