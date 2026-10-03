@@ -2,6 +2,12 @@ export const COMPANY_TYPES = ["producer", "auditor", "buyer"] as const;
 
 export type CompanyType = (typeof COMPANY_TYPES)[number];
 
+/** Company types a visitor may self-register; producer accounts are provisioned. */
+export const SELF_SERVICE_COMPANY_TYPES: readonly CompanyType[] = [
+  "auditor",
+  "buyer",
+];
+
 export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
   producer: "Productor",
   auditor: "Auditor",
