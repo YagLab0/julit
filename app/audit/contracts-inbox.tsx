@@ -81,10 +81,12 @@ export function ContractsInbox({
 
     setRespondingId(id);
     try {
-      const response = await fetch(`/api/companies/contracts/${id}/respond`, {
-        method: "POST",
+      const response = await fetch(`/api/companies/contracts/${id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          action: status === "accepted" ? "accept" : "decline",
+        }),
       });
       const body = await response.json().catch(() => null);
 

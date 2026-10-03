@@ -17,7 +17,9 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
+  parseCertifyBatchInstruction,
   parseCreateBatchInstruction,
+  type ParsedCertifyBatchInstruction,
   type ParsedCreateBatchInstruction,
 } from "../instructions";
 
@@ -25,6 +27,7 @@ export const JULIT_PROGRAM_ADDRESS =
   "D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg" as Address<"D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg">;
 
 export enum JulitAccount {
+  Audit,
   Batch,
 }
 
@@ -32,6 +35,17 @@ export function identifyJulitAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): JulitAccount {
   const data = "data" in account ? account.data : account;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([242, 65, 202, 147, 141, 103, 253, 134]),
+      ),
+      0,
+    )
+  ) {
+    return JulitAccount.Audit;
+  }
   if (
     containsBytes(
       data,
@@ -49,6 +63,7 @@ export function identifyJulitAccount(
 }
 
 export enum JulitInstruction {
+  CertifyBatch,
   CreateBatch,
 }
 
@@ -56,6 +71,17 @@ export function identifyJulitInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): JulitInstruction {
   const data = "data" in instruction ? instruction.data : instruction;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([125, 158, 1, 110, 72, 174, 248, 42]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.CertifyBatch;
+  }
   if (
     containsBytes(
       data,
@@ -74,15 +100,26 @@ export function identifyJulitInstruction(
 
 export type ParsedJulitInstruction<
   TProgram extends string = "D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg",
-> = {
-  instructionType: JulitInstruction.CreateBatch;
-} & ParsedCreateBatchInstruction<TProgram>;
+> =
+  | ({
+      instructionType: JulitInstruction.CertifyBatch;
+    } & ParsedCertifyBatchInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.CreateBatch;
+    } & ParsedCreateBatchInstruction<TProgram>);
 
 export function parseJulitInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedJulitInstruction<TProgram> {
   const instructionType = identifyJulitInstruction(instruction);
   switch (instructionType) {
+    case JulitInstruction.CertifyBatch: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.CertifyBatch,
+        ...parseCertifyBatchInstruction(instruction),
+      };
+    }
     case JulitInstruction.CreateBatch: {
       assertIsInstructionWithAccounts(instruction);
       return {

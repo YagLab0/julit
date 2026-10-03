@@ -26,24 +26,32 @@ export const JULIT_ERROR__INVALID_PRICE = 0x1773; // 6003
 export const JULIT_ERROR__AUDITOR_IS_PRODUCER = 0x1774; // 6004
 /** BuyerIsParty: Reserved buyer cannot be the producer or the auditor */
 export const JULIT_ERROR__BUYER_IS_PARTY = 0x1775; // 6005
+/** NotDesignatedAuditor: Only the designated auditor can certify this batch */
+export const JULIT_ERROR__NOT_DESIGNATED_AUDITOR = 0x1776; // 6006
+/** AlreadyCertified: Batch is already audited */
+export const JULIT_ERROR__ALREADY_CERTIFIED = 0x1777; // 6007
 
 export type JulitError =
+  | typeof JULIT_ERROR__ALREADY_CERTIFIED
   | typeof JULIT_ERROR__AUDITOR_IS_PRODUCER
   | typeof JULIT_ERROR__BUYER_IS_PARTY
   | typeof JULIT_ERROR__INVALID_BATCH_ID
   | typeof JULIT_ERROR__INVALID_PRICE
   | typeof JULIT_ERROR__INVALID_VOLUME
-  | typeof JULIT_ERROR__NOT_BATTERY_GRADE;
+  | typeof JULIT_ERROR__NOT_BATTERY_GRADE
+  | typeof JULIT_ERROR__NOT_DESIGNATED_AUDITOR;
 
 let julitErrorMessages: Record<JulitError, string> | undefined;
 if (process.env.NODE_ENV !== "production") {
   julitErrorMessages = {
+    [JULIT_ERROR__ALREADY_CERTIFIED]: `Batch is already audited`,
     [JULIT_ERROR__AUDITOR_IS_PRODUCER]: `Auditor cannot be the producer`,
     [JULIT_ERROR__BUYER_IS_PARTY]: `Reserved buyer cannot be the producer or the auditor`,
     [JULIT_ERROR__INVALID_BATCH_ID]: `Batch id must be 1-32 bytes`,
     [JULIT_ERROR__INVALID_PRICE]: `Price must be greater than zero`,
     [JULIT_ERROR__INVALID_VOLUME]: `Volume must be at least one tonne`,
     [JULIT_ERROR__NOT_BATTERY_GRADE]: `Only battery grade (99.50-100.00%) is accepted`,
+    [JULIT_ERROR__NOT_DESIGNATED_AUDITOR]: `Only the designated auditor can certify this batch`,
   };
 }
 

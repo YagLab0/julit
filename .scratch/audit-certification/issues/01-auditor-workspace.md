@@ -11,13 +11,15 @@ auditor's next-step card on `/account` links to `/audit`.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done — upgraded: the batch list now reads real `batches` rows via
+`loadAuditorBatches` (service join for producer name + origin — `companies`
+is never browser-readable, ADR-0003); the demo module and notice are gone
 
-- [ ] `/audit` server page replicates the `/batches/new` gate chain for auditors
-- [ ] Client gate: connected wallet must match the verified company wallet (same pattern as new-batch-client)
-- [ ] Demo data module exports demo batches (with producer names — `companies` is never browser-readable, ADR-0003) and demo contract offers, with a comment naming issues 06/03 as its replacement
-- [ ] Pending section lists `created` batches with batch id, producer, origin, volume, purity, water/carbon footprints, price
-- [ ] Certified section shows recorded findings (ESG approval + EU assessment), including negative findings
-- [ ] Empty state when no batches are assigned; visible "Datos simulados" demo notice (amber style like the map)
-- [ ] Auditor card on `/account` links to `/audit` instead of "Próximamente"
-- [ ] All UI text Spanish; semantic tokens only (`eyebrow`, `btn-primary`, `btn-secondary`, `bg-card`, `border-border`)
+- [x] `/audit` server page replicates the `/batches/new` gate chain for auditors
+- [x] Client gate: connected wallet must match the verified company wallet (same pattern as new-batch-client)
+- [x] Batches read server-side from `batches` filtered by `auditor_wallet`; producer names come from the `companies` join through the service role
+- [x] Pending section lists `created` batches with batch id, producer, origin, volume, purity, water/carbon footprints, price
+- [x] Certified section shows recorded findings (ESG approval + EU assessment), including negative findings; `completed` batches also list as certified
+- [x] Empty state when no batches are assigned
+- [x] Auditor card on `/account` links to `/audit` instead of "Próximamente"
+- [x] All UI text Spanish; semantic tokens only (`eyebrow`, `btn-primary`, `btn-secondary`, `bg-card`, `border-border`)

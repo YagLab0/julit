@@ -12,13 +12,15 @@ validation module with vitest coverage — the spec's single test seam.
 
 **Blocked by:** 01 (needs the demo store and the list that links here)
 
-**Status:** ready-for-agent
+**Status:** partial — the page reads the real batch server-side
+(`loadAuditorBatch` scoped to the auditor's wallet); the submit stays a
+boundary stub until the certificate upload and `certify_batch` land
 
-- [ ] Server page awaits `params`, replicates the auditor gate chain; deep links can't bypass identity checks
-- [ ] Unknown or already-certified batch renders a clear state, not the form
-- [ ] Non-PDF files and files over 50 MiB rejected client-side with field errors
-- [ ] PDF SHA-256 computed in-browser and displayed as lowercase hex
-- [ ] Submit disabled until digest + ESG choice + EU choice are all present
-- [ ] Submit mutates the demo batch to `audited` with findings + digest, toasts, returns to `/audit`; the batch then appears in the certified section
-- [ ] Pure validation module (input → errors/payload `{ digest, esgApproved, euAssessment }`) with vitest tests: missing file, wrong MIME, oversize, missing ESG, missing EU, happy path
+- [x] Server page awaits `params`, replicates the auditor gate chain; deep links can't bypass identity checks
+- [x] Unknown or already-certified batch renders a clear state, not the form
+- [x] Non-PDF files and files over 50 MiB rejected client-side with field errors
+- [x] PDF SHA-256 computed in-browser and displayed as lowercase hex
+- [x] Submit disabled until digest + ESG choice + EU choice are all present
+- [ ] Submit sends the certificate upload + `certify_batch` transaction and writes the index (not implemented yet — currently toasts at the boundary)
+- [x] Pure validation module (input → errors/payload `{ digest, esgApproved, euAssessment }`) with vitest tests: missing file, wrong MIME, oversize, missing ESG, missing EU, happy path
 - [ ] `pnpm build`, `pnpm lint`, `pnpm test`, `pnpm format:check` green

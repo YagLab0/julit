@@ -5,6 +5,7 @@ import { SessionMenu } from "../components/session-menu";
 import { ThemeToggle } from "../components/theme-toggle";
 import { createClient } from "../lib/supabase/server";
 import { AuditClient } from "./audit-client";
+import { loadAuditorBatches } from "./batches";
 import { loadAuditorContracts } from "./contracts";
 
 export default async function AuditPage() {
@@ -23,10 +24,14 @@ export default async function AuditPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const contracts =
-    company?.company_type === "auditor" && company.wallet_verified_at
-      ? await loadAuditorContracts(user.id)
-      : [];
+  const isGatedAuditor =
+    company?.company_type === "auditor" && company.wallet_verified_at;
+  const [batches, contracts] = isGatedAuditor
+    ? await Promise.all([
+        loadAuditorBatches(company.wallet_address!),
+        loadAuditorContracts(user.id),
+      ])
+    : [[], []];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -64,6 +69,7 @@ export default async function AuditPage() {
               walletAddress: company.wallet_address!,
             }}
             contracts={contracts}
+            batches={batches}
           />
         )}
       </main>

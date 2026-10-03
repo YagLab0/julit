@@ -1,4 +1,4 @@
-import type { DemoBatch } from "./demo-data";
+import type { AuditBatch } from "./batches";
 
 export const numberFmt = new Intl.NumberFormat("es-AR", {
   maximumFractionDigits: 6,
@@ -17,7 +17,7 @@ export function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function Findings({ batch }: { batch: DemoBatch }) {
+export function Findings({ batch }: { batch: AuditBatch }) {
   return (
     <div className="mt-3 space-y-2 border-t border-border-low pt-3">
       <div className="flex flex-wrap gap-2">
