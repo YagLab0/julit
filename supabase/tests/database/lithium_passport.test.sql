@@ -19,6 +19,8 @@ insert into public.companies (id, name, company_type, wallet_address, wallet_ver
 
 set local role service_role;
 
+delete from public.batches;
+
 insert into public.company_contracts (producer_id, counterparty_id, status, responded_at) values
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'accepted', now()),
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', 'accepted', now()),

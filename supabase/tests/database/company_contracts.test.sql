@@ -17,6 +17,9 @@ insert into public.companies (id, name, company_type, wallet_address, wallet_ver
 
 set local role service_role;
 
+delete from public.batches;
+delete from public.company_contracts;
+
 select throws_ok($$insert into public.companies (id, name, company_type, origin_id)
     values ('00000000-0000-0000-0000-000000000010', 'Bad auditor', 'auditor', 'pena_blanca')$$,
   '23514', null, 'An auditor cannot carry an origin');
@@ -25,9 +28,10 @@ select throws_ok($$update public.companies set origin_id = 'condor'
     where id = '00000000-0000-0000-0000-000000000001'$$,
   '23514', null, 'A bound origin cannot be changed once set');
 
-select lives_ok($$insert into public.company_contracts (producer_id, counterparty_id)
+select lives_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
     values ('00000000-0000-0000-0000-000000000001',
-            '00000000-0000-0000-0000-000000000002')$$,
+            '00000000-0000-0000-0000-000000000002',
+            '00000000-0000-0000-0000-000000000001')$$,
   'A producer can offer a contract to an auditor');
 
 select results_eq($$select status::text from public.company_contracts
@@ -35,20 +39,29 @@ select results_eq($$select status::text from public.company_contracts
   $$values ('pending')$$,
   'New contracts start pending');
 
-select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id)
+select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
     values ('00000000-0000-0000-0000-000000000001',
-            '00000000-0000-0000-0000-000000000002')$$,
+            '00000000-0000-0000-0000-000000000002',
+            '00000000-0000-0000-0000-000000000001')$$,
   '23505', null, 'The same producer-counterparty pair cannot duplicate');
 
-select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id)
+select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
     values ('00000000-0000-0000-0000-000000000002',
-            '00000000-0000-0000-0000-000000000001')$$,
+            '00000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000002')$$,
   '23514', null, 'Only a producer can be the contract producer');
 
-select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id)
+select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
     values ('00000000-0000-0000-0000-000000000001',
-            '00000000-0000-0000-0000-000000000004')$$,
+            '00000000-0000-0000-0000-000000000004',
+            '00000000-0000-0000-0000-000000000001')$$,
   '23514', null, 'A producer cannot be a contract counterparty');
+
+select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
+    values ('00000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000003',
+            '00000000-0000-0000-0000-000000000004')$$,
+  '23514', null, 'A third party cannot be the contract initiator');
 
 select throws_ok($$update public.company_contracts set status = 'accepted'
     where producer_id = '00000000-0000-0000-0000-000000000001'$$,
@@ -58,12 +71,24 @@ update public.company_contracts
 set status = 'accepted', responded_at = now()
 where producer_id = '00000000-0000-0000-0000-000000000001';
 
-insert into public.company_contracts (producer_id, counterparty_id)
-values ('00000000-0000-0000-0000-000000000001',
-        '00000000-0000-0000-0000-000000000003');
+-- Buyer initiates contract with Producer One
+select lives_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
+    values ('00000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000003',
+            '00000000-0000-0000-0000-000000000003')$$,
+  'A buyer can initiate a contract request with a producer');
+
 update public.company_contracts
-set status = 'accepted', responded_at = now()
+set status = 'accepted', responded_at = now(),
+    initiator_signature = repeat('s', 88),
+    counterparty_signature = repeat('c', 88),
+    initiator_signed_at = now(),
+    counterparty_signed_at = now()
 where counterparty_id = '00000000-0000-0000-0000-000000000003';
+
+select throws_ok($$update public.company_contracts set initiator_signature = '   '
+    where counterparty_id = '00000000-0000-0000-0000-000000000003'$$,
+  '23514', null, 'Whitespace-only signature is rejected');
 
 -- Batch indexing: uncontracted auditor is rejected, accepted contract is fine.
 select throws_ok($$insert into public.batches (
@@ -119,11 +144,33 @@ select lives_ok($$insert into public.batches (
   )$$,
   'A reserved buyer holding an accepted contract is indexed');
 
+-- Bilateral RLS checks
+set local role authenticated;
+
+-- Producer 1 sees its 2 contracts (Auditor One and Buyer One)
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+select results_eq($$select count(*)::int from public.company_contracts$$,
+  $$values (2)$$,
+  'Producer One sees contracts where it is the producer');
+
+-- Buyer 1 sees its 1 contract with Producer 1
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated"}', true);
+select results_eq($$select count(*)::int from public.company_contracts$$,
+  $$values (1)$$,
+  'Buyer One sees contracts where it is the counterparty');
+
+-- Producer 2 sees 0 contracts
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000004","role":"authenticated"}', true);
+select results_eq($$select count(*)::int from public.company_contracts$$,
+  $$values (0)$$,
+  'Unrelated producer sees 0 contracts');
+
 set local role anon;
 select throws_ok($$select * from public.company_contracts$$,
   '42501', null, 'Anonymous clients cannot read company contracts');
-select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id)
+select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
     values ('00000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000003',
             '00000000-0000-0000-0000-000000000003')$$,
   '42501', null, 'Anonymous clients cannot create company contracts');
 

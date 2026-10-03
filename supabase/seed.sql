@@ -97,7 +97,7 @@ values
 on conflict do nothing;
 
 insert into public.companies (id, name, company_type, origin_id, wallet_address, wallet_verified_at) values
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', 'ProdSalesdelAltiplano111111111111111111111', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', 'ProdSaLesdeLALtipLano111111111111111111111', now()),
   ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor', 'ProdMineraCondor222222222222222222222222', now()),
   ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null, 'AuditAnd1noLabCert111111111111111111111111', now()),
   ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, 'C1ienteTesaEnergy3333333333333333333333333', now())
@@ -105,10 +105,10 @@ on conflict (id) do update set
   wallet_address = excluded.wallet_address,
   wallet_verified_at = excluded.wallet_verified_at;
 
-insert into public.company_contracts (producer_id, counterparty_id, status, responded_at) values
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000003', 'accepted', now()),
-  ('a1a1a1a1-0000-4000-8000-000000000002', 'a1a1a1a1-0000-4000-8000-000000000003', 'accepted', now()),
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000004', 'accepted', now())
+insert into public.company_contracts (producer_id, counterparty_id, initiator_id, status, responded_at) values
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000003', 'a1a1a1a1-0000-4000-8000-000000000001', 'accepted', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'a1a1a1a1-0000-4000-8000-000000000003', 'a1a1a1a1-0000-4000-8000-000000000002', 'accepted', now()),
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'a1a1a1a1-0000-4000-8000-000000000004', 'a1a1a1a1-0000-4000-8000-000000000004', 'accepted', now())
 on conflict (producer_id, counterparty_id) do update set
   status = excluded.status,
   responded_at = excluded.responded_at;
@@ -121,9 +121,9 @@ insert into public.batches (
   observed_slot
 ) values
   (
-    'BatchPdaPenaBlanca1111111111111111111111',
+    'BatchPdaPenaBLanca1111111111111111111111',
     'LIT-2026-PBL-01',
-    'ProdSalesdelAltiplano111111111111111111111',
+    'ProdSaLesdeLALtipLano111111111111111111111',
     'AuditAnd1noLabCert111111111111111111111111',
     null,
     'pena_blanca',
@@ -141,9 +141,9 @@ insert into public.batches (
     1000
   ),
   (
-    'BatchPdaPenaBlanca2222222222222222222222',
+    'BatchPdaPenaBLanca2222222222222222222222',
     'LIT-2026-PBL-02',
-    'ProdSalesdelAltiplano111111111111111111111',
+    'ProdSaLesdeLALtipLano111111111111111111111',
     'AuditAnd1noLabCert111111111111111111111111',
     'C1ienteTesaEnergy3333333333333333333333333',
     'pena_blanca',

@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Create Supabase migration adding `initiator_id uuid references public.companies(id)`, `initiator_signature text`, `counterparty_signature text`, `initiator_signed_at timestamptz`, and `counterparty_signed_at timestamptz` to `company_contracts`.
-- [ ] Add check constraints ensuring `initiator_id` is either `producer_id` or `counterparty_id`.
-- [ ] Update RLS policies so authenticated users can read contracts where their company is either `producer_id` or `counterparty_id`.
-- [ ] Add pgTAP test suite in `supabase/tests/database/company_contracts.test.sql` validating foreign keys, triggers, constraints, and bilateral RLS access.
+- [x] Create Supabase migration adding `initiator_id uuid references public.companies(id)`, `initiator_signature text`, `counterparty_signature text`, `initiator_signed_at timestamptz`, and `counterparty_signed_at timestamptz` to `company_contracts`.
+- [x] Add check constraints ensuring `initiator_id` is either `producer_id` or `counterparty_id`.
+- [x] Update RLS policies so authenticated users can read contracts where their company is either `producer_id` or `counterparty_id`.
+- [x] Add pgTAP test suite in `supabase/tests/database/company_contracts.test.sql` validating foreign keys, triggers, constraints, and bilateral RLS access.
