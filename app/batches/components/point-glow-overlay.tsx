@@ -18,7 +18,7 @@ export type GlowFrame = { pins: GlowPin[] };
 
 const MAX_PINS = 16;
 
-// Expanding rings + soft halo over each origin with batches on sale.
+// Expanding rings + soft halo over each origin pin.
 // Premultiplied output: the canvas composites transparently over the map.
 // (Wind streaks from lithium-passport intentionally omitted: visual demo
 // without the weather layer.)

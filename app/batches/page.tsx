@@ -2,17 +2,18 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 import { ThemeToggle } from "../components/theme-toggle";
 import { SessionMenu } from "../components/session-menu";
+import { createClient } from "../lib/supabase/client";
 import { MapLayersPanel, type LayerState } from "./components/map-layers-panel";
 import type { Basemap } from "./components/map-style";
 import type { MapStatus } from "./components/region-map";
 import { AssetsListView } from "./components/assets-list-view";
 import { OriginModal } from "./components/origin-modal";
-import { mergeOrigins } from "./data/points";
+import { ORIGIN_COLUMNS, type Origin } from "./data/origins";
 
 // MapLibre + WebGPU only exist in the browser.
 const RegionMap = dynamic(
@@ -21,6 +22,7 @@ const RegionMap = dynamic(
 );
 
 type View = "map" | "list";
+type CatalogueStatus = "loading" | "error" | "ready";
 
 function ViewToggle({
   view,
@@ -82,6 +84,46 @@ function LoadingOverlay() {
   );
 }
 
+/** Catalogue fetch states: full-screen, keyboard- and screen-reader friendly. */
+function CatalogueStatusOverlay({
+  status,
+  onRetry,
+}: {
+  status: CatalogueStatus;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-30 grid place-items-center bg-background px-6">
+      {status === "loading" ? (
+        <div className="flex flex-col items-center gap-3 text-muted">
+          <span
+            aria-hidden
+            className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-brand-600"
+          />
+          <p className="text-xs font-medium" role="status">
+            Cargando los orígenes…
+          </p>
+        </div>
+      ) : (
+        <div
+          role="alert"
+          className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 text-center shadow-sm"
+        >
+          <p className="text-sm font-semibold text-foreground">
+            No se pudieron cargar los orígenes.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            Revisá tu conexión e intentá de nuevo.
+          </p>
+          <button type="button" onClick={onRetry} className="btn-primary mt-4">
+            Reintentar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function IntroTitle({
   visible,
   showSkip,
@@ -103,7 +145,7 @@ function IntroTitle({
         Litio trazable de la Puna jujeña
       </h1>
       <p className="mt-3 text-sm font-medium text-foreground/75 [text-shadow:0_1px_8px_rgba(255,255,255,0.9)]">
-        Elegí un origen para ver sus lotes en venta
+        Elegí un origen para ver su ficha
       </p>
       {showSkip && (
         <button
@@ -120,8 +162,11 @@ function IntroTitle({
 }
 
 export default function JuLitAppPage() {
-  // Visual demo: static mock data, no repository, no wallet.
-  const origins = useMemo(() => mergeOrigins(), []);
+  // Origins come from the public Supabase `origins` catalogue.
+  const [origins, setOrigins] = useState<Origin[]>([]);
+  const [catalogueStatus, setCatalogueStatus] =
+    useState<CatalogueStatus>("loading");
+  const [reloadKey, setReloadKey] = useState(0);
   const [view, setView] = useState<View>("map");
   const [mapStatus, setMapStatus] = useState<MapStatus>("loading");
   const [skipIntroSignal, setSkipIntroSignal] = useState(0);
@@ -132,6 +177,28 @@ export default function JuLitAppPage() {
     routes: false,
   });
   const { resolvedTheme } = useTheme();
+
+  // No session needed: RLS exposes the catalogue to anonymous reads.
+  useEffect(() => {
+    let active = true;
+    createClient()
+      .from("origins")
+      .select(ORIGIN_COLUMNS)
+      .order("name", { ascending: true })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error("Could not load the origins catalogue", error);
+          setCatalogueStatus("error");
+          return;
+        }
+        setOrigins((data ?? []) as Origin[]);
+        setCatalogueStatus("ready");
+      });
+    return () => {
+      active = false;
+    };
+  }, [reloadKey]);
 
   const basemap: Basemap = layers.satellite
     ? "satellite"
@@ -146,7 +213,7 @@ export default function JuLitAppPage() {
     if (status === "error") {
       setView("list");
       toast.warning("El mapa 3D no está disponible", {
-        description: "Mostramos los lotes en lista.",
+        description: "Mostramos los orígenes en lista.",
       });
     }
   }, []);
@@ -162,30 +229,22 @@ export default function JuLitAppPage() {
     setSelectedId(id);
   }, []);
 
+  const ready = catalogueStatus === "ready";
   const mapAvailable = mapStatus !== "error";
-  const showMap = view === "map" && mapAvailable;
+  const showMap = ready && view === "map" && mapAvailable;
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-background text-foreground">
-      {mapAvailable && (
-        <div
-          className={
-            showMap
-              ? "contents"
-              : "invisible [&_.maplibregl-control-container]:hidden"
-          }
-          aria-hidden={!showMap}
-        >
-          <RegionMap
-            origins={origins}
-            selectedId={selectedId}
-            onSelect={handleSelect}
-            onStatusChange={handleStatus}
-            skipIntroSignal={skipIntroSignal}
-            basemap={basemap}
-            showRoutes={layers.routes}
-          />
-        </div>
+      {showMap && (
+        <RegionMap
+          origins={origins}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          onStatusChange={handleStatus}
+          skipIntroSignal={skipIntroSignal}
+          basemap={basemap}
+          showRoutes={layers.routes}
+        />
       )}
 
       {showMap && mapStatus === "loading" && <LoadingOverlay />}
@@ -203,9 +262,19 @@ export default function JuLitAppPage() {
         </div>
       )}
 
-      {view === "list" && <AssetsListView origins={origins} />}
+      {ready && view === "list" && <AssetsListView origins={origins} />}
 
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-wrap items-start justify-between gap-3 p-4">
+      {catalogueStatus !== "ready" && (
+        <CatalogueStatusOverlay
+          status={catalogueStatus}
+          onRetry={() => {
+            setCatalogueStatus("loading");
+            setReloadKey((n) => n + 1);
+          }}
+        />
+      )}
+
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start justify-between gap-3 p-4">
         <div className="pointer-events-auto rounded-2xl border border-border bg-card/90 px-4 py-3 shadow-sm backdrop-blur">
           <Link
             href="/"
@@ -229,16 +298,17 @@ export default function JuLitAppPage() {
         </div>
       </header>
 
-      <div
-        role="note"
-        className="absolute bottom-4 left-4 z-10 max-w-xs rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50/95 dark:bg-amber-950/60 px-3 py-2 text-[11px] leading-snug text-amber-900 dark:text-amber-200 shadow-sm"
-      >
-        <p>
-          <strong>Datos simulados – demo visual.</strong> Los lotes, auditorías
-          y precios no corresponden a operaciones reales. Ubicaciones,
-          capacidades y salares: fuentes públicas.
-        </p>
-      </div>
+      {ready && (
+        <div
+          role="note"
+          className="absolute bottom-4 left-4 z-10 max-w-xs rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50/95 dark:bg-amber-950/60 px-3 py-2 text-[11px] leading-snug text-amber-900 dark:text-amber-200 shadow-sm"
+        >
+          <p>
+            <strong>Datos de referencia pública.</strong> Ubicaciones,
+            capacidades y salares: cada origen cita su fuente.
+          </p>
+        </div>
+      )}
 
       {selectedOrigin && (
         <OriginModal
