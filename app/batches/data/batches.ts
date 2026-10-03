@@ -28,7 +28,9 @@ export const BATCH_COLUMNS =
   "pda_address, batch_id, origin_id, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, esg_approved, eu_regulation_assessment, audit_sha256, audit_certificate_path, indexed_at" as const;
 
 /** Public URL of the audited certificate PDF, content-addressed by digest. */
-export function batchCertificateUrl(batch: Batch): string | null {
+export function batchCertificateUrl(
+  batch: Pick<Batch, "audit_certificate_path">
+): string | null {
   if (batch.audit_certificate_path === null) return null;
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/audit-certificates/${batch.audit_certificate_path}`;
 }

@@ -42,6 +42,12 @@ export function PassportQr({
             errorCorrectionLevel: "M",
             margin: 2,
             width: size * 2,
+          }).then(() => {
+            // The renderer inlines style.width/height at the backing-store
+            // size; pin the display size back so the 2x canvas lays out at
+            // `size` px instead of overflowing its card.
+            canvas.style.width = `${size}px`;
+            canvas.style.height = `${size}px`;
           });
     rendered.then(
       () => {

@@ -161,7 +161,13 @@ export function BatchMetrics({
   batch,
   origin,
 }: {
-  batch: Batch;
+  batch: Pick<
+    Batch,
+    | "volume_tonnes"
+    | "purity_pct"
+    | "water_footprint_m3_per_tonne"
+    | "carbon_footprint_kg_co2e_per_tonne"
+  >;
   origin: Origin;
 }) {
   return (
@@ -195,7 +201,11 @@ export function BatchMetrics({
 }
 
 /** Audit findings, explicit: ESG may be false and the EU assessment negative. */
-export function BatchFindings({ batch }: { batch: Batch }) {
+export function BatchFindings({
+  batch,
+}: {
+  batch: Pick<Batch, "esg_approved" | "eu_regulation_assessment">;
+}) {
   if (batch.esg_approved === null) return null;
   return (
     <div className="flex flex-wrap gap-2">

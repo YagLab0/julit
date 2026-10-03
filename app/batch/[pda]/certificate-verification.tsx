@@ -62,65 +62,64 @@ export function CertificateVerification({
     }
   }, [certificateUrl, recordedHex]);
 
-  if (state.status === "checking") {
-    return (
-      <div
-        role="status"
-        className="flex items-center gap-2 text-[11px] text-muted"
-      >
-        <span
-          aria-hidden
-          className="h-3 w-3 animate-spin rounded-full border border-border border-t-brand-600"
-        />
-        Descargando el certificado y calculando su SHA-256…
-      </div>
-    );
-  }
+  const checking = state.status === "checking";
 
-  if (state.status === "match") {
-    return (
-      <VerifyCard
-        tone="good"
-        title="El PDF coincide con el digest indexado para este lote"
-      >
-        <p className="mt-1 text-[11px] leading-snug">
-          La verificación en Solana llega con la certificación on-chain.
-        </p>
-      </VerifyCard>
-    );
-  }
-
-  if (state.status === "mismatch") {
-    return (
-      <VerifyCard tone="warn" title="El PDF no coincide con el digest indexado">
-        <p className="mt-1 text-[11px] leading-snug">
-          Los bytes descargados difieren del SHA-256 registrado para este lote:
-          el documento puede estar alterado o desactualizado.
-        </p>
-      </VerifyCard>
-    );
-  }
-
-  if (state.status === "failed") {
-    return (
-      <VerifyCard tone="warn" title="No se pudo descargar el certificado">
-        <p className="mt-1 text-[11px] leading-snug">
-          Sin el PDF no hay veredicto: intentá de nuevo.
-        </p>
-        <button
-          type="button"
-          onClick={() => void verify()}
-          className="btn-secondary mt-3"
-        >
-          Reintentar
-        </button>
-      </VerifyCard>
-    );
-  }
-
+  // The status output lives in one persistent live region and the action
+  // button never unmounts — it disables while checking — so every verdict is
+  // announced and focus survives the transition (user story 35).
   return (
-    <button type="button" onClick={() => void verify()} className="btn-primary">
-      Verificar certificado
-    </button>
+    <div className="space-y-2">
+      <div role="status">
+        {checking && (
+          <p className="flex items-center gap-2 text-[11px] text-muted">
+            <span
+              aria-hidden
+              className="h-3 w-3 animate-spin rounded-full border border-border border-t-brand-600"
+            />
+            Descargando el certificado y calculando su SHA-256…
+          </p>
+        )}
+
+        {state.status === "match" && (
+          <VerifyCard
+            tone="good"
+            title="El PDF coincide con el digest indexado para este lote"
+          >
+            <p className="mt-1 text-[11px] leading-snug">
+              La verificación en Solana llega con la certificación on-chain.
+            </p>
+          </VerifyCard>
+        )}
+
+        {state.status === "mismatch" && (
+          <VerifyCard
+            tone="warn"
+            title="El PDF no coincide con el digest indexado"
+          >
+            <p className="mt-1 text-[11px] leading-snug">
+              Los bytes descargados difieren del SHA-256 registrado para este
+              lote: el documento puede estar alterado o desactualizado.
+            </p>
+          </VerifyCard>
+        )}
+
+        {state.status === "failed" && (
+          <VerifyCard tone="warn" title="No se pudo descargar el certificado">
+            <p className="mt-1 text-[11px] leading-snug">
+              Sin el PDF no hay veredicto: intentá de nuevo.
+            </p>
+          </VerifyCard>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void verify()}
+        disabled={checking}
+        className="btn-primary"
+      >
+        {state.status === "failed" ? "Reintentar" : "Verificar certificado"}
+      </button>
+    </div>
   );
 }

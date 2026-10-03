@@ -106,69 +106,68 @@ export function RecordContrast({ batch }: { batch: IndexedBatch }) {
     setAttempt((n) => n + 1);
   }, []);
 
-  if (state.status === "checking") {
-    return (
-      <div
-        role="status"
-        className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-4 text-[11px] text-muted"
-      >
-        <span
-          aria-hidden
-          className="h-3 w-3 animate-spin rounded-full border border-border border-t-brand-600"
-        />
-        Consultando el registro en Solana Devnet…
-      </div>
-    );
-  }
-
-  if (state.status === "verified") {
-    return (
-      <ContrastCard tone="good" title="Registro verificado en Solana">
-        <p className="mt-1 text-[11px] leading-snug">
-          La cuenta on-chain del lote coincide campo por campo con el registro
-          indexado.
-        </p>
-      </ContrastCard>
-    );
-  }
-
-  if (state.status === "missing") {
-    return (
-      <ContrastCard tone="warn" title="La cuenta del lote no existe en Solana">
-        <p className="mt-1 text-[11px] leading-snug">
-          No hay una cuenta del programa JuLit en la dirección derivada para
-          este lote en Devnet.
-        </p>
-      </ContrastCard>
-    );
-  }
-
-  if (state.status === "mismatch") {
-    return (
-      <ContrastCard
-        tone="warn"
-        title="El registro indexado difiere de la cuenta on-chain"
-      >
-        <p className="mt-1 text-[11px] leading-snug">Campos que difieren:</p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {state.fields.map((field) => (
-            <Chip key={field} tone="warn">
-              {FIELD_LABELS[field]}
-            </Chip>
-          ))}
-        </div>
-      </ContrastCard>
-    );
-  }
-
+  // One persistent live region: every state — checking included — is
+  // announced as it lands instead of rendering under a different node each
+  // time (user story 35).
   return (
-    <ContrastCard tone="warn" title="No se pudo consultar Solana Devnet">
-      <p className="mt-1 text-[11px] leading-snug">
-        El contraste con la cuenta on-chain no está disponible ahora.
-      </p>
-      <button type="button" onClick={retry} className="btn-secondary mt-3">
-        Reintentar
-      </button>
-    </ContrastCard>
+    <div role="status">
+      {state.status === "checking" && (
+        <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-4 text-[11px] text-muted">
+          <span
+            aria-hidden
+            className="h-3 w-3 animate-spin rounded-full border border-border border-t-brand-600"
+          />
+          Consultando el registro en Solana Devnet…
+        </div>
+      )}
+
+      {state.status === "verified" && (
+        <ContrastCard tone="good" title="Registro verificado en Solana">
+          <p className="mt-1 text-[11px] leading-snug">
+            La cuenta on-chain del lote coincide campo por campo con el registro
+            indexado.
+          </p>
+        </ContrastCard>
+      )}
+
+      {state.status === "missing" && (
+        <ContrastCard
+          tone="warn"
+          title="La cuenta del lote no existe en Solana"
+        >
+          <p className="mt-1 text-[11px] leading-snug">
+            No hay una cuenta del programa JuLit en la dirección derivada para
+            este lote en Devnet.
+          </p>
+        </ContrastCard>
+      )}
+
+      {state.status === "mismatch" && (
+        <ContrastCard
+          tone="warn"
+          title="El registro indexado difiere de la cuenta on-chain"
+        >
+          <p className="mt-1 text-[11px] leading-snug">Campos que difieren:</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {state.fields.map((field) => (
+              <Chip key={field} tone="warn">
+                {FIELD_LABELS[field]}
+              </Chip>
+            ))}
+          </div>
+        </ContrastCard>
+      )}
+
+      {state.status === "unavailable" && (
+        <ContrastCard tone="warn" title="No se pudo consultar Solana Devnet">
+          <p className="mt-1 text-[11px] leading-snug">
+            El contraste con la cuenta on-chain no está disponible ahora.
+          </p>
+          <button type="button" onClick={retry} className="btn-secondary mt-3">
+            Reintentar
+          </button>
+        </ContrastCard>
+      )}
+    </div>
   );
 }
