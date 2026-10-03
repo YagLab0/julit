@@ -4,15 +4,15 @@
 
 **Blocked by:** 02: Migración de base de datos para contratos comerciales bilaterales con firmas criptográficas
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Implement `POST /api/companies/contracts`:
+- [x] Implement `POST /api/companies/contracts`:
   - Validates caller authentication, company registration, and linked verified wallet.
   - Verifies canonical contract message and Ed25519 `initiator_signature`.
   - Inserts `company_contracts` row with `status = 'pending'`.
-- [ ] Extend `POST /api/companies/contracts/[id]/respond`:
+- [x] Extend `POST /api/companies/contracts/[id]/respond`:
   - Authorizes the non-initiating counterparty to accept or revoke.
   - Verifies `counterparty_signature` upon acceptance.
   - Updates status to `accepted` or `revoked`.
-- [ ] Implement `GET /api/companies/contracts` returning the authenticated company's contracts with joined counterparty names and wallets.
-- [ ] Write unit tests with Vitest verifying signature validation, role checking, and response consistency.
+- [x] Implement `GET /api/companies/contracts` returning the authenticated company's contracts with joined counterparty names and wallets.
+- [x] Write unit tests with Vitest verifying signature validation, role checking, and response consistency.
