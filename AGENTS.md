@@ -1,15 +1,17 @@
 # Agent Rules
 
-* Never assume anything. If requirements, context, or answers are uncertain or unknown, ask the user before proceeding.
-* Do not preserve backward compatibility. Remove obsolete paths instead of adding compatibility layers, fallbacks, or migrations.
-* Choose the simplest implementation that fully meets the current requirements. Avoid speculative abstractions, configuration, and indirection.
-* Grow the system in layers. Start from the smallest version that works end to end, and add each new capability on top of a product that already works. Never trade a working product for unfinished complexity.
-* Keep components modular and concerns clearly separated.
-* Prefer established, well-maintained libraries when they reduce overall complexity or improve reliability. Do not reimplement common functionality without a clear reason.
-* Lean on the dependencies already in the project before writing your own implementation or adding packages. Do not assume a library lacks a capability without checking its documentation and types.
-* Make architectural decisions for the long term. Do not accept a stopgap that only works for now and is meant to be replaced later.
-* Use Conventional Commits for commit messages (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
-* Write all code, comments, identifiers, and documentation in English. Only end-user-facing strings (UI text, toasts, user docs) go in Spanish.
+- Never assume anything. If requirements, context, or answers are uncertain or unknown, ask the user before proceeding.
+- Do not preserve backward compatibility. Remove obsolete paths instead of adding compatibility layers, fallbacks, or migrations.
+- Choose the simplest implementation that fully meets the current requirements. Avoid speculative abstractions, configuration, and indirection.
+- Grow the system in layers. Start from the smallest version that works end to end, and add each new capability on top of a product that already works. Never trade a working product for unfinished complexity.
+- Keep components modular and concerns clearly separated.
+- Prefer established, well-maintained libraries when they reduce overall complexity or improve reliability. Do not reimplement common functionality without a clear reason.
+- Lean on the dependencies already in the project before writing your own implementation or adding packages. Do not assume a library lacks a capability without checking its documentation and types.
+- Make architectural decisions for the long term. Do not accept a stopgap that only works for now and is meant to be replaced later.
+- Use Conventional Commits for commit messages (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
+- Write all code, comments, identifiers, and documentation in English. Only end-user-facing strings (UI text, toasts, user docs) go in Spanish.
+- Never publish anything to GitHub — issues, pull requests, comments, or releases. This repository's issue tracker is local markdown: specs and tickets live under `.scratch/<feature-slug>/`.
+- Workflow order is grill-with-docs → to-spec → to-tickets → implement. When the grill finishes, stop and never jump to implement; recommend running to-spec next.
 
 ## Frontend
 

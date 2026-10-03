@@ -5,12 +5,12 @@ import {
   type Map as MapLibreMap,
 } from "maplibre-gl";
 import * as THREE from "three";
-import type { OriginInfo } from "../data/points";
+import { originCoordinates, type Origin } from "../data/origins";
 import { createMineModel } from "./mine-geometry";
 import { CLUSTER_MAX_ZOOM } from "./map-style";
 
 type MineScene = {
-  origin: OriginInfo;
+  origin: Origin;
   anchor: MercatorCoordinate;
   scene: THREE.Scene;
   colors: Map<THREE.MeshStandardMaterial, THREE.Color>;
@@ -38,7 +38,7 @@ export class MineLayer implements CustomLayerInterface {
     this.renderer.autoClear = false;
   }
 
-  setOrigins(origins: OriginInfo[]) {
+  setOrigins(origins: Origin[]) {
     for (const [id, mine] of this.scenes) {
       if (origins.some((origin) => origin.id === id)) continue;
       this.disposeScene(mine);
@@ -48,7 +48,9 @@ export class MineLayer implements CustomLayerInterface {
       const existing = this.scenes.get(origin.id);
       if (existing) {
         existing.origin = origin;
-        existing.anchor = MercatorCoordinate.fromLngLat(origin.coordinates);
+        existing.anchor = MercatorCoordinate.fromLngLat(
+          originCoordinates(origin)
+        );
         continue;
       }
       const scene = new THREE.Scene();
@@ -65,7 +67,7 @@ export class MineLayer implements CustomLayerInterface {
       });
       this.scenes.set(origin.id, {
         origin,
-        anchor: MercatorCoordinate.fromLngLat(origin.coordinates),
+        anchor: MercatorCoordinate.fromLngLat(originCoordinates(origin)),
         scene,
         colors,
       });
@@ -91,7 +93,9 @@ export class MineLayer implements CustomLayerInterface {
     }
     this.renderer.resetState();
     for (const mine of this.scenes.values()) {
-      const elevation = this.map.queryTerrainElevation(mine.origin.coordinates);
+      const elevation = this.map.queryTerrainElevation(
+        originCoordinates(mine.origin)
+      );
       if (elevation === null) continue;
       const units = mine.anchor.meterInMercatorCoordinateUnits();
       this.transform

@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { batchesForSale, tonnesForSale } from "../data/points";
-import type { Origin } from "../data/points";
+import { originCoordinates, type Origin } from "../data/origins";
 import { EXPORT_PORTS, EXPORT_ROUTES, OTHER_SALARES } from "../data/points";
 import {
   applyBasemap,
@@ -31,11 +30,8 @@ function plural(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-const tonnes = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
-
 function markerMeta(origin: Origin) {
-  const forSale = batchesForSale(origin).length;
-  return `${origin.producer} · ${plural(forSale, "lote", "lotes")} · ${tonnes.format(tonnesForSale(origin))} t`;
+  return `${origin.producer} · ${origin.salar}`;
 }
 
 function markerHtml(origin: Origin) {
@@ -49,8 +45,7 @@ function markerHtml(origin: Origin) {
 }
 
 function clusterMetaText(origins: Origin[]) {
-  const lots = origins.reduce((n, o) => n + batchesForSale(o).length, 0);
-  return `${plural(origins.length, "operación", "operaciones")} · ${plural(lots, "lote", "lotes")} en venta`;
+  return `${plural(origins.length, "origen", "orígenes")} en la Puna`;
 }
 
 function clusterHtml(origins: Origin[]) {
@@ -206,7 +201,7 @@ export function RegionMap({
       const el = document.createElement("button");
       el.type = "button";
       el.className = "lp-mine-marker";
-      el.setAttribute("aria-label", `Ver lotes de ${origin.name}`);
+      el.setAttribute("aria-label", `Ver información de ${origin.name}`);
       el.innerHTML = markerHtml(origin);
       el.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -217,7 +212,7 @@ export function RegionMap({
         anchor: "left",
         offset: [-6, 0],
       })
-        .setLngLat(origin.coordinates)
+        .setLngLat(originCoordinates(origin))
         .addTo(map);
       markersRef.current.set(origin.id, marker);
     }
@@ -236,7 +231,7 @@ export function RegionMap({
       anchor: "left",
       offset: [-6, 0],
     })
-      .setLngLat(centroid(origins.map((o) => o.coordinates)))
+      .setLngLat(centroid(origins.map(originCoordinates)))
       .addTo(map);
 
     contextMarkersRef.current = OTHER_SALARES.map((salar) => {
@@ -361,8 +356,9 @@ export function RegionMap({
     const origin = originsRef.current.find((o) => o.id === selectedId);
     if (origin) {
       map.flyTo({
-        center: origin.coordinates,
-        elevation: map.queryTerrainElevation(origin.coordinates) ?? undefined,
+        center: originCoordinates(origin),
+        elevation:
+          map.queryTerrainElevation(originCoordinates(origin)) ?? undefined,
         zoom: 11.6,
         pitch: 62,
         bearing: -18,
@@ -426,22 +422,20 @@ export function RegionMap({
     const pins = clusteredRef.current
       ? [
           {
-            ...map.project(centroid(origins.map((o) => o.coordinates))),
+            ...map.project(centroid(origins.map(originCoordinates))),
             selected: false,
             dimmed: false,
           },
         ]
-      : origins
-          .filter((origin) => batchesForSale(origin).length > 0)
-          .map((origin) => {
-            const point = map.project(origin.coordinates);
-            return {
-              x: point.x,
-              y: point.y,
-              selected: origin.id === selected,
-              dimmed: selected !== null && origin.id !== selected,
-            };
-          });
+      : origins.map((origin) => {
+          const point = map.project(originCoordinates(origin));
+          return {
+            x: point.x,
+            y: point.y,
+            selected: origin.id === selected,
+            dimmed: selected !== null && origin.id !== selected,
+          };
+        });
 
     return { pins };
   }, []);
