@@ -243,7 +243,7 @@ export function BatchCard({
 }
 
 /** Batch Created: waiting on the auditor. Visual only. */
-function PendingBatchRow({ batch }: { batch: Batch }) {
+export function PendingBatchRow({ batch }: { batch: Batch }) {
   return (
     <li className="rounded-xl border border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/60 p-3">
       <div className="flex items-center justify-between gap-2">
@@ -262,7 +262,7 @@ function PendingBatchRow({ batch }: { batch: Batch }) {
 }
 
 /** Batch Completed: settled, traceability only. */
-function SoldBatchRow({ batch }: { batch: Batch }) {
+export function SoldBatchRow({ batch }: { batch: Batch }) {
   const completed = eventOf(batch, "completed");
   return (
     <li className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs">

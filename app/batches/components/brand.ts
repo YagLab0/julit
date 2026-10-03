@@ -16,10 +16,8 @@ export const BRAND_SCALE = {
   950: "#042f2e",
 } as const;
 
-/** 3D columns + marker glow. */
+/** Map accents + marker glow. */
 export const BRAND = BRAND_SCALE[600];
-/** Selected column. */
-export const BRAND_DARK = BRAND_SCALE[700];
 
 /** Shader tint (0–1 RGB) derived from BRAND. */
 export const BRAND_RGB: [number, number, number] = [0.05, 0.58, 0.53];

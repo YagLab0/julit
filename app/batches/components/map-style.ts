@@ -10,17 +10,15 @@ import type {
   SkySpecification,
   StyleSpecification,
 } from "maplibre-gl";
-import { JUJUY_PUNA_CENTER, tonnesForSale } from "../data/points";
-import type { Origin } from "../data/points";
+import { JUJUY_PUNA_CENTER } from "../data/points";
 import { EXPORT_ROUTES } from "../data/points";
 import { OTHER_SALARES_GEOJSON } from "../data/points";
 import { SALARES } from "../data/points";
-import { BRAND, BRAND_DARK } from "./brand";
+import { BRAND } from "./brand";
 
 export type Basemap = "light" | "dark" | "satellite";
 
 export const TEAL = BRAND;
-export const TEAL_DARK = BRAND_DARK;
 export const ROUTE_COLORS = {
   pacific: "#0284c7",
   atlantic: "#d97706",
@@ -28,10 +26,6 @@ export const ROUTE_COLORS = {
 
 /** Below this zoom the origins collapse into a single marker. */
 export const CLUSTER_MAX_ZOOM = 7.5;
-
-/** Column metres per tonne on sale (visual scale, not real). */
-const COLUMN_METERS_PER_TONNE = 4;
-const COLUMN_RADIUS_M = 750;
 
 export const INTRO_VIEW = {
   center: JUJUY_PUNA_CENTER,
@@ -51,39 +45,6 @@ const OSM_ATTRIBUTION =
 
 const esri = (service: string) =>
   `https://server.arcgisonline.com/ArcGIS/rest/services/${service}/MapServer/tile/{z}/{y}/{x}`;
-
-/** Hexagon around a point, for the 3D volume column. */
-function hexagon([lng, lat]: [number, number], radiusM: number) {
-  const dLat = radiusM / 111_320;
-  const dLng = radiusM / (111_320 * Math.cos((lat * Math.PI) / 180));
-  const ring: [number, number][] = [];
-  for (let i = 0; i <= 6; i++) {
-    const a = (Math.PI / 3) * i;
-    ring.push([lng + dLng * Math.cos(a), lat + dLat * Math.sin(a)]);
-  }
-  return ring;
-}
-
-export function columnsGeoJson(
-  origins: Origin[]
-): GeoJSONSourceSpecification["data"] {
-  return {
-    type: "FeatureCollection",
-    features: origins
-      .filter((origin) => tonnesForSale(origin) > 0)
-      .map((origin) => ({
-        type: "Feature",
-        properties: {
-          originId: origin.id,
-          height: tonnesForSale(origin) * COLUMN_METERS_PER_TONNE,
-        },
-        geometry: {
-          type: "Polygon",
-          coordinates: [hexagon(origin.coordinates, COLUMN_RADIUS_M)],
-        },
-      })),
-  };
-}
 
 function routesGeoJson(): GeoJSONSourceSpecification["data"] {
   return {
@@ -206,10 +167,7 @@ const LOOKS: Record<Basemap, BasemapLook> = {
 
 const ALL_RASTER_LAYERS = Object.values(LOOKS).flatMap((l) => l.rasterLayers);
 
-export function buildStyle(
-  origins: Origin[],
-  basemap: Basemap
-): StyleSpecification {
+export function buildStyle(basemap: Basemap): StyleSpecification {
   const look = LOOKS[basemap];
   const raster = (id: string, source: string) => ({
     id,
@@ -217,8 +175,7 @@ export function buildStyle(
     source,
     layout: {
       visibility: (look.rasterLayers.includes(id) ? "visible" : "none") as
-        | "visible"
-        | "none",
+        "visible" | "none",
     },
   });
 
@@ -301,7 +258,6 @@ export function buildStyle(
         data: OTHER_SALARES_GEOJSON as GeoJSONSourceSpecification["data"],
       },
       routes: { type: "geojson", data: routesGeoJson() },
-      columns: { type: "geojson", data: columnsGeoJson(origins) },
     },
     layers: [
       {
@@ -394,27 +350,6 @@ export function buildStyle(
           ],
           "line-width": ["interpolate", ["linear"], ["zoom"], 4, 2, 10, 4],
           "line-dasharray": [0, 4, 3],
-        },
-      },
-      {
-        id: "columns",
-        type: "fill-extrusion",
-        source: "columns",
-        minzoom: CLUSTER_MAX_ZOOM - 0.5,
-        paint: {
-          "fill-extrusion-color": TEAL,
-          "fill-extrusion-height": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            8.5,
-            ["*", ["get", "height"], 3.5],
-            11.5,
-            ["get", "height"],
-          ],
-          "fill-extrusion-base": 0,
-          "fill-extrusion-opacity": 0.88,
-          "fill-extrusion-vertical-gradient": true,
         },
       },
     ],

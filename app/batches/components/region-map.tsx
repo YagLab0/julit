@@ -11,15 +11,13 @@ import {
   buildStyle,
   bySelection,
   CLUSTER_MAX_ZOOM,
-  columnsGeoJson,
   DASH_SEQUENCE,
   INTRO_VIEW,
   ROUTE_COLORS,
-  TEAL,
-  TEAL_DARK,
   type Basemap,
 } from "./map-style";
 import { PointGlowOverlay, type GlowFrame } from "./point-glow-overlay";
+import { MineLayer } from "./mine-layer";
 
 // Served from public/ by scripts/copy-maplibre-worker.mjs (postinstall).
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
@@ -77,21 +75,14 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Refresh columns and cards when batches change (no restart). */
+/** Refresh mine data and cards when origins change (no restart). */
 function syncOriginData(
-  map: maplibregl.Map,
+  mineLayer: MineLayer,
   origins: Origin[],
   markers: Map<string, maplibregl.Marker>,
   cluster: maplibregl.Marker | null
 ) {
-  const source = map.getSource("columns") as
-    | maplibregl.GeoJSONSource
-    | undefined;
-  source?.setData(
-    columnsGeoJson(origins) as Parameters<
-      maplibregl.GeoJSONSource["setData"]
-    >[0]
-  );
+  mineLayer.setOrigins(origins);
   for (const origin of origins) {
     const card = markers
       .get(origin.id)
@@ -132,6 +123,7 @@ export function RegionMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const mineLayerRef = useRef<MineLayer | null>(null);
   const markersRef = useRef(new Map<string, maplibregl.Marker>());
   const clusterRef = useRef<maplibregl.Marker | null>(null);
   const contextMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -163,8 +155,13 @@ export function RegionMap({
   useEffect(() => {
     originsRef.current = origins;
     const map = mapRef.current;
-    if (map && styleLoadedRef.current) {
-      syncOriginData(map, origins, markersRef.current, clusterRef.current);
+    if (map && styleLoadedRef.current && mineLayerRef.current) {
+      syncOriginData(
+        mineLayerRef.current,
+        origins,
+        markersRef.current,
+        clusterRef.current
+      );
     }
   }, [origins]);
 
@@ -183,12 +180,13 @@ export function RegionMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: buildStyle(origins, basemapRef.current),
+        style: buildStyle(basemapRef.current),
         center: [-63, -20],
         zoom: 1.8,
         pitch: 0,
         maxPitch: 80,
         attributionControl: { compact: true },
+        canvasContextAttributes: { antialias: true },
       });
     } catch (err) {
       console.error("Could not start the map", err);
@@ -299,13 +297,17 @@ export function RegionMap({
 
     map.once("load", () => {
       styleLoadedRef.current = true;
+      const mineLayer = new MineLayer();
+      map.addLayer(mineLayer);
+      mineLayerRef.current = mineLayer;
       syncOriginData(
-        map,
+        mineLayer,
         originsRef.current,
         markersRef.current,
         clusterRef.current
       );
       applyBasemap(map, basemapRef.current);
+      mineLayer.setSelectedId(selectedIdRef.current);
       setCanvasContainer(map.getCanvasContainer());
       if (prefersReducedMotion()) {
         map.jumpTo(INTRO_VIEW);
@@ -327,6 +329,7 @@ export function RegionMap({
       portMarkersRef.current.forEach((m) => m.remove());
       map.remove();
       mapRef.current = null;
+      mineLayerRef.current = null;
       styleLoadedRef.current = false;
     };
   }, []);
@@ -346,12 +349,8 @@ export function RegionMap({
       );
     });
 
-    if (map.getLayer("columns")) {
-      map.setPaintProperty(
-        "columns",
-        "fill-extrusion-color",
-        bySelection(selectedId, TEAL_DARK, "#a8b5b0", TEAL)
-      );
+    mineLayerRef.current?.setSelectedId(selectedId);
+    if (map.getLayer("salares-line")) {
       map.setPaintProperty(
         "salares-line",
         "line-opacity",
@@ -361,7 +360,6 @@ export function RegionMap({
 
     const origin = originsRef.current.find((o) => o.id === selectedId);
     if (origin) {
-      const isDesktop = window.innerWidth >= 768;
       map.flyTo({
         center: origin.coordinates,
         elevation: map.queryTerrainElevation(origin.coordinates) ?? undefined,
@@ -370,12 +368,8 @@ export function RegionMap({
         bearing: -18,
         duration: 2200,
         essential: true,
-        padding: {
-          right: isDesktop ? 400 : 0,
-          top: 0,
-          bottom: isDesktop ? 0 : Math.round(window.innerHeight * 0.55),
-          left: 0,
-        },
+        // The detail opens as a centered modal: keep the origin centered.
+        padding: 0,
       });
     } else if (styleLoadedRef.current) {
       map.flyTo({ ...INTRO_VIEW, duration: 1800, padding: 0, essential: true });

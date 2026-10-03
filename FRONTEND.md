@@ -7,15 +7,16 @@ Devnet PDAs (or an index) without touching the components.
 
 ## 1. Stack
 
-| Library              | Version | License | Use                                    |
-| -------------------- | ------- | ------- | -------------------------------------- |
-| `next`               | 16.3.4  | MIT     | App Router                             |
-| `react` / `react-dom`| 19.2.3  | MIT     | UI                                     |
-| `tailwindcss`        | 4       | MIT     | Styles (tokens in `app/globals.css`)   |
-| **`maplibre-gl`**    | **6.11.2** | BSD-3 | Map, globe, 3D terrain, markers, camera |
-| **`vgpu`**           | **0.4.1**  | MIT   | WebGPU glow layer for pins (WGSL shader) |
-| `qrcode`             | 1.5.4   | MIT     | Public verification QR                 |
-| `sonner`             | 2       | MIT     | Toasts                                 |
+| Library               | Version     | License | Use                                                     |
+| --------------------- | ----------- | ------- | ------------------------------------------------------- |
+| `next`                | 16.3.4      | MIT     | App Router                                              |
+| `react` / `react-dom` | 19.2.3      | MIT     | UI                                                      |
+| `tailwindcss`         | 4           | MIT     | Styles (tokens in `app/globals.css`)                    |
+| **`maplibre-gl`**     | **6.11.2**  | BSD-3   | Map, globe, 3D terrain, markers, camera                 |
+| **`vgpu`**            | **0.4.1**   | MIT     | WebGPU glow layer for pins (WGSL shader)                |
+| **`three`**           | **0.186.1** | MIT     | Stylized mine models in MapLibre's shared WebGL context |
+| `qrcode`              | 1.5.4       | MIT     | Public verification QR                                  |
+| `sonner`              | 2           | MIT     | Toasts                                                  |
 
 ## 2. Language and formatting
 
@@ -59,7 +60,9 @@ app/<feature>/
 └── components/
     ├── region-map.tsx    # MapLibre: style, terrain, camera, markers
     ├── point-glow-overlay.tsx  # vgpu glow layer
-    └── assets-panel.tsx  # side panel / bottom sheet
+    ├── assets-panel.tsx  # side panel / bottom sheet
+    ├── mine-geometry.ts  # procedural lithium-brine diorama (ponds, plant, tanks)
+    └── mine-layer.ts     # Three.js custom MapLibre layer, rigid terrain anchors
 app/generated/             # Codama TS client — never edit by hand
 app/lib/                   # wallet, hooks, solana-client, errors, explorer
 ```
@@ -67,3 +70,11 @@ app/lib/                   # wallet, hooks, solana-client, errors, explorer
 - "Buy / Settle" stays a toast until the on-chain instruction exists.
 - Public detail route (`/<asset>/[id]` with QR) loads without 3D — must open
   in under ~1 s on mobile.
+
+- Mine models are symbolic lithium-brine operations, not surveyed footprints.
+  Their exaggerated dimensions are fixed: batch availability and tonnes do not
+  resize or hide the site. Each model shares one terrain elevation at the plant
+  coordinate, so ponds and buildings cannot drift apart on uneven ground.
+- Mine cards sit above their ground-level pins to leave the dioramas visible.
+  The custom layer follows map rendering rather than running an animation loop;
+  it disposes its geometries, materials, and renderer when the map is removed.

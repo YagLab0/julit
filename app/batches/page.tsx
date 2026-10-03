@@ -10,7 +10,7 @@ import { MapLayersPanel, type LayerState } from "./components/map-layers-panel";
 import type { Basemap } from "./components/map-style";
 import type { MapStatus } from "./components/region-map";
 import { AssetsListView } from "./components/assets-list-view";
-import { AssetsPanel } from "./components/assets-panel";
+import { OriginModal } from "./components/origin-modal";
 import { mergeOrigins } from "./data/points";
 
 // MapLibre + WebGPU only exist in the browser.
@@ -235,8 +235,9 @@ export default function JuLitAppPage() {
         </p>
       </div>
 
-      {showMap && selectedOrigin && (
-        <AssetsPanel
+      {selectedOrigin && (
+        <OriginModal
+          key={selectedOrigin.id}
           origin={selectedOrigin}
           onClose={() => setSelectedId(null)}
         />
