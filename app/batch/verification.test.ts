@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BatchStatus, JULIT_PROGRAM_ADDRESS } from "../generated/julit";
 import {
+  certificateVerdict,
   contrastBatchRecord,
   scaledDecimal,
   type ContrastField,
@@ -207,5 +208,31 @@ describe("decimal exactness", () => {
     expect(scaledDecimal("abc", 2)).toBeNull();
     expect(scaledDecimal("-1", 2)).toBeNull();
     expect(scaledDecimal("1e3", 2)).toBeNull();
+  });
+});
+
+describe("certificateVerdict", () => {
+  const hexA = "a".repeat(64);
+  const hexB = "b".repeat(64);
+
+  it("returns match for equal hex", () => {
+    expect(certificateVerdict(hexA, hexA)).toBe("match");
+  });
+
+  it("returns match for equal hex in either case", () => {
+    expect(certificateVerdict(hexA, hexA.toUpperCase())).toBe("match");
+    expect(certificateVerdict(hexA.toUpperCase(), hexA)).toBe("match");
+  });
+
+  it("returns mismatch for any difference", () => {
+    expect(certificateVerdict(hexA, hexB)).toBe("mismatch");
+    expect(certificateVerdict(hexA, `${hexA.slice(0, 63)}b`)).toBe("mismatch");
+  });
+
+  it("returns mismatch for malformed computed hex", () => {
+    expect(certificateVerdict(hexA, "not-hex")).toBe("mismatch");
+    expect(certificateVerdict(hexA, hexA.slice(0, 63))).toBe("mismatch");
+    expect(certificateVerdict(hexA, `${hexA}ff`)).toBe("mismatch");
+    expect(certificateVerdict(hexA, "")).toBe("mismatch");
   });
 });

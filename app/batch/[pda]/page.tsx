@@ -8,8 +8,10 @@ import {
   dateFmt,
 } from "../../batches/components/batch-display";
 import { ThemeToggle } from "../../components/theme-toggle";
+import { batchCertificateUrl } from "../../batches/data/batches";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
 import { getPassportRecord } from "../data/passport";
+import { CertificateVerification } from "./certificate-verification";
 import { RecordContrast } from "./record-contrast";
 
 type PassportParams = { pda: string };
@@ -43,6 +45,7 @@ export default async function BatchPassportPage({
   if (!record) notFound();
   const { batch, origin } = record;
 
+  const certificate = batchCertificateUrl(batch);
   const addressUrl = getExplorerUrl(`/address/${batch.pda_address}`, "devnet");
   const creationTxUrl = getExplorerUrl(
     `/tx/${batch.creation_tx_signature}`,
@@ -95,8 +98,33 @@ export default async function BatchPassportPage({
                 </p>
               </div>
             ) : (
-              <div className="mt-2">
+              <div className="mt-2 space-y-3">
                 <BatchFindings batch={batch} />
+                {certificate !== null && batch.audit_sha256 !== null && (
+                  <div className="space-y-2 rounded-xl border border-border bg-card px-3.5 py-3 text-[11px] text-muted">
+                    <p>
+                      <a
+                        href={certificate}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                      >
+                        Certificado de auditoría (PDF)
+                      </a>
+                    </p>
+                    <p>
+                      SHA-256 indexado:{" "}
+                      <span className="font-mono text-foreground/75">
+                        {batch.audit_sha256.slice(0, 8)}…
+                        {batch.audit_sha256.slice(-6)}
+                      </span>
+                    </p>
+                    <CertificateVerification
+                      certificateUrl={certificate}
+                      recordedHex={batch.audit_sha256}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </section>

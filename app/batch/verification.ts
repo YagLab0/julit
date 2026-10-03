@@ -131,3 +131,20 @@ export function contrastBatchRecord(input: {
     ? { state: "verified" }
     : { state: "mismatch", fields };
 }
+
+const HEX_64 = /^[0-9a-f]{64}$/;
+
+/**
+ * Certificate digest comparison: the PDF's computed SHA-256 against the hex
+ * digest recorded for the batch, case-insensitive. Anything that is not an
+ * exact 64-hex equality — including malformed input — is a mismatch.
+ */
+export function certificateVerdict(
+  recordedHex: string,
+  computedHex: string
+): "match" | "mismatch" {
+  const recorded = recordedHex.trim().toLowerCase();
+  const computed = computedHex.trim().toLowerCase();
+  if (!HEX_64.test(recorded) || !HEX_64.test(computed)) return "mismatch";
+  return recorded === computed ? "match" : "mismatch";
+}
