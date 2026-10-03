@@ -1,6 +1,6 @@
 ## Problem Statement
 
-JuLit's demonstration revolves around two real Origins — Olaroz (Salar de Olaroz) and Cauchari-Olaroz (Salar de Cauchari). Today the database stores only an identifier and a display name for each: the mine metadata (code, salar, operating Producer, shareholders, processing-plant coordinates, capacity, altitude, water-footprint reference and cited sources) lives hardcoded in the frontend demo data. Any visitor can self-register as a Producer even though only these two Origins exist and each is operated by exactly one producer. The two Producer companies, Sales de Jujuy and Minera Exar, have no accounts, so nobody can sign in as them. And the frontend ships simulated Batches — prices, report digests, event histories, purity figures — that exist nowhere, so the UI presents invented records with the same visual weight as verifiable data.
+JuLit's demonstration revolves around two real Origins — Olaroz (Salar de Olaroz) and Cauchari-Olaroz (Salar de Cauchari). Today the database stores only an identifier and a display name for each: the origin metadata (code, salar, operating Producer, shareholders, processing-plant coordinates, capacity, altitude, water-footprint reference and cited sources) lives hardcoded in the frontend demo data. Any visitor can self-register as a Producer even though only these two Origins exist and each is operated by exactly one producer. The two Producer companies, Sales de Jujuy and Minera Exar, have no accounts, so nobody can sign in as them. And the frontend ships simulated Batches — prices, report digests, event histories, purity figures — that exist nowhere, so the UI presents invented records with the same visual weight as verifiable data.
 
 ## Solution
 
@@ -37,7 +37,7 @@ Make the database the single source of truth for the two Origins and their metad
 
 ## Implementation Decisions
 
-### Data model: Origins become the mine catalogue
+### Data model: origins become the catalogue
 
 - `origins` gains explicit columns; nullability is reserved for references without a published value. Public read (anonymous and authenticated) is unchanged.
 
@@ -92,7 +92,7 @@ source_url text not null
 
 - Tests assert externally observable behavior — stored rows, constraint failures, HTTP status codes, issued sessions — never internal helpers, source text or rendered markup. They are deterministic, isolated and safe in a full run.
 - pgTAP (existing seam; run through the documented local workflow; prior art: the existing database test files): cover both Origins with the exact values above, the absence of `cauchari_olaroz`, anonymous select on origins, and a server-role Batch insert referencing `cauchari-olaroz` (rename plus foreign key).
-- Permanent smoke script (new seam, decided): a Node script using built-in fetch and the already-installed Supabase libraries, kept in the repository's scripts directory. Against the local stack it proves: both provisioned producers obtain a password session; producer registration is rejected (400); a fresh auditor registration succeeds (201); re-running the seed leaves auth-user and company counts unchanged. It exits non-zero on failure and doubles as read-only validation of the linked project after the reviewed push.
+- Permanent smoke script (new seam, decided): a Node script using built-in fetch and the already-installed Supabase libraries, kept in the repository's scripts directory. Against the local stack it proves: both provisioned producers obtain a password session; producer registration is rejected (400); a fresh auditor registration succeeds (201); re-running the seed leaves auth-user and company counts unchanged. It exits non-zero on failure; against a deployed target the producer sign-ins, the rejection check and the origins read reuse through `SMOKE_*` variables, while the fresh-auditor registration (it writes) and the seed re-run (needs Docker) stay local-only.
 - UI has no automated seam (decided): verified through the production build, lint and the seams above; the map's visual limitation is reported in the implementation notes. Feature files document behavior but do not execute.
 - The documented database advisors gate runs with the local workflow.
 
@@ -112,3 +112,6 @@ source_url text not null
 - One producer per Origin stays a seed convention (company names match the Origin `producer` value), not a database constraint: with producer self-registration removed and only the server role writing companies, no third producer can appear through the application.
 - The producer type remains part of the domain model even though it is not self-registerable.
 
+## Amendments
+
+- 2026-10-03 — Merge reconciliation. The parallel producer-binding workstream (ADR-0006: `companies.origin_id`, company contracts, producer sign-up with origin selection) landed while this spec was being implemented. Per explicit decision: the spec wins on registration policy — producer self-registration is closed, the origin pickers and the one-time binding route (`/api/companies/origin`) are deleted, and the provisioned producers are seeded pre-bound to their origin. The `cauchari-olaroz` rename is dropped: every layer keeps `cauchari_olaroz`. The seed reaches the linked project through the reviewed `db push --include-seed` runbook (not a manual SQL paste). Merged-work pgTAP fixtures (`lithium_passport`, `company_contracts`) were adapted to the origin-binding and contract triggers, and two broken `lives_ok` inserts (missing `creation_tx_signature`/`observed_slot`) were fixed.

@@ -8,12 +8,13 @@ See [the glossary](../GLOSSARY.md) and [architecture decisions](./adr/).
 
 ## Tables
 
-- `companies`: one row per `auth.users.id`, with `name`, `company_type` (`producer`, `auditor`, or `buyer`), and at most one verified wallet. Registration can precede wallet linking. Once linked, the wallet and company type are fixed. A wallet cannot belong to two companies. There are no employee accounts, memberships, invitations, or duplicate user table.
+- `companies`: one row per `auth.users.id`, with `name`, `company_type` (`producer`, `auditor`, or `buyer`), an optional `origin_id` binding, and at most one verified wallet. A producer operates exactly one origin, fixed once set; auditors and buyers never carry one. Registration can precede wallet linking. Once linked, the wallet and company type are fixed. A wallet cannot belong to two companies. There are no employee accounts, memberships, invitations, or duplicate user table. See [ADR-0006](./adr/0006-producer-origin-binding-and-company-contracts.md).
 - `wallet_link_challenges`: the single-use proof records behind wallet linking: a 32-byte random `nonce`, the account and email it was issued to, the wallet address, the request domain, the issue time, an expiry five minutes later, and the consumption time. Only the server role can read or write them; browsers hold no grants. See [ADR-0005](./adr/0005-wallet-link-challenges-are-single-use.md).
-- `origins`: `olaroz` (Salar de Olaroz) and `cauchari_olaroz` (Cauchari-Olaroz).
+- `company_contracts`: mutual-consent contracts between a producer and an auditor or buyer: statuses `pending`, `accepted`, `revoked`, with `responded_at` set on any decision and one row per producer–counterparty pair. Only accepted contracts scope which counterparties a producer may designate as a batch's auditor or reserved buyer. Each party reads only its own contracts; writes go through the server role.
+- `origins`: the origin catalogue — `olaroz` (Olaroz) and `cauchari_olaroz` (Cauchari-Olaroz) — each with `code`, `salar`, the producer display name, shareholders, processing-plant `longitude`/`latitude`, and its published reference block: `capacity_tpa`, `altitude_m` and `water_m3_per_tonne` when a published value exists, `note`, `source_label`, `source_url`. Public read.
 - `batches`: one row per PDA, identified publicly by `pda_address`. `(producer_wallet, batch_id)` is unique. `batch_id` occupies 1–32 UTF-8 bytes, matching the Solana seed limit; `LIT-2026-EXAR-02` is a valid example. The same identifier may be used by another producer.
 
-Every participating wallet must belong to a registered, wallet-verified company of the corresponding type. Producer and designated auditor are required. `reserved_buyer_wallet` is null for spot batches. `buyer_wallet` identifies the actual buyer only after completion. Company records referenced by batches cannot be deleted through cascading account deletion.
+Every participating wallet must belong to a registered, wallet-verified company of the corresponding type. Producer and designated auditor are required. A batch's origin must match the producer's bound origin, and the designated auditor and reserved buyer must hold an accepted `company_contracts` contract with that producer; the index rejects anything else. `reserved_buyer_wallet` is null for spot batches. `buyer_wallet` identifies the actual buyer only after completion. Company records referenced by batches cannot be deleted through cascading account deletion.
 
 ## Units and exact values
 
@@ -83,7 +84,9 @@ supabase db advisors --local --level warn --fail-on warn
 
 Use `supabase db reset --local` only for a disposable local database: it deletes local data and replays all migrations.
 
-This migration set is applied to the linked project `sixusybflhwjtoikrecn` (`JuLit`, Postgres 17.11, PostgREST v14.18). Any further production change requires an explicit, separately reviewed `supabase db push --linked`, previewed with `--dry-run`.
+The two demo producer accounts are provisioned by the seed file (`supabase/seed.sql`), which `db reset` applies; its credentials are demo-only and documented in the file. Verify the local demo by code with `pnpm smoke` (with `pnpm dev` running against the local stack): it proves both producer logins, the producer-registration rejection, a fresh auditor registration, the public origins read, and that re-running the seed changes nothing.
+
+This migration set is deployed to the linked project `sixusybflhwjtoikrecn` (`JuLit`, Postgres 17.11, PostgREST v14.18) through explicit, separately reviewed pushes (`supabase db push --linked`, previewed with `--dry-run`). The provisioned demo producers travel through the same reviewed path with `--include-seed`.
 
 ## References
 
