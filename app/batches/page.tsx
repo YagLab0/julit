@@ -215,6 +215,9 @@ export default function JuLitAppPage() {
           <p className="text-xs text-muted">Demo visual · Puna jujeña</p>
         </div>
         <div className="pointer-events-auto flex items-center gap-2">
+          <Link href="/batches/new" className="btn-secondary">
+            Registrar lote
+          </Link>
           <ViewToggle
             view={view}
             onChange={setView}
