@@ -10,6 +10,7 @@ import {
 import { ThemeToggle } from "../../components/theme-toggle";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
 import { getPassportRecord } from "../data/passport";
+import { RecordContrast } from "./record-contrast";
 
 type PassportParams = { pda: string };
 
@@ -137,6 +138,13 @@ export default async function BatchPassportPage({
                 </a>
               </p>
             </div>
+          </section>
+
+          <section aria-labelledby="passport-contrast">
+            <h2 id="passport-contrast" className="eyebrow">
+              Contraste con Solana
+            </h2>
+            <RecordContrast batch={batch} />
           </section>
         </div>
       </main>
