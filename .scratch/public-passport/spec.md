@@ -21,7 +21,7 @@ map. It shows the Batch's product record — origin, production metrics,
 sustainability metrics, certification evidence — contrasts the indexed row
 with the batch's on-chain account on Devnet, and, for certified Batches,
 verifies the certificate PDF's SHA-256 against the digest recorded for the
-batch (staged labelling per ADR-0009). A shared QR block renders the passport
+batch (staged labelling per ADR-0010). A shared QR block renders the passport
 URL in the batch fiche and on the page itself, with copy-link and PNG
 download for printing or attaching to batch documentation.
 
@@ -56,7 +56,7 @@ download for printing or attaching to batch documentation.
     compare them with the salar's figures.
 11. As a visitor, I want the passport to show the product record only — no
     price, no reservation and no buyer — so commercial terms stay in the
-    catalogue (ADR-0008).
+    catalogue (ADR-0009).
 12. As a visitor of a Batch that is not yet certified, I want a clear
     "Certificación pendiente" state without findings or certificate, so the
     absence of evidence is explicit, not hidden.
@@ -70,7 +70,7 @@ download for printing or attaching to batch documentation.
 15. As a visitor, I want the passport to read the batch's on-chain account and
     state whether it exists, belongs to the JuLit programme, and matches the
     indexed record field by field, so the record is contrasted with Solana
-    (ADR-0010), not just displayed.
+    (ADR-0011), not just displayed.
 16. As a visitor, when the account and the index differ, I want the differing
     fields named explicitly, so a mismatch is actionable, not a vague warning.
 17. As a visitor, when the on-chain account does not exist, I want an explicit
@@ -96,7 +96,7 @@ download for printing or attaching to batch documentation.
 24. As a visitor, I want the verification result to name its source — the
     result states the PDF matches the digest indexed for the batch and that
     Solana verification arrives with on-chain certification — so the index
-    comparison is never presented as Solana verification (ADR-0009).
+    comparison is never presented as Solana verification (ADR-0010).
 25. As a visitor, when the downloaded bytes do not match the recorded digest,
     I want an explicit mismatch verdict, so a tampered or stale PDF is visible.
 26. As a visitor, when the download fails, I want an explicit failure state
@@ -120,7 +120,7 @@ download for printing or attaching to batch documentation.
 
 32. As a visitor, I want audited surfaces to appear only for genuinely
     certified Batches — the index is not seeded with fake audited rows — so
-    the demo never presents unverifiable evidence (ADR-0008).
+    the demo never presents unverifiable evidence (ADR-0009).
 33. As a visitor, I want loading and error states for every asynchronous read
     (index, chain, certificate), so no surface fabricates data.
 34. As a visitor, I want numbers and dates formatted `es-AR`, so the demo
@@ -172,7 +172,7 @@ download for printing or attaching to batch documentation.
   ×100, water/carbon ×100, price ×1 000 000) — never through JavaScript
   `Number`. Contrasted fields: PDA derivation, programme address, batch id,
   producer, origin, volume, purity, water, carbon, status. Price, reservation
-  and buyer are out of the contrast along with the display (ADR-0008).
+  and buyer are out of the contrast along with the display (ADR-0009).
 
 - **Contrast island**: uses the generated Codama client and
   `createSolanaClient("devnet")` — `findBatchPda` for the derivation check and
@@ -183,7 +183,7 @@ download for printing or attaching to batch documentation.
   `audit_sha256` and `audit_certificate_path`. On demand: fetch the PDF from
   its public URL, hash the bytes with `crypto.subtle.digest("SHA-256")`,
   compare via `certificateVerdict`, and render the staged, source-naming
-  result (ADR-0009); mismatch and download-failure are distinct states and a
+  result (ADR-0010); mismatch and download-failure are distinct states and a
   failure yields no verdict. No server-side hashing fallback.
 - **QR block**: one shared client component used by the passport page and the
   catalogue's batch fiche (compact variant). Renders with the already
@@ -228,12 +228,12 @@ download for printing or attaching to batch documentation.
   The production index's two `created` batches exercise entry, QR, record
   contrast and the pending state. The audited/certificate surface is
   exercised locally only: a disposable audited row and a fixture PDF in the
-  **local** stack, never in production (ADR-0008).
+  **local** stack, never in production (ADR-0009).
 
 ## Out of Scope
 
 - `certify_batch` and the on-chain certificate digest — the digest comparison
-  stays staged (ADR-0009).
+  stays staged (ADR-0010).
 - Certificate upload endpoint and its API.
 - Seeding audited batches or stand-in certificates into the production index.
 - QR in the list-view cards or any surface other than the fiche and the page.
@@ -248,8 +248,8 @@ download for printing or attaching to batch documentation.
   Its `@program` scenario describes the certificate comparison once
   certification exists on-chain; today's staged label implements the `@ui`
   half.
-- Decisions: ADR-0008 (scope and content), ADR-0009 (staged certificate
-  verification), ADR-0010 (record contrast). Glossary terms used: Passport,
+- Decisions: ADR-0009 (scope and content), ADR-0010 (staged certificate
+  verification), ADR-0011 (record contrast). Glossary terms used: Passport,
   Certificate Verification, Batch, Origin, Producer, Audited Batch.
 - The generated Codama client and the PDA derivation were exercised against
   Devnet: `findBatchPda` reproduces the production `pda_address` values and

@@ -4,12 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { address } from "@solana/kit";
+import {
+  EuAssessment as OnChainEuAssessment,
+  getCertifyBatchInstructionAsync,
+} from "../../generated/julit";
 import { Field } from "../../components/form-field";
+import { useCluster } from "../../components/cluster-context";
 import { VerifiedWalletGate } from "../../components/verified-wallet-gate";
-import { ellipsify } from "../../lib/explorer";
+import { ellipsify, getExplorerUrl } from "../../lib/explorer";
+import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
+import { useWallet } from "../../lib/wallet/context";
 import { Metric, Findings, numberFmt, percentFmt } from "../batch-display";
 import type { AuditorInfo } from "../audit-client";
-import { demoBatches, type DemoBatch, type EuAssessment } from "../demo-data";
+import type { AuditBatch, EuAssessment } from "../batches";
 import {
   CERTIFICATE_MAX_BYTES,
   validateCertifyForm,
@@ -53,20 +61,40 @@ async function sha256Hex(file: File): Promise<string> {
     .join("");
 }
 
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+type SubmitStep = "upload" | "sign" | "index";
+
+const STEP_LABEL: Record<SubmitStep, string> = {
+  upload: "Subiendo…",
+  sign: "Firmando…",
+  index: "Indexando…",
+};
+
 function CertifyForm({
   batch,
   auditor,
 }: {
-  batch: DemoBatch;
+  batch: AuditBatch;
   auditor: AuditorInfo;
 }) {
   const router = useRouter();
+  const { signer } = useWallet();
+  const { cluster } = useCluster();
+  const { send, isSending } = useSendTransaction();
   const [file, setFile] = useState<File | null>(null);
   const [digest, setDigest] = useState<string | null>(null);
   const [hashing, setHashing] = useState(false);
   const [esgApproved, setEsgApproved] = useState<boolean | null>(null);
   const [euAssessment, setEuAssessment] = useState<EuAssessment | null>(null);
   const [errors, setErrors] = useState<CertifyFieldErrors>({});
+  const [step, setStep] = useState<SubmitStep | null>(null);
 
   const clearError = (key: keyof CertifyFieldErrors) =>
     setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
@@ -107,8 +135,10 @@ function CertifyForm({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (step) return;
+
     const values: CertifyFormValues = {
       fileType: file?.type ?? null,
       fileSizeBytes: file?.size ?? null,
@@ -118,26 +148,101 @@ function CertifyForm({
     };
     const { errors, payload } = validateCertifyForm(values);
     setErrors(errors);
-    if (!payload) {
+    if (!payload || !file) {
       toast.error("Revisá los campos marcados.");
       return;
     }
-
-    // The certificate upload and certify_batch transaction land with the
-    // backend; the demo records the certification in the in-memory store.
-    const stored = demoBatches.find((b) => b.pdaAddress === batch.pdaAddress);
-    if (stored) {
-      stored.status = "audited";
-      stored.esgApproved = payload.esgApproved;
-      stored.euAssessment = payload.euAssessment;
-      stored.auditSha256 = payload.digest;
+    if (!signer || signer.address !== auditor.walletAddress) {
+      toast.error("Conectá la wallet verificada para firmar.");
+      return;
     }
 
-    toast.success(`Lote ${batch.batchId} certificado`, {
-      description:
-        "La transacción on-chain se habilita con el programa Anchor.",
-    });
-    router.push("/audit");
+    try {
+      // 1. Upload the certificate; the server digest is the on-chain hash.
+      setStep("upload");
+      const form = new FormData();
+      form.append("file", file);
+      const uploadRes = await fetch(
+        `/api/batches/${batch.pdaAddress}/certificate`,
+        { method: "POST", body: form }
+      );
+      const uploadBody = (await uploadRes.json().catch(() => null)) as {
+        digest?: string;
+        error?: string;
+      } | null;
+      if (!uploadRes.ok || !uploadBody?.digest) {
+        toast.error("No se pudo subir el certificado.", {
+          description: uploadBody?.error ?? "Reintentá más tarde.",
+        });
+        return;
+      }
+
+      // 2. Sign and send certify_batch with the verified auditor wallet.
+      setStep("sign");
+      const instruction = await getCertifyBatchInstructionAsync({
+        batch: address(batch.pdaAddress),
+        auditor: signer,
+        auditHash: hexToBytes(uploadBody.digest),
+        esgApproved: payload.esgApproved,
+        euAssessment:
+          payload.euAssessment === "conformant"
+            ? OnChainEuAssessment.Conformant
+            : OnChainEuAssessment.NonConformant,
+      });
+      const txSignature = await send({ instructions: [instruction] });
+
+      // 3. Index only after the transaction confirmed on-chain.
+      setStep("index");
+      const indexRes = await fetch(`/api/batches/${batch.pdaAddress}/certify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tx_signature: txSignature }),
+      });
+      if (!indexRes.ok) {
+        const indexBody = (await indexRes.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        toast.error("El lote quedó certificado on-chain pero no se indexó", {
+          description: indexBody?.error ?? "Reintentá la indexación.",
+          action: {
+            label: "Ver transacción",
+            onClick: () =>
+              window.open(
+                getExplorerUrl(`/tx/${txSignature}`, cluster),
+                "_blank"
+              ),
+          },
+        });
+        return;
+      }
+
+      toast.success(`Lote ${batch.batchId} certificado`, {
+        description: "La certificación quedó confirmada e indexada.",
+        action: {
+          label: "Ver transacción",
+          onClick: () =>
+            window.open(
+              getExplorerUrl(`/tx/${txSignature}`, cluster),
+              "_blank"
+            ),
+        },
+      });
+      router.push("/audit");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (step === "sign" && /reject|cancel|denied/i.test(message)) {
+        toast.error("Cancelaste la firma.");
+      } else {
+        toast.error(
+          step === "upload"
+            ? "No se pudo subir el certificado."
+            : "No se pudo certificar el lote.",
+          { description: message || "Error inesperado." }
+        );
+      }
+    } finally {
+      setStep(null);
+    }
   };
 
   const ready =
@@ -281,9 +386,9 @@ function CertifyForm({
           <button
             type="submit"
             className="btn-primary"
-            disabled={hashing || !ready}
+            disabled={hashing || !ready || step !== null || isSending}
           >
-            Certificar lote
+            {step ? STEP_LABEL[step] : "Certificar lote"}
           </button>
         </div>
       </div>
@@ -292,14 +397,12 @@ function CertifyForm({
 }
 
 export function CertifyBatch({
-  pda,
+  batch,
   auditor,
 }: {
-  pda: string;
+  batch: AuditBatch | null;
   auditor: AuditorInfo;
 }) {
-  const batch = demoBatches.find((b) => b.pdaAddress === pda);
-
   return (
     <VerifiedWalletGate
       name={auditor.name}
@@ -316,7 +419,7 @@ export function CertifyBatch({
             Volver a mis lotes
           </Link>
         </div>
-      ) : batch.status === "audited" ? (
+      ) : batch.status !== "created" ? (
         <div className="mt-8 rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>

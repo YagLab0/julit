@@ -1,13 +1,13 @@
 # 02: On-chain record contrast
 
 **What to build:** the passport reads the Batch's Devnet account and contrasts
-it with the indexed record (ADR-0010). A pure verification module exposes the
+it with the indexed record (ADR-0011). A pure verification module exposes the
 contrast verdict — verified / account missing / mismatch naming the differing
 fields — comparing PDA derivation, programme address, batch id, producer,
 origin, volume, purity, water, carbon and status, with exact decimal parsing
 (index decimal strings and on-chain scaled integers both become scaled
 `BigInt`; never `Number`). Price, reservation and buyer stay out of the
-contrast along with the display (ADR-0008). A small client island loads the
+contrast along with the display (ADR-0009). A small client island loads the
 contrast after first paint using the generated Codama client
 (`findBatchPda` for the derivation check, `fetchMaybeBatch` for the account)
 and renders the states: checking, verified in Solana, mismatch with the field

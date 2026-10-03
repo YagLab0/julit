@@ -1,8 +1,12 @@
+import {
+  contractPosture,
+  offerDirection,
+  type ContractRole,
+} from "../../../lib/company-contracts";
+import type { CompanyType } from "../../../lib/company";
 import { jsonError, readJsonBody } from "../../../lib/server/api";
 import { createClient } from "../../../lib/supabase/server";
 import { createServiceClient } from "../../../lib/supabase/service";
-
-const COUNTERPARTY_TYPES = ["auditor", "buyer"] as const;
 
 async function sessionCompany(
   supabase: Awaited<ReturnType<typeof createClient>>
@@ -58,22 +62,31 @@ export async function GET() {
   const partyById = new Map((parties ?? []).map((p) => [p.id, p]));
 
   return Response.json({
-    contracts: (contracts ?? []).map((c) => ({
-      id: c.id,
-      status: c.status,
-      respondedAt: c.responded_at,
-      createdAt: c.created_at,
-      producer: partyById.get(c.producer_id) ?? null,
-      counterparty: partyById.get(c.counterparty_id) ?? null,
-      role:
-        c.producer_id === company.id
-          ? ("producer" as const)
-          : ("counterparty" as const),
-    })),
+    contracts: (contracts ?? []).map((c) => {
+      const counterparty = partyById.get(c.counterparty_id) ?? null;
+      const role: ContractRole =
+        c.producer_id === company.id ? "producer" : "counterparty";
+      const posture = counterparty
+        ? contractPosture(role, counterparty.company_type as CompanyType)
+        : null;
+      return {
+        id: c.id,
+        status: c.status,
+        respondedAt: c.responded_at,
+        createdAt: c.created_at,
+        producer: partyById.get(c.producer_id) ?? null,
+        counterparty,
+        role,
+        posture,
+      };
+    }),
   });
 }
 
-/** Producer offers a contract to an auditor or buyer company. */
+/**
+ * Creates a contract offer under the two sanctioned flows (ADR-0008):
+ * a producer offering to an auditor, or a buyer offering to a producer.
+ */
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { user, company } = await sessionCompany(supabase);
@@ -83,34 +96,33 @@ export async function POST(request: Request) {
   if (!company) {
     return jsonError("Registrá tu empresa primero.", 400);
   }
-  if (company.company_type !== "producer") {
-    return jsonError("Solo las productoras pueden ofrecer contratos.", 403);
-  }
 
   const body = await readJsonBody(request);
-  const counterpartyId = body?.counterparty_id;
-  if (typeof counterpartyId !== "string" || !counterpartyId) {
+  const targetId = body?.counterparty_id;
+  if (typeof targetId !== "string" || !targetId) {
     return jsonError("Elegí una empresa contraparte.", 400);
   }
-  if (counterpartyId === company.id) {
+  if (targetId === company.id) {
     return jsonError("No podés contratarte a vos misma.", 400);
   }
 
   const service = createServiceClient();
-  const { data: counterparty } = await service
+  const { data: target } = await service
     .from("companies")
     .select("id, company_type")
-    .eq("id", counterpartyId)
+    .eq("id", targetId)
     .maybeSingle();
 
-  if (
-    !counterparty ||
-    !COUNTERPARTY_TYPES.includes(
-      counterparty.company_type as (typeof COUNTERPARTY_TYPES)[number]
-    )
-  ) {
+  const offer = target
+    ? offerDirection(
+        company.company_type as CompanyType,
+        target.company_type as CompanyType
+      )
+    : null;
+
+  if (!offer) {
     return jsonError(
-      "La contraparte debe ser una empresa auditora o compradora registrada.",
+      "Solo una productora puede ofrecer a una auditora, o una compradora a una productora.",
       400
     );
   }
@@ -118,8 +130,8 @@ export async function POST(request: Request) {
   const { data: contract, error } = await service
     .from("company_contracts")
     .insert({
-      producer_id: company.id,
-      counterparty_id: counterpartyId,
+      producer_id: offer.producerIsInitiator ? company.id : targetId,
+      counterparty_id: offer.producerIsInitiator ? targetId : company.id,
     })
     .select("id, status, created_at")
     .single();

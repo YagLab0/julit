@@ -14,7 +14,7 @@ and formatters, renders no 3D or map code, and pins Devnet. An unknown or
 malformed PDA renders "Pasaporte no encontrado" with a link to the catalogue.
 The passport's index read additionally selects the producer wallet and the
 creation transaction signature; catalogue queries stay unchanged. No price,
-reservation or buyer data appears anywhere (ADR-0008).
+reservation or buyer data appears anywhere (ADR-0009).
 
 **Blocked by:** None (can start immediately)
 
@@ -26,5 +26,5 @@ reservation or buyer data appears anywhere (ADR-0008).
 - [ ] Provenance: PDA, Explorer address link and creation transaction link Devnet-pinned, plus the index snapshot date labelled as the index's
 - [ ] Unknown or malformed PDA renders "Pasaporte no encontrado" with a catalogue link and a proper not-found response
 - [ ] Page title names the batch; no 3D/map code on the route; semantic tokens; `es-AR` formatting; light and dark
-- [ ] No price, reservation or buyer data anywhere (ADR-0008)
+- [ ] No price, reservation or buyer data anywhere (ADR-0009)
 - [ ] `pnpm build`, `pnpm lint`, `pnpm format:check` pass

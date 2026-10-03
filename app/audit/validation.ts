@@ -2,7 +2,7 @@
 // audit-certificates Storage bucket (docs/database.md): application/pdf only,
 // 50 MiB maximum. ESG approval and the EU assessment are auditor declarations
 // at certification — negative findings are valid payloads (ADR-0004/0006).
-import type { EuAssessment } from "./demo-data";
+import type { EuAssessment } from "./batches";
 
 export const CERTIFICATE_MAX_BYTES = 50 * 1024 * 1024;
 

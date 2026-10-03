@@ -32,7 +32,7 @@ function VerifyCard({
 }
 
 /**
- * Staged certificate verification (ADR-0009): on demand, the visitor's
+ * Staged certificate verification (ADR-0010): on demand, the visitor's
  * browser downloads the PDF, hashes its bytes and compares them with the
  * digest indexed for the batch. The verdict names its source — the index —
  * and never claims Solana verification. A download failure shows no verdict.

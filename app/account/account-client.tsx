@@ -73,6 +73,7 @@ export function AccountClient({
       />
 
       <ContractsCard companyType={company.companyType} />
+      {company.companyType === "producer" && <BuyerOffersCard />}
 
       <section className="rounded-2xl border border-border-low bg-card p-5">
         <h2 className="text-sm font-semibold">{nextStep.title}</h2>
@@ -114,15 +115,14 @@ type ContractRow = {
   producer: { id: string; name: string; company_type: CompanyType } | null;
   counterparty: { id: string; name: string; company_type: CompanyType } | null;
   role: "producer" | "counterparty";
+  posture: "initiator" | "responder" | null;
 };
 
 function ContractsCard({ companyType }: { companyType: CompanyType }) {
   const [contracts, setContracts] = useState<ContractRow[] | null>(null);
-  const [directory, setDirectory] = useState<{
-    type: "auditor" | "buyer";
-    companies: { id: string; name: string }[];
-  } | null>(null);
-  const [offerType, setOfferType] = useState<"auditor" | "buyer">("auditor");
+  const [directory, setDirectory] = useState<
+    { id: string; name: string }[] | null
+  >(null);
   const [counterpartyId, setCounterpartyId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -148,25 +148,18 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
   useEffect(() => {
     if (!isProducer) return;
     let cancelled = false;
-    fetch(`/api/companies/directory?type=${offerType}`)
+    fetch("/api/companies/directory?type=auditor")
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { companies?: { id: string; name: string }[] } | null) => {
-        if (!cancelled) {
-          setDirectory({
-            type: offerType,
-            companies: data?.companies ?? [],
-          });
-        }
+        if (!cancelled) setDirectory(data?.companies ?? []);
       })
       .catch(() => {
-        if (!cancelled) {
-          setDirectory({ type: offerType, companies: [] });
-        }
+        if (!cancelled) setDirectory([]);
       });
     return () => {
       cancelled = true;
     };
-  }, [offerType, reload, isProducer]);
+  }, [reload, isProducer]);
 
   async function offerContract() {
     if (!counterpartyId) return;
@@ -215,7 +208,7 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
   }
 
   const pendingIncoming = (contracts ?? []).filter(
-    (c) => c.role === "counterparty" && c.status === "pending"
+    (c) => !isProducer && c.posture === "responder" && c.status === "pending"
   );
 
   return (
@@ -223,42 +216,29 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
       <h2 className="text-sm font-semibold">Contratos comerciales</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
         {isProducer
-          ? "Ofrecé contratos a auditoras y compradoras. Solo las contrapartes que acepten aparecen como opciones al registrar un lote."
+          ? "Ofrecé contratos a auditoras. Solo las auditoras que acepten aparecen como opciones al registrar un lote."
           : "Las productoras te ofrecen contratos comerciales. Aceptalos para aparecer como auditora designada o cliente de sus lotes."}
       </p>
 
       {isProducer && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <select
-            value={offerType}
-            onChange={(event) => {
-              setOfferType(event.target.value as "auditor" | "buyer");
-              setCounterpartyId("");
-            }}
-            className="rounded-lg border border-border-low bg-background px-3 py-2 text-sm text-foreground"
-          >
-            <option value="auditor">Auditora</option>
-            <option value="buyer">Compradora</option>
-          </select>
-          <select
             value={counterpartyId}
             onChange={(event) => setCounterpartyId(event.target.value)}
             className="rounded-lg border border-border-low bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="">
-              {directory?.type !== offerType
-                ? "Cargando empresas…"
-                : directory.companies.length === 0
-                  ? "Sin empresas registradas"
-                  : "Elegí una empresa…"}
+              {directory === null
+                ? "Cargando auditoras…"
+                : directory.length === 0
+                  ? "Sin auditoras registradas"
+                  : "Elegí una auditora…"}
             </option>
-            {(directory?.type === offerType ? directory.companies : []).map(
-              (c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              )
-            )}
+            {(directory ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
           <button
             type="button"
@@ -329,7 +309,10 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
                     {COMPANY_TYPE_LABELS[
                       other?.company_type ?? "auditor"
                     ].toLowerCase()}
-                    {c.role === "producer" ? "" : " · oferta recibida"})
+                    {c.posture === "responder"
+                      ? " · oferta recibida"
+                      : " · oferta enviada"}
+                    )
                   </span>
                 </p>
                 <span
@@ -345,6 +328,110 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
 
       {contracts !== null && contracts.length === 0 && (
         <p className="mt-3 text-xs text-muted">Todavía no hay contratos.</p>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function BuyerOffersCard() {
+  const [offers, setOffers] = useState<ContractRow[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/companies/contracts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { contracts?: ContractRow[] } | null) => {
+        if (!cancelled) setOffers(data?.contracts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setOffers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
+
+  async function respond(id: string, action: "accept" | "decline") {
+    setBusy(true);
+    setError(null);
+
+    const response = await fetch(`/api/companies/contracts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      setError(payload?.error ?? "No se pudo responder el contrato.");
+      setBusy(false);
+      return;
+    }
+
+    setBusy(false);
+    setReload((n) => n + 1);
+  }
+
+  const pending = (offers ?? []).filter(
+    (c) => c.posture === "responder" && c.status === "pending"
+  );
+
+  return (
+    <section className="rounded-2xl border border-border-low bg-card p-5">
+      <h2 className="text-sm font-semibold">Ofertas de compradoras</h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted">
+        Las compradoras te ofrecen contratos para reservar tus lotes. Aceptalas
+        para habilitarlas como clientes.
+      </p>
+
+      {offers === null ? (
+        <p className="mt-3 text-xs text-muted">Cargando ofertas…</p>
+      ) : pending.length === 0 ? (
+        <p className="mt-3 text-xs text-muted">
+          No hay ofertas pendientes de compradoras.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {pending.map((c) => (
+            <div
+              key={c.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
+            >
+              <p className="text-xs">
+                <span className="font-medium">{c.counterparty?.name}</span>{" "}
+                <span className="text-muted">quiere comprar tu producción</span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "accept")}
+                  disabled={busy}
+                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
+                >
+                  Aceptar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respond(c.id, "decline")}
+                  disabled={busy}
+                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {error && (

@@ -3,7 +3,7 @@
 // snapshot, not the authoritative ledger, so the page never claims
 // verification. Unlike the catalogue columns, the passport read also selects
 // the producer wallet and the creation transaction signature, and never
-// selects the price: commercial terms stay in the catalogue (ADR-0008) and a
+// selects the price: commercial terms stay in the catalogue (ADR-0009) and a
 // column that is not read cannot leak into the client payload.
 
 import { cache } from "react";

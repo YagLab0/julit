@@ -55,7 +55,7 @@ function ContrastCard({
 /**
  * On-chain record contrast: after first paint the island derives the batch
  * PDA, reads the account on Devnet and renders the explicit verdict. A
- * failure or an absent account never renders as verified (ADR-0010).
+ * failure or an absent account never renders as verified (ADR-0011).
  */
 export function RecordContrast({ batch }: { batch: IndexedBatch }) {
   const [state, setState] = useState<ContrastState>({ status: "checking" });

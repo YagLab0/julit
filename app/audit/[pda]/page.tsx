@@ -4,6 +4,7 @@ import { GateCard } from "../../components/gate-card";
 import { SessionMenu } from "../../components/session-menu";
 import { ThemeToggle } from "../../components/theme-toggle";
 import { createClient } from "../../lib/supabase/server";
+import { loadAuditorBatch } from "../batches";
 import { CertifyBatch } from "./certify-batch";
 
 export default async function CertifyBatchPage({
@@ -27,6 +28,11 @@ export default async function CertifyBatchPage({
     .select("name, company_type, wallet_address, wallet_verified_at")
     .eq("id", user.id)
     .maybeSingle();
+
+  const batch =
+    company?.company_type === "auditor" && company.wallet_verified_at
+      ? await loadAuditorBatch(pda, company.wallet_address!)
+      : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -54,7 +60,7 @@ export default async function CertifyBatchPage({
           <GateCard body="Vinculá la wallet verificada de tu empresa para poder certificar." />
         ) : (
           <CertifyBatch
-            pda={pda}
+            batch={batch}
             auditor={{
               name: company.name,
               walletAddress: company.wallet_address!,

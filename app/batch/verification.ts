@@ -1,8 +1,8 @@
 // Pure record contrast: indexed row + derived PDA + decoded on-chain account
-// in, verdict out (ADR-0010). No I/O and no Number math — index decimal
+// in, verdict out (ADR-0011). No I/O and no Number math — index decimal
 // strings and on-chain scaled integers are both parsed to scaled BigInt with
 // fixed multipliers. Price, reservation and buyer stay out of the contrast,
-// like they stay out of the passport (ADR-0008).
+// like they stay out of the passport (ADR-0009).
 
 import {
   BatchStatus as OnChainBatchStatus,
