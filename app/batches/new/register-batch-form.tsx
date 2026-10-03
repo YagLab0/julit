@@ -3,7 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ellipsify } from "../../lib/explorer";
+import { address } from "@solana/kit";
+import { getCreateBatchInstructionAsync } from "../../generated/julit";
+import { ellipsify, getExplorerUrl } from "../../lib/explorer";
+import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
+import { useWallet } from "../../lib/wallet/context";
+import { useCluster } from "../../components/cluster-context";
 import type { ProducerInfo } from "./new-batch-client";
 import {
   validateBatchForm,
@@ -64,16 +69,24 @@ export function RegisterBatchForm({
   auditors: Counterparty[];
   buyers: Counterparty[];
 }) {
+  const { signer } = useWallet();
+  const { cluster } = useCluster();
+  const { send, isSending } = useSendTransaction();
   const [values, setValues] = useState<BatchFormValues>(INITIAL);
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  const [indexing, setIndexing] = useState(false);
 
   const update = (key: FieldKey) => (v: string) => {
     setValues((prev) => ({ ...prev, [key]: v }));
     setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!signer) {
+      toast.error("Conectá la wallet verificada para firmar.");
+      return;
+    }
     const { errors, payload } = validateBatchForm(values, {
       producerWallet: producer.walletAddress,
       originId: producer.originId,
@@ -85,12 +98,74 @@ export function RegisterBatchForm({
       toast.error("Revisá los campos marcados.");
       return;
     }
-    // The on-chain create_batch instruction lands with the Anchor program.
-    console.info("create_batch payload", payload);
-    toast.success(`Lote ${payload.batchId} validado`, {
-      description:
-        "La transacción on-chain se habilita con el programa Anchor.",
-    });
+
+    try {
+      const instruction = await getCreateBatchInstructionAsync({
+        producer: signer,
+        auditor: address(payload.auditorWallet),
+        batchId: payload.batchId,
+        originId: payload.originId,
+        volumeTonnes: BigInt(payload.volumeTonnes),
+        purityBasisPoints: BigInt(payload.purityBasisPoints),
+        waterM3PerTonneScaled: BigInt(payload.waterM3PerTonneScaled),
+        carbonKgCo2ePerTonneScaled: BigInt(payload.carbonKgCo2ePerTonneScaled),
+        priceUsdcScaled: BigInt(payload.priceUsdcScaled),
+        reservedBuyer: payload.reservedBuyerWallet
+          ? address(payload.reservedBuyerWallet)
+          : null,
+      });
+
+      const txSignature = await send({ instructions: [instruction] });
+
+      setIndexing(true);
+      const response = await fetch("/api/batches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tx_signature: txSignature }),
+      });
+      setIndexing(false);
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        toast.error("El lote quedó on-chain pero no se indexó", {
+          description: body?.error ?? "Reintentá la indexación más tarde.",
+          action: {
+            label: "Ver transacción",
+            onClick: () =>
+              window.open(
+                getExplorerUrl(`/tx/${txSignature}`, cluster),
+                "_blank"
+              ),
+          },
+        });
+        return;
+      }
+
+      toast.success(`Lote ${payload.batchId} registrado`, {
+        description: "La transacción quedó confirmada e indexada.",
+        action: {
+          label: "Ver transacción",
+          onClick: () =>
+            window.open(
+              getExplorerUrl(`/tx/${txSignature}`, cluster),
+              "_blank"
+            ),
+        },
+      });
+      setValues(INITIAL);
+    } catch (err) {
+      setIndexing(false);
+      const message = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(message)) {
+        toast.error("Cancelaste la firma.");
+      } else {
+        toast.error("No se pudo registrar el lote.", {
+          description: message || "Error inesperado.",
+        });
+      }
+    }
   };
 
   const isReserved = values.reservedBuyerWallet.trim().length > 0;
@@ -257,8 +332,16 @@ export function RegisterBatchForm({
           <Link href="/batches" className="btn-secondary">
             Volver al catálogo
           </Link>
-          <button type="submit" className="btn-primary">
-            Registrar lote
+          <button
+            type="submit"
+            disabled={isSending || indexing}
+            className="btn-primary"
+          >
+            {isSending
+              ? "Firmando…"
+              : indexing
+                ? "Indexando…"
+                : "Registrar lote"}
           </button>
         </div>
       </div>
