@@ -10,18 +10,18 @@ select ('00000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
 from generate_series(1, 4) as n;
 
 insert into public.companies (id, name, company_type, wallet_address, wallet_verified_at, origin_id) values
-  ('00000000-0000-0000-0000-000000000001', 'Producer One', 'producer', repeat('2', 31) || '2', now(), 'olaroz'),
+  ('00000000-0000-0000-0000-000000000001', 'Producer One', 'producer', repeat('2', 31) || '2', now(), 'pena_blanca'),
   ('00000000-0000-0000-0000-000000000002', 'Auditor One', 'auditor', repeat('3', 31) || '3', now(), null),
   ('00000000-0000-0000-0000-000000000003', 'Buyer One', 'buyer', repeat('4', 31) || '4', now(), null),
-  ('00000000-0000-0000-0000-000000000004', 'Producer Two', 'producer', repeat('5', 31) || '5', now(), 'cauchari_olaroz');
+  ('00000000-0000-0000-0000-000000000004', 'Producer Two', 'producer', repeat('5', 31) || '5', now(), 'condor');
 
 set local role service_role;
 
 select throws_ok($$insert into public.companies (id, name, company_type, origin_id)
-    values ('00000000-0000-0000-0000-000000000010', 'Bad auditor', 'auditor', 'olaroz')$$,
+    values ('00000000-0000-0000-0000-000000000010', 'Bad auditor', 'auditor', 'pena_blanca')$$,
   '23514', null, 'An auditor cannot carry an origin');
 
-select throws_ok($$update public.companies set origin_id = 'cauchari_olaroz'
+select throws_ok($$update public.companies set origin_id = 'condor'
     where id = '00000000-0000-0000-0000-000000000001'$$,
   '23514', null, 'A bound origin cannot be changed once set');
 
@@ -72,7 +72,7 @@ select throws_ok($$insert into public.batches (
     carbon_footprint_kg_co2e_per_tonne, price_usdc
   ) values (
     repeat('6', 44), 'LIT-T1', repeat('5', 31) || '5', repeat('3', 31) || '3',
-    'cauchari_olaroz', 10, 99.5, 50, 8000, 1000
+    'condor', 10, 99.5, 50, 8000, 1000
   )$$,
   '23514', null, 'An auditor without a contract with that producer is rejected');
 
@@ -82,7 +82,7 @@ select throws_ok($$insert into public.batches (
     carbon_footprint_kg_co2e_per_tonne, price_usdc
   ) values (
     repeat('6', 44), 'LIT-T2', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    'cauchari_olaroz', 10, 99.5, 50, 8000, 1000
+    'condor', 10, 99.5, 50, 8000, 1000
   )$$,
   '23514', null, 'A batch origin differing from the producer origin is rejected');
 
@@ -93,7 +93,7 @@ select lives_ok($$insert into public.batches (
     observed_slot
   ) values (
     repeat('6', 44), 'LIT-T3', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    'olaroz', 10, 99.5, 50, 8000, 1000, repeat('6', 63) || '8', 2000
+    'pena_blanca', 10, 99.5, 50, 8000, 1000, repeat('6', 63) || '8', 2000
   )$$,
   'A batch with an accepted auditor contract and matching origin is indexed');
 
@@ -103,7 +103,7 @@ select throws_ok($$insert into public.batches (
     carbon_footprint_kg_co2e_per_tonne, price_usdc
   ) values (
     repeat('7', 44), 'LIT-T4', repeat('5', 31) || '5', repeat('3', 31) || '3',
-    repeat('4', 31) || '4', 'cauchari_olaroz', 10, 99.5, 50, 8000, 1000
+    repeat('4', 31) || '4', 'condor', 10, 99.5, 50, 8000, 1000
   )$$,
   '23514', null, 'A reserved buyer without a contract with that producer is rejected');
 
@@ -114,7 +114,7 @@ select lives_ok($$insert into public.batches (
     observed_slot
   ) values (
     repeat('7', 44), 'LIT-T5', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    repeat('4', 31) || '4', 'olaroz', 10, 99.5, 50, 8000, 1000,
+    repeat('4', 31) || '4', 'pena_blanca', 10, 99.5, 50, 8000, 1000,
     repeat('7', 63) || '8', 2001
   )$$,
   'A reserved buyer holding an accepted contract is indexed');

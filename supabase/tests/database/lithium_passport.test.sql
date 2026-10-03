@@ -10,11 +10,11 @@ select ('00000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
 from generate_series(1, 7) as n;
 
 insert into public.companies (id, name, company_type, wallet_address, wallet_verified_at, origin_id) values
-  ('00000000-0000-0000-0000-000000000001', 'Producer A', 'producer', repeat('1', 31) || '2', now(), 'olaroz'),
+  ('00000000-0000-0000-0000-000000000001', 'Producer A', 'producer', repeat('1', 31) || '2', now(), 'pena_blanca'),
   ('00000000-0000-0000-0000-000000000002', 'Auditor', 'auditor', repeat('1', 31) || '3', now(), null),
   ('00000000-0000-0000-0000-000000000003', 'Buyer A', 'buyer', repeat('1', 31) || '4', now(), null),
   ('00000000-0000-0000-0000-000000000004', 'Buyer B', 'buyer', repeat('1', 31) || '5', now(), null),
-  ('00000000-0000-0000-0000-000000000005', 'Producer B', 'producer', repeat('1', 31) || '6', now(), 'olaroz'),
+  ('00000000-0000-0000-0000-000000000005', 'Producer B', 'producer', repeat('1', 31) || '6', now(), 'pena_blanca'),
   ('00000000-0000-0000-0000-000000000006', 'Unlinked buyer', 'buyer', null, null, null);
 
 set local role service_role;
@@ -31,11 +31,11 @@ insert into public.batches (
 ) values (
   repeat('1', 31) || '7', 'LIT-2026-EXAR-02', repeat('1', 31) || '2',
   repeat('1', 31) || '3', repeat('1', 31) || '4',
-  'olaroz', 100, 99.50, 125.50, 450.25, 12000.123456, repeat('1', 63) || '2', 1000
+  'pena_blanca', 100, 99.50, 125.50, 450.25, 12000.123456, repeat('1', 63) || '2', 1000
 ), (
   repeat('1', 31) || '8', 'LIT-2026-EXAR-03', repeat('1', 31) || '2',
   repeat('1', 31) || '3', null,
-  'olaroz', 50, 99.75, 80.25, 300.50, 7000, repeat('1', 63) || '3', 1001
+  'pena_blanca', 50, 99.75, 80.25, 300.50, 7000, repeat('1', 63) || '3', 1001
 );
 
 select throws_ok($$update public.companies set wallet_address = repeat('1', 31) || '9'
@@ -124,7 +124,7 @@ select results_eq($$insert into public.batches (
     price_usdc, creation_tx_signature, observed_slot
   ) values (
     repeat('1', 31) || '9', 'LIT-2026-EXAR-02', repeat('1', 31) || '6', repeat('1', 31) || '3',
-    'olaroz', 25, 99.50, 100, 200, 3000, repeat('1', 63) || '4', 1002
+    'pena_blanca', 25, 99.50, 100, 200, 3000, repeat('1', 63) || '4', 1002
   ) returning producer_wallet, batch_id$$,
   $$values (repeat('1', 31) || '6', 'LIT-2026-EXAR-02'::text)$$,
   'A different producer can use the same batch identifier');

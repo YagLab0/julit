@@ -181,8 +181,8 @@ try {
     res.ok &&
     Array.isArray(rows) &&
     rows.length === 2 &&
-    rows.some((row) => row.id === "olaroz") &&
-    rows.some((row) => row.id === "cauchari_olaroz");
+    rows.some((row) => row.id === "pena_blanca") &&
+    rows.some((row) => row.id === "condor");
   report(ok, "origins catalogue publicly readable", JSON.stringify(rows));
 } catch (error) {
   report(false, "origins catalogue publicly readable", error.message);
@@ -207,7 +207,7 @@ if (!isLocalTarget) {
       " || ':' || (select count(*) from auth.identities i join auth.users u on u.id = i.user_id" +
       ` where u.email in (${demoEmails}))` +
       " || ':' || (select count(*) from public.companies" +
-      " where name in ('Sales de Jujuy','Minera Exar','Auditor Demo','Comprador Demo'));";
+      " where name in ('Sales del Altiplano S.A.','Minera Cóndor S.A.','Auditor Demo','Comprador Demo'));";
     const psql = (args, input) =>
       execFileSync(
         "docker",

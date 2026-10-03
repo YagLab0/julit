@@ -74,7 +74,7 @@ export function RegisterBatchForm({
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <Field
             label="Identificador de lote"
-            hint="Único por productora. Ej.: LIT-2026-EXAR-02"
+            hint="Único por productora. Ej.: LIT-2026-PBL-02"
             error={errors.batchId}
           >
             <input
