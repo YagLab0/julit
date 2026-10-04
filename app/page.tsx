@@ -131,7 +131,7 @@ export default function Home() {
           />
           <div className={styles.heroContent} data-landing-reveal>
             <p className={styles.heroEyebrow}>
-              Litio de Jujuy. Proyección global.
+              Litio de Jujuy. Proyección global
             </p>
             <h1 id="hero-title">
               Del salar al mercado, con evidencia verificable.
