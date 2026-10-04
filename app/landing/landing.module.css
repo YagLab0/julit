@@ -119,6 +119,42 @@
   color: var(--muted);
   text-decoration: none;
 }
+.navigation .teamLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  color: var(--color-brand-700);
+}
+.teamLink::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.header .teamLink::before {
+  animation: teamPulse 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes teamPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.45;
+  }
+}
+.teamLink:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 7px;
+}
+.footer .navigation .teamLink {
+  color: var(--color-brand-300);
+}
 .headerActions {
   display: flex;
   align-items: center;
@@ -417,6 +453,12 @@
   .login:hover {
     color: var(--foreground);
   }
+  .navigation .teamLink:hover {
+    color: var(--color-brand-800);
+  }
+  .footer .navigation .teamLink:hover {
+    color: var(--landing-on-inverse);
+  }
   .hero :global(.btn-primary:hover),
   .close :global(.btn-primary:hover) {
     background: var(--landing-on-inverse);
@@ -566,5 +608,8 @@
   }
   .landing :global([data-landing-pressed]) {
     transform: none;
+  }
+  .header .teamLink::before {
+    animation: none;
   }
 }

@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CommerceSection, ParticipantsSection } from "./landing/commerce";
 import { FaqSection, PassportSection } from "./landing/passport-faq";
+import { TeamSection } from "./landing/team";
 import { LandingMotion } from "./landing/landing-motion";
 import { ProcessWidget } from "./landing/process-widgets";
 import styles from "./landing/landing.module.css";
@@ -88,6 +89,9 @@ function SectionLinks() {
       <a href="#como-funciona">Cómo funciona</a>
       <a href="#pasaporte">Pasaporte</a>
       <a href="#preguntas-frecuentes">Preguntas frecuentes</a>
+      <a href="#equipo" className={styles.teamLink}>
+        Equipo
+      </a>
     </>
   );
 }
@@ -228,6 +232,7 @@ export default function Home() {
         <PassportSection />
         <ParticipantsSection />
         <FaqSection />
+        <TeamSection />
 
         <section className={styles.close} aria-labelledby="close-title">
           <div className={styles.closeInner}>
