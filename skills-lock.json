@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "auditor-skill": {
+      "source": "solanabr/auditor-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "0bbecd7e2720b562551a826427741e1c900b488c1874000f8425faec117bc102"
+    },
+    "colosseum-copilot": {
+      "source": "ColosseumOrg/colosseum-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/colosseum-copilot/SKILL.md",
+      "computedHash": "76a88fd18ef527fc89b10e6f51ea5ac219aabd15774d4c782e543885c978ea08"
+    },
     "emil-design-eng": {
       "source": "emilkowalski/skills",
       "sourceType": "github",
