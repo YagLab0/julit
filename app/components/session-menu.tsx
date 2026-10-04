@@ -82,12 +82,14 @@ export function SessionMenu() {
         >
           Ingresar
         </Link>
+        {/* Sign-up removed: accounts are provisioned, not self-registered.
         <Link
           href="/sign-up"
           className="inline-flex min-h-10 shrink-0 items-center rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-primary-foreground transition hover:opacity-90 lg:min-h-0"
         >
           Crear cuenta
         </Link>
+        */}
       </div>
     );
   }

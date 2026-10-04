@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+// Sign-up removed: accounts are provisioned, not self-registered.
+// import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { createClient } from "../lib/supabase/client";
@@ -78,6 +79,7 @@ export function SignInForm() {
       <button type="submit" disabled={busy} className="btn-primary w-full">
         {busy ? "Ingresando…" : "Ingresar"}
       </button>
+      {/* Sign-up removed: accounts are provisioned, not self-registered.
       <p className="text-center text-xs text-muted">
         ¿No tenés cuenta?{" "}
         <Link
@@ -87,6 +89,7 @@ export function SignInForm() {
           Creá la de tu empresa
         </Link>
       </p>
+      */}
     </form>
   );
 }

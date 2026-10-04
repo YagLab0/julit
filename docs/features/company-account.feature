@@ -19,7 +19,7 @@ Feature: Company account and verified wallet
 
   @ui
   Scenario: Producer type is not offered for self-registration
-    When a visitor opens the company registration form
+    When a signed-in user without a company opens the company registration form
     Then only Auditor and Buyer are offered as company types
 
   @api
