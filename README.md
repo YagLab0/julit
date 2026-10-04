@@ -2,6 +2,15 @@
 
 JuLit presents a B2B lithium-carbonate proposition and an existing Solana Devnet demonstration. The public `/` landing explains the proposed process and evidence boundaries; `/batches` opens the Origin catalogue and map. Demo settlement is simulated and does not transfer USDC. See [the public landing contract and asset provenance](docs/landing.md).
 
+## Pitch presentation
+
+`public/pitch.html` is a self-contained Spanish deck: a cover followed by one slide
+for each of the four speakers. Open the file directly in a browser, without a server
+or internet connection, or visit `/pitch.html` when the application is running.
+Use the arrow keys, navigation buttons, or slide selectors; the fullscreen button
+is available in browsers that support it. The deck distinguishes proposed USDC
+settlement from the current simulated demo.
+
 ## Stack
 
 | Layer          | Technology                       |
