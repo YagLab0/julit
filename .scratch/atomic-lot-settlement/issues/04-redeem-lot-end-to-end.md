@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] `redeem_lot` burns NFT in escrow + releases USDC to producer minus fee + fee to treasury, atomically
-- [ ] Callable from `funded` and `disputed`; rejected from any other state; buyer-signed only
-- [ ] Exact fee math verified (producer = amount − fee, treasury = fee)
-- [ ] `POST /api/lots/redeem` writes `redeemed` + signature only after RPC verification
-- [ ] "Confirmar recepción" signs `redeem_lot` for the buyer
-- [ ] LiteSVM tests cover success, fee split, wrong signer, wrong state, double redeem
+- [x] `redeem_lot` burns NFT in escrow + releases USDC to producer minus fee + fee to treasury, atomically
+- [x] Callable from `funded` and `disputed`; rejected from any other state; buyer-signed only
+- [x] Exact fee math verified (producer = amount − fee, treasury = fee)
+- [x] `POST /api/lots/redeem` writes `redeemed` + signature only after RPC verification
+- [x] "Confirmar recepción" signs `redeem_lot` for the buyer
+- [x] LiteSVM tests cover success, fee split, wrong signer, wrong state, double redeem

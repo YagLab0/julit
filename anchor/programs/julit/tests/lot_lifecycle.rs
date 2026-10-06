@@ -1,4 +1,4 @@
-use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
+use anchor_lang::{AnchorDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use julit::{accounts, instruction, Config, Lot, LotStatus};
 use litesvm::LiteSVM;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
@@ -229,6 +229,61 @@ fn token_balance(svm: &LiteSVM, ata: &Pubkey) -> u64 {
         .amount
 }
 
+fn title_mint(lot: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[b"mint", lot.as_ref()], &julit::ID).0
+}
+
+fn ata(owner: &Pubkey, mint: &Pubkey) -> Pubkey {
+    spl_associated_token_account::get_associated_token_address(owner, mint)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn redeem_lot_ix(
+    buyer: &Pubkey,
+    lot: &Pubkey,
+    producer: &Pubkey,
+    treasury: &Pubkey,
+    usdc_mint: &Pubkey,
+) -> Instruction {
+    let (config, _) = config_pda();
+    let mint = title_mint(lot);
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::RedeemLot {
+            lot: *lot,
+            config,
+            buyer: *buyer,
+            escrow_usdc: ata(lot, usdc_mint),
+            escrow_title: ata(lot, &mint),
+            mint,
+            producer: *producer,
+            treasury: *treasury,
+            producer_usdc: ata(producer, usdc_mint),
+            treasury_usdc: ata(treasury, usdc_mint),
+            usdc_mint: *usdc_mint,
+            token_program: spl_token::ID,
+            associated_token_program: spl_associated_token_account::ID,
+            system_program: solana_sdk::system_program::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::RedeemLot {}.data(),
+    }
+}
+
+/// Rewrites a lot account's status in place (e.g. to simulate `Disputed`,
+/// which has no instruction yet).
+fn set_lot_status(svm: &mut LiteSVM, lot: &Pubkey, status: LotStatus) {
+    let mut acc = svm.get_account(lot).unwrap();
+    let mut decoded = Lot::deserialize(&mut &acc.data[8..]).unwrap();
+    decoded.status = status;
+    let encoded = decoded.try_to_vec().unwrap();
+    acc.data[8..8 + encoded.len()].copy_from_slice(&encoded);
+    for byte in &mut acc.data[8 + encoded.len()..] {
+        *byte = 0;
+    }
+    svm.set_account(*lot, acc).unwrap();
+}
+
 /// Shared setup: config + a listed lot priced at `price`, funded buyer ATA.
 /// Returns (buyer keypair, lot pda).
 fn listed_lot(
@@ -239,6 +294,7 @@ fn listed_lot(
     buyer_balance: u64,
 ) -> (Keypair, Pubkey) {
     let buyer = Keypair::new();
+    svm.airdrop(&buyer.pubkey(), LAMPORTS_PER_SOL).unwrap();
     provision_buyer(svm, payer, usdc_mint, &buyer.pubkey(), buyer_balance);
     let now = svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp;
     let (ix, lot, _) = create_lot_ix(
@@ -338,6 +394,159 @@ fn fund_lot_rejects_insufficient_balance() {
         &[&payer, &buyer],
     );
     assert!(err.contains("InsufficientFunds") || err.contains("custom program error"), "{err}");
+}
+
+/// Config + listed lot + funded escrow. Returns (treasury, buyer, lot).
+fn funded_lot(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    usdc_mint: &Pubkey,
+    price: u64,
+) -> (Keypair, Keypair, Pubkey) {
+    let treasury = Keypair::new();
+    initialize(svm, payer, *usdc_mint, treasury.pubkey());
+    let (buyer, lot) = listed_lot(svm, payer, usdc_mint, price, price * 2);
+    send(
+        svm,
+        vec![fund_lot_ix(&buyer.pubkey(), &lot, usdc_mint)],
+        &[payer, &buyer],
+    );
+    svm.expire_blockhash();
+    (treasury, buyer, lot)
+}
+
+#[test]
+fn redeem_lot_burns_title_and_splits_escrow() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    // fee_bps = 50 → fee = 2_000_000 on a 400_000_000 lot.
+    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    send(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+
+    assert_eq!(token_balance(&svm, &ata(&payer.pubkey(), &usdc_mint)), 398_000_000);
+    assert_eq!(token_balance(&svm, &ata(&treasury.pubkey(), &usdc_mint)), 2_000_000);
+    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 0);
+
+    // The Digital Title is burned inside escrow; mint supply hits zero.
+    let mint = title_mint(&lot);
+    assert_eq!(token_balance(&svm, &ata(&lot, &mint)), 0);
+    let mint_state =
+        spl_token::state::Mint::unpack(&svm.get_account(&mint).unwrap().data).unwrap();
+    assert_eq!(mint_state.supply, 0);
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Redeemed);
+}
+
+#[test]
+fn redeem_lot_works_from_disputed() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    set_lot_status(&mut svm, &lot, LotStatus::Disputed);
+    send(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Redeemed);
+}
+
+#[test]
+fn redeem_lot_rejects_wrong_buyer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let impostor = Keypair::new();
+    svm.airdrop(&impostor.pubkey(), LAMPORTS_PER_SOL).unwrap();
+    let err = send_err(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &impostor.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &impostor],
+    );
+    assert!(err.contains("WrongBuyer") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn redeem_lot_rejects_unfunded_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let treasury = Keypair::new();
+    initialize(&mut svm, &payer, usdc_mint, treasury.pubkey());
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("LotNotFunded") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn redeem_lot_rejects_double_redeem() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    send(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+    svm.expire_blockhash();
+
+    let err = send_err(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("LotNotFunded") || err.contains("601"), "{err}");
 }
 
 #[test]

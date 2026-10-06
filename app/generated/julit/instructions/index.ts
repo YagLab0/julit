@@ -9,3 +9,4 @@
 export * from "./createLot";
 export * from "./fundLot";
 export * from "./initialize";
+export * from "./redeemLot";

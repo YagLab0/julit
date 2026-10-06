@@ -44,6 +44,16 @@ export const JULIT_ERROR__WRONG_METADATA_PROGRAM = 0x177c; // 6012
 export const JULIT_ERROR__WRONG_BUYER = 0x177d; // 6013
 /** LotNotListed: Lot is not open for funding */
 export const JULIT_ERROR__LOT_NOT_LISTED = 0x177e; // 6014
+/** LotNotFunded: Lot is not funded or disputed */
+export const JULIT_ERROR__LOT_NOT_FUNDED = 0x177f; // 6015
+/** WrongTitleMint: Mint is not this lot's Digital Title */
+export const JULIT_ERROR__WRONG_TITLE_MINT = 0x1780; // 6016
+/** WrongProducer: Account is not the lot's producer */
+export const JULIT_ERROR__WRONG_PRODUCER = 0x1781; // 6017
+/** WrongTreasury: Account is not the configured treasury */
+export const JULIT_ERROR__WRONG_TREASURY = 0x1782; // 6018
+/** MathOverflow: Arithmetic overflow */
+export const JULIT_ERROR__MATH_OVERFLOW = 0x1783; // 6019
 
 export type JulitError =
   | typeof JULIT_ERROR__BUYER_IS_PRODUCER
@@ -55,11 +65,16 @@ export type JulitError =
   | typeof JULIT_ERROR__INVALID_PRICE
   | typeof JULIT_ERROR__INVALID_TREASURY
   | typeof JULIT_ERROR__INVALID_VOLUME
+  | typeof JULIT_ERROR__LOT_NOT_FUNDED
   | typeof JULIT_ERROR__LOT_NOT_LISTED
+  | typeof JULIT_ERROR__MATH_OVERFLOW
   | typeof JULIT_ERROR__METADATA_URI_TOO_LONG
   | typeof JULIT_ERROR__NOT_BATTERY_GRADE
   | typeof JULIT_ERROR__WRONG_BUYER
   | typeof JULIT_ERROR__WRONG_METADATA_PROGRAM
+  | typeof JULIT_ERROR__WRONG_PRODUCER
+  | typeof JULIT_ERROR__WRONG_TITLE_MINT
+  | typeof JULIT_ERROR__WRONG_TREASURY
   | typeof JULIT_ERROR__WRONG_USDC_MINT;
 
 let julitErrorMessages: Record<JulitError, string> | undefined;
@@ -74,11 +89,16 @@ if (process.env.NODE_ENV !== "production") {
     [JULIT_ERROR__INVALID_PRICE]: `Price must be greater than zero`,
     [JULIT_ERROR__INVALID_TREASURY]: `Invalid treasury address`,
     [JULIT_ERROR__INVALID_VOLUME]: `Volume must be at least one tonne`,
+    [JULIT_ERROR__LOT_NOT_FUNDED]: `Lot is not funded or disputed`,
     [JULIT_ERROR__LOT_NOT_LISTED]: `Lot is not open for funding`,
+    [JULIT_ERROR__MATH_OVERFLOW]: `Arithmetic overflow`,
     [JULIT_ERROR__METADATA_URI_TOO_LONG]: `Metadata URI exceeds 200 bytes`,
     [JULIT_ERROR__NOT_BATTERY_GRADE]: `Only battery grade (99.50-100.00%) is accepted`,
     [JULIT_ERROR__WRONG_BUYER]: `Only the designated buyer may fund this lot`,
     [JULIT_ERROR__WRONG_METADATA_PROGRAM]: `Not the Metaplex Token Metadata program`,
+    [JULIT_ERROR__WRONG_PRODUCER]: `Account is not the lot's producer`,
+    [JULIT_ERROR__WRONG_TITLE_MINT]: `Mint is not this lot's Digital Title`,
+    [JULIT_ERROR__WRONG_TREASURY]: `Account is not the configured treasury`,
     [JULIT_ERROR__WRONG_USDC_MINT]: `Mint is not the configured settlement mint`,
   };
 }

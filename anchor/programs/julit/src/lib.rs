@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount};
+use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount};
 use mpl_token_metadata::instructions::{
     CreateMasterEditionV3CpiBuilder, CreateMetadataAccountV3CpiBuilder,
 };
@@ -211,6 +211,86 @@ pub mod julit {
         lot.status = LotStatus::Funded;
         Ok(())
     }
+
+    /// The buyer confirms physical receipt. Atomically burns the Digital
+    /// Title inside escrow, releases the escrowed USDC to the producer minus
+    /// the take rate, and pays the treasury its fee. Callable from `Funded`
+    /// and `Disputed` — the buyer's release is the on-chain shape of an
+    /// off-chain resolution in the producer's favor.
+    pub fn redeem_lot(ctx: Context<RedeemLot>) -> Result<()> {
+        let lot = &mut ctx.accounts.lot;
+        require!(
+            lot.status == LotStatus::Funded || lot.status == LotStatus::Disputed,
+            LotError::LotNotFunded
+        );
+
+        let fee = (lot.price_usdc as u128)
+            .checked_mul(ctx.accounts.config.fee_bps as u128)
+            .ok_or(LotError::MathOverflow)?
+            .checked_div(10_000)
+            .ok_or(LotError::MathOverflow)? as u64;
+        let release = lot
+            .price_usdc
+            .checked_sub(fee)
+            .ok_or(LotError::MathOverflow)?;
+
+        let producer_key = lot.producer;
+        let lot_id_bytes = lot.lot_id.as_bytes().to_vec();
+        let bump = [lot.bump];
+        let signer_seeds: &[&[u8]] = &[
+            b"lot",
+            producer_key.as_ref(),
+            lot_id_bytes.as_slice(),
+            &bump,
+        ];
+        let signer = &[signer_seeds];
+
+        // Burn the Digital Title inside its escrow — it never left the PDA.
+        token::burn(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    from: ctx.accounts.escrow_title.to_account_info(),
+                    authority: lot.to_account_info(),
+                },
+                signer,
+            ),
+            1,
+        )?;
+
+        // Release principal to the producer and the take rate to treasury.
+        let escrow_usdc = ctx.accounts.escrow_usdc.to_account_info();
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: escrow_usdc.clone(),
+                    to: ctx.accounts.producer_usdc.to_account_info(),
+                    authority: lot.to_account_info(),
+                },
+                signer,
+            ),
+            release,
+        )?;
+        if fee > 0 {
+            token::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+                    token::Transfer {
+                        from: escrow_usdc,
+                        to: ctx.accounts.treasury_usdc.to_account_info(),
+                        authority: lot.to_account_info(),
+                    },
+                    signer,
+                ),
+                fee,
+            )?;
+        }
+
+        lot.status = LotStatus::Redeemed;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -354,6 +434,89 @@ pub struct FundLot<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+#[derive(Accounts)]
+pub struct RedeemLot<'info> {
+    /// The lot being redeemed; the PDA seeds prove the account is the real one.
+    #[account(
+        mut,
+        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
+        bump = lot.bump,
+    )]
+    pub lot: Account<'info, Lot>,
+
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, Config>,
+
+    /// Only the designated buyer confirms receipt and releases the escrow.
+    #[account(
+        mut,
+        constraint = buyer.key() == lot.buyer @ LotError::WrongBuyer
+    )]
+    pub buyer: Signer<'info>,
+
+    /// The lot-owned escrow holding the deposit; drained by this instruction.
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_usdc: Account<'info, TokenAccount>,
+
+    /// The escrow holding the Digital Title; its single token is burned.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_title: Account<'info, TokenAccount>,
+
+    /// The Digital Title mint; burn reduces its supply to zero.
+    #[account(
+        mut,
+        constraint = mint.key() == lot.mint @ LotError::WrongTitleMint
+    )]
+    pub mint: Account<'info, Mint>,
+
+    /// The lot's producer; only its address derives the release ATA.
+    /// CHECK: constrained to `lot.producer`.
+    #[account(constraint = producer.key() == lot.producer @ LotError::WrongProducer)]
+    pub producer: UncheckedAccount<'info>,
+
+    /// The protocol treasury; only its address derives the fee ATA.
+    /// CHECK: constrained to `config.treasury`.
+    #[account(constraint = treasury.key() == config.treasury @ LotError::WrongTreasury)]
+    pub treasury: UncheckedAccount<'info>,
+
+    /// The producer's USDC ATA — the release destination. The buyer creates
+    /// it if the producer never held the settlement token.
+    #[account(
+        init_if_needed,
+        payer = buyer,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = producer,
+    )]
+    pub producer_usdc: Account<'info, TokenAccount>,
+
+    /// The treasury's USDC ATA — the fee destination.
+    #[account(
+        init_if_needed,
+        payer = buyer,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_usdc: Account<'info, TokenAccount>,
+
+    /// Settlement mint; constrained to the Config's `usdc_mint`.
+    #[account(
+        constraint = usdc_mint.key() == config.usdc_mint @ LotError::WrongUsdcMint
+    )]
+    pub usdc_mint: Account<'info, Mint>,
+
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 pub struct Config {
     pub admin: Pubkey,
@@ -443,4 +606,14 @@ pub enum LotError {
     WrongBuyer,
     #[msg("Lot is not open for funding")]
     LotNotListed,
+    #[msg("Lot is not funded or disputed")]
+    LotNotFunded,
+    #[msg("Mint is not this lot's Digital Title")]
+    WrongTitleMint,
+    #[msg("Account is not the lot's producer")]
+    WrongProducer,
+    #[msg("Account is not the configured treasury")]
+    WrongTreasury,
+    #[msg("Arithmetic overflow")]
+    MathOverflow,
 }

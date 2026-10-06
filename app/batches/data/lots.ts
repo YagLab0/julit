@@ -16,6 +16,8 @@ export type Lot = {
   water_footprint_m3_per_tonne: number;
   carbon_footprint_kg_co2e_per_tonne: number;
   price_usdc: number;
+  /** Producer's verified wallet — also the redeem release destination. */
+  producer_wallet: string;
   /** Designated buyer fixed at creation; only this wallet may fund the escrow. */
   buyer_wallet: string;
   claimable_after: string;
@@ -26,7 +28,7 @@ export type Lot = {
 
 /** Columns the origin fiche needs, in one place for the per-origin query. */
 export const LOT_COLUMNS =
-  "pda_address, lot_id, origin_id, status, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, buyer_wallet, claimable_after, plant_cert_sha256, plant_certificate_path, indexed_at" as const;
+  "pda_address, lot_id, origin_id, status, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, claimable_after, plant_cert_sha256, plant_certificate_path, indexed_at" as const;
 
 /** Public URL of the producer's plant certificate PDF, content-addressed by digest. */
 export function plantCertificateUrl(

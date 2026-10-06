@@ -112,8 +112,22 @@ export type VerifyLotFundingInput = {
   lotAccount: LotAccountFacts | null;
 };
 
-export function verifyLotFunding(
-  input: VerifyLotFundingInput
+type TransitionSpec = {
+  /** What the on-chain lot status must be after the transition. */
+  expectedStatus: LotAccountFacts["status"];
+  /** Index statuses that may take this transition. */
+  allowedIndex: readonly LotAccountFacts["status"][];
+  missingIx: string;
+  wrongLot: string;
+  wrongSigner: string;
+  wrongOnChainBuyer: string;
+  wrongOnChainStatus: string;
+  staleIndex: string;
+};
+
+function verifyLifecycleTransition(
+  input: VerifyLotFundingInput,
+  spec: TransitionSpec
 ): { ok: true } | { ok: false; rejection: LotRejection } {
   const reject = (status: number, message: string) => ({
     ok: false as const,
@@ -130,16 +144,13 @@ export function verifyLotFunding(
 
   const ix = tx.fundLotInstruction;
   if (!ix) {
-    return reject(
-      400,
-      "La transacción no contiene una instrucción de fondeo JuLit."
-    );
+    return reject(400, spec.missingIx);
   }
   if (ix.lot !== input.lotPda) {
-    return reject(400, "La transacción no fondea este lote.");
+    return reject(400, spec.wrongLot);
   }
   if (ix.buyer !== input.buyerWallet) {
-    return reject(403, "El fondeo no lo firmó tu wallet verificada.");
+    return reject(403, spec.wrongSigner);
   }
 
   const lot = input.lotAccount;
@@ -147,18 +158,50 @@ export function verifyLotFunding(
     return reject(400, "La cuenta del lote no existe en el programa.");
   }
   if (lot.buyer !== input.buyerWallet) {
-    return reject(403, "Solo la compradora designada puede fondear el lote.");
+    return reject(403, spec.wrongOnChainBuyer);
   }
-  if (lot.status !== "funded") {
-    return reject(400, "El lote no quedó fondeado en la cadena.");
+  if (lot.status !== spec.expectedStatus) {
+    return reject(400, spec.wrongOnChainStatus);
   }
 
   if (input.indexedStatus === null) {
     return reject(404, "El lote no está indexado.");
   }
-  if (input.indexedStatus !== "listed") {
-    return reject(409, "El lote ya no está publicado.");
+  if (!spec.allowedIndex.includes(input.indexedStatus)) {
+    return reject(409, spec.staleIndex);
   }
 
   return { ok: true };
+}
+
+export function verifyLotFunding(
+  input: VerifyLotFundingInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "funded",
+    allowedIndex: ["listed"],
+    missingIx: "La transacción no contiene una instrucción de fondeo JuLit.",
+    wrongLot: "La transacción no fondea este lote.",
+    wrongSigner: "El fondeo no lo firmó tu wallet verificada.",
+    wrongOnChainBuyer: "Solo la compradora designada puede fondear el lote.",
+    wrongOnChainStatus: "El lote no quedó fondeado en la cadena.",
+    staleIndex: "El lote ya no está publicado.",
+  });
+}
+
+export function verifyLotRedemption(
+  input: VerifyLotFundingInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "redeemed",
+    allowedIndex: ["funded", "disputed"],
+    missingIx:
+      "La transacción no contiene una instrucción de confirmación JuLit.",
+    wrongLot: "La transacción no confirma este lote.",
+    wrongSigner: "La recepción no la firmó tu wallet verificada.",
+    wrongOnChainBuyer:
+      "Solo la compradora designada puede confirmar la recepción.",
+    wrongOnChainStatus: "El lote no quedó liquidado en la cadena.",
+    staleIndex: "El lote ya no está pendiente de recepción.",
+  });
 }

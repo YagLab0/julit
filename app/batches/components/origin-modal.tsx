@@ -42,6 +42,7 @@ import {
   fetchConfig,
   findConfigPda,
   getFundLotInstructionAsync,
+  getRedeemLotInstructionAsync,
 } from "../../generated/julit";
 
 // R3F touches WebGL: client-only, never prerendered.
@@ -226,6 +227,7 @@ export function OriginModal({
   >("none");
   const [requestingContract, setRequestingContract] = useState(false);
   const [funding, setFunding] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
 
   // Load producer company and contract status
   useEffect(() => {
@@ -468,6 +470,90 @@ export function OriginModal({
     }
   }
 
+  async function handleConfirmReceipt() {
+    if (!selected || !isDesignatedBuyer) return;
+    if (!signer) {
+      toast.warning("Billetera sin firma", {
+        description:
+          "Tu billetera no puede firmar transacciones; reconectala para confirmar la recepción.",
+      });
+      return;
+    }
+    if (cluster !== "devnet") {
+      toast.warning("Cambiá a Solana Devnet", {
+        description: "La confirmación de recepción corre sobre Devnet.",
+      });
+      return;
+    }
+
+    setRedeeming(true);
+    try {
+      const { rpc } = createSolanaClient("devnet");
+      const configPda = await findConfigPda();
+      const config = await fetchConfig(rpc, configPda[0], {
+        commitment: "confirmed",
+      });
+
+      const redeemIx = await getRedeemLotInstructionAsync({
+        lot: address(selected.pda_address),
+        buyer: signer,
+        mint: address(selected.mint_address),
+        producer: address(selected.producer_wallet),
+        treasury: config.data.treasury,
+        usdcMint: config.data.usdcMint,
+      });
+      const txSignature = await sendTransaction({
+        instructions: [redeemIx],
+      });
+
+      const res = await fetch("/api/lots/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lot_pda: selected.pda_address,
+          tx_signature: txSignature,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error("La liquidación quedó on-chain pero falló el índice.", {
+          description:
+            err?.error ??
+            "El pago ya fue liberado; el pasaporte puede tardar en reflejarlo.",
+        });
+        return;
+      }
+
+      retry();
+      toast.success(`Recepción confirmada: lote ${selected.lot_id} liquidado`, {
+        description:
+          "El Título Digital fue quemado y el pago liberado a la productora.",
+        action: {
+          label: "Ver en Explorer",
+          onClick: () =>
+            window.open(
+              getExplorerUrl(`/tx/${txSignature}`, cluster),
+              "_blank"
+            ),
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(msg)) {
+        toast.info("Transacción cancelada", {
+          description: "Cancelaste la firma en tu billetera.",
+        });
+      } else {
+        toast.error("No se pudo confirmar la recepción.", {
+          description: "Reintentá en unos segundos.",
+        });
+      }
+    } finally {
+      setRedeeming(false);
+    }
+  }
+
   return (
     <Modal onClose={onClose} labelledBy="origin-modal-title" maxWidth={1040}>
       <header className="shrink-0 border-b border-border px-5 pt-4 pb-3">
@@ -707,10 +793,30 @@ export function OriginModal({
                     : "Designado a otra empresa"}
               </button>
             )}
-            {selected.status === "funded" && (
-              <p className="text-[11px] text-muted sm:max-w-52 sm:text-right">
-                Fondeado en escrow: pendiente de confirmación de recepción.
-              </p>
+            {(selected.status === "funded" ||
+              selected.status === "disputed") && (
+              <>
+                {isDesignatedBuyer ? (
+                  <button
+                    type="button"
+                    disabled={redeeming}
+                    onClick={() => void handleConfirmReceipt()}
+                    className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
+                      redeeming
+                        ? "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
+                        : "btn-primary cursor-pointer"
+                    }`}
+                  >
+                    {redeeming ? "Confirmando…" : "Confirmar recepción"}
+                  </button>
+                ) : (
+                  <p className="text-[11px] text-muted sm:max-w-52 sm:text-right">
+                    {selected.status === "disputed"
+                      ? "En disputa: congelado hasta que la compradora confirme."
+                      : "Fondeado en escrow: pendiente de confirmación de recepción."}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </footer>

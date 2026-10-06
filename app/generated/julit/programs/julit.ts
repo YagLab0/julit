@@ -20,9 +20,11 @@ import {
   parseCreateLotInstruction,
   parseFundLotInstruction,
   parseInitializeInstruction,
+  parseRedeemLotInstruction,
   type ParsedCreateLotInstruction,
   type ParsedFundLotInstruction,
   type ParsedInitializeInstruction,
+  type ParsedRedeemLotInstruction,
 } from "../instructions";
 
 export const JULIT_PROGRAM_ADDRESS =
@@ -68,6 +70,7 @@ export enum JulitInstruction {
   CreateLot,
   FundLot,
   Initialize,
+  RedeemLot,
 }
 
 export function identifyJulitInstruction(
@@ -107,6 +110,17 @@ export function identifyJulitInstruction(
   ) {
     return JulitInstruction.Initialize;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([123, 49, 49, 64, 118, 149, 146, 79]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.RedeemLot;
+  }
   throw new Error(
     "The provided instruction could not be identified as a julit instruction.",
   );
@@ -123,7 +137,10 @@ export type ParsedJulitInstruction<
     } & ParsedFundLotInstruction<TProgram>)
   | ({
       instructionType: JulitInstruction.Initialize;
-    } & ParsedInitializeInstruction<TProgram>);
+    } & ParsedInitializeInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.RedeemLot;
+    } & ParsedRedeemLotInstruction<TProgram>);
 
 export function parseJulitInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
@@ -149,6 +166,13 @@ export function parseJulitInstruction<TProgram extends string>(
       return {
         instructionType: JulitInstruction.Initialize,
         ...parseInitializeInstruction(instruction),
+      };
+    }
+    case JulitInstruction.RedeemLot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.RedeemLot,
+        ...parseRedeemLotInstruction(instruction),
       };
     }
     default:
