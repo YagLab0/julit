@@ -1,8 +1,175 @@
+import type { ReactNode } from "react";
 import styles from "./commerce.module.css";
+import { SolutionCarousel } from "./commerce-carousel";
 import {
   BuyerReviewWidget,
   ProducerStructureWidget,
 } from "./participant-widgets";
+
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={styles.checkIcon}
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="m8 12.5 2.5 2.5L16 9.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SettlementMock() {
+  return (
+    <div className={styles.mockCard}>
+      <div className={styles.exchange}>
+        <span className={styles.party}>Comprador</span>
+        <span className={styles.exchangeLegs}>
+          <span className={styles.exchangeLeg}>
+            USDC <i className={styles.arrowRight} />
+          </span>
+          <span className={styles.exchangeLeg}>
+            <i className={styles.arrowLeft} /> Título
+          </span>
+        </span>
+        <span className={styles.party}>Productor</span>
+      </div>
+      <p className={styles.mockFoot}>
+        <CheckIcon /> Una transacción · ambas patas o ninguna
+      </p>
+    </div>
+  );
+}
+
+function PassportMock() {
+  return (
+    <div className={styles.mockCard}>
+      <p className={styles.mockHead}>
+        Pasaporte del lote <em className={styles.headPill}>público</em>
+      </p>
+      <ul className={styles.mockRows}>
+        <li>
+          <span>Lote</span>
+          <b>0042 · Salinas Grandes</b>
+        </li>
+        <li>
+          <span>Estado</span>
+          <b className={styles.tagTeal}>Liquidado</b>
+        </li>
+        <li>
+          <span>Transacciones</span>
+          <b>3</b>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function CertificateMock() {
+  return (
+    <div className={styles.mockCard}>
+      <div className={styles.docRow}>
+        <span className={styles.docIcon}>
+          <i className={styles.docBadge}>PDF</i>
+        </span>
+        <span className={styles.docMeta}>
+          <b className={styles.fileName}>certificado-planta.pdf</b>
+          <span className={styles.fileCaption}>
+            Declarado una sola vez por el productor
+          </span>
+        </span>
+      </div>
+      <div className={styles.hashRow}>
+        <span>SHA-256</span>
+        <code>9f2c…a41b</code>
+        <span className={styles.hashCheck}>
+          <CheckIcon /> coincide
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ReservedMock() {
+  return (
+    <div className={styles.mockCard}>
+      <div className={styles.lotRow}>
+        <b className={styles.fileName}>Lote 0042</b>
+        <span className={styles.lockPill}>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <rect x="5" y="11" width="14" height="9" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          Comprador designado
+        </span>
+      </div>
+      <p className={styles.fileCaption}>Carbonato de litio · Jujuy</p>
+      <div className={styles.hashRow}>
+        <span>Liquidación</span>
+        <span className={styles.hashCheck}>
+          solo el comprador designado <CheckIcon />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const slides: {
+  title: string;
+  problem: string;
+  solution: string;
+  mock: ReactNode;
+}[] = [
+  {
+    title: "Liquidación sin ventana de riesgo",
+    problem:
+      "El pago y la entrega del bien no ocurren al mismo tiempo; alguien asume el riesgo de que la otra parte no cumpla.",
+    solution:
+      "El pago del comprador y el título digital del lote cambian de manos juntos, o no cambia nada.",
+    mock: <SettlementMock />,
+  },
+  {
+    title: "Un solo registro para todos",
+    problem:
+      "Cada parte guarda sus propios datos del lote y reconciliarlos cuesta tiempo y genera disputas.",
+    solution:
+      "El título digital concentra la referencia del lote y su historial es consultable públicamente en el Pasaporte.",
+    mock: <PassportMock />,
+  },
+  {
+    title: "Evidencia a nivel planta",
+    problem:
+      "Auditar cada lote por separado no refleja cómo certifica la industria real y multiplica la fricción documental.",
+    solution:
+      "El productor declara el certificado de su planta una sola vez; cada lote registra su referencia y cualquiera puede comprobar que el documento coincide.",
+    mock: <CertificateMock />,
+  },
+  {
+    title: "Operaciones reservadas, no góndola abierta",
+    problem:
+      "Los acuerdos entre mineras y compradores se negocian en privado, pero los datos comerciales terminan dispersos o públicos.",
+    solution:
+      "Todo lote nace reservado a un comprador designado; el acuerdo se cierra entre las empresas y solo ese comprador puede liquidarlo.",
+    mock: <ReservedMock />,
+  },
+];
 
 export function CommerceSection() {
   return (
@@ -26,164 +193,29 @@ export function CommerceSection() {
           </p>
         </div>
 
-        <div className={styles.commerceGrid}>
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+        <SolutionCarousel>
+          {slides.map((slide, index) => (
+            <figure
+              key={slide.title}
+              className={styles.slide}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${index + 1} de ${slides.length}`}
+              data-landing-reveal
+              data-landing-delay={index * 50}
             >
-              <path d="M5 11h21m-5-5 5 5-5 5M27 21H6m5-5-5 5 5 5" />
-            </svg>
-            <h3>Liquidación sin ventana de riesgo</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  En una operación común, el pago y la entrega del bien no
-                  ocurren al mismo tiempo; alguien asume el riesgo de que la
-                  otra parte no cumpla.
-                </dd>
+              <div className={styles.slideCard} aria-hidden="true">
+                <div className={styles.slideMock}>{slide.mock}</div>
               </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  La liquidación es una sola transacción: el pago del comprador
-                  y el título digital del lote cambian de manos juntos, o no
-                  cambia nada.
-                </dd>
-              </div>
-            </dl>
-          </article>
-
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-            data-landing-delay="50"
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="11" y="11" width="10" height="10" rx="2" />
-              <circle cx="6" cy="6" r="3" />
-              <circle cx="26" cy="6" r="3" />
-              <circle cx="16" cy="27" r="3" />
-              <path d="m8 8 4 4m12-4-4 4m-4 9v3" />
-            </svg>
-            <h3>Un solo registro para todos</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  Cada parte guarda sus propios datos del lote — origen,
-                  cantidad, pureza, estado — y reconciliarlos cuesta tiempo y
-                  genera disputas.
-                </dd>
-              </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  El título digital concentra la referencia del lote y su
-                  historial es consultable públicamente en el Pasaporte.
-                </dd>
-              </div>
-            </dl>
-          </article>
-
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-            data-landing-delay="100"
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 4H8a2 2 0 0 0-2 2v20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V11L19 4Z" />
-              <path d="M19 4v7h7M11 16h6m-6 5h3m4 1 2 2 5-5" />
-            </svg>
-            <h3>Evidencia a nivel planta</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  Auditar cada lote por separado no refleja cómo certifica la
-                  industria real y multiplica la fricción documental.
-                </dd>
-              </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  El productor declara el certificado de su planta una sola vez;
-                  cada lote registra su referencia y cualquiera puede comprobar
-                  que el documento coincide con la versión registrada.
-                </dd>
-              </div>
-            </dl>
-          </article>
-
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-            data-landing-delay="150"
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="4" y="5" width="24" height="22" rx="3" />
-              <path d="M4 11h24M8 8h.01M11 8h.01" />
-              <circle cx="15" cy="18" r="4" />
-              <path d="m18 21 4 3" />
-            </svg>
-            <h3>Operaciones reservadas, no góndola abierta</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  Los acuerdos entre mineras y compradores se negocian en
-                  privado, pero los datos comerciales terminan dispersos o
-                  públicos.
-                </dd>
-              </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  Todo lote nace reservado a un comprador designado; el acuerdo
-                  se cierra entre las empresas y solo el comprador designado
-                  puede liquidarlo.
-                </dd>
-              </div>
-            </dl>
-          </article>
-        </div>
+              <figcaption className={styles.slideCaption}>
+                <span className={styles.slideProblem}>
+                  El problema — {slide.problem}
+                </span>
+                <strong>{slide.title}.</strong> {slide.solution}
+              </figcaption>
+            </figure>
+          ))}
+        </SolutionCarousel>
       </div>
     </section>
   );
