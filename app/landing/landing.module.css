@@ -87,7 +87,6 @@
   justify-content: space-between;
   gap: 24px;
   padding: 18px 44px;
-  border-bottom: 1px solid var(--border-low);
 }
 
 .brand {
@@ -203,21 +202,6 @@
   margin: 0 auto;
   padding: 72px 40px 0;
   text-align: center;
-}
-.heroEyebrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 12px;
-  letter-spacing: 0.025em;
-}
-.heroEyebrow::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--primary);
 }
 .hero h1 {
   margin-top: 26px;
@@ -517,9 +501,6 @@
   }
   .hero h1 {
     font-size: 40px;
-  }
-  .heroEyebrow {
-    font-size: 10px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

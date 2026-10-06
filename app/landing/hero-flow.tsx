@@ -12,29 +12,32 @@ function HexMark() {
   );
 }
 
-const beamPaths = [
+const inPaths = [
   "M52 0C52 56 160 48 160 108",
   "M160 0V108",
   "M268 0C268 56 160 48 160 108",
 ];
 
-function Beams() {
+const outPaths = ["M160 0C160 44 84 40 84 84", "M160 0C160 44 236 40 236 84"];
+
+function Beams({ paths, flip }: { paths: string[]; flip?: boolean }) {
   return (
     <svg
       className={styles.beams}
-      viewBox="0 0 320 108"
+      viewBox={`0 0 320 ${flip ? 84 : 108}`}
       aria-hidden="true"
       preserveAspectRatio="none"
+      data-flip={flip || undefined}
     >
-      {beamPaths.map((d) => (
+      {paths.map((d) => (
         <path key={d} d={d} className={styles.beamGhost} />
       ))}
-      {beamPaths.map((d, i) => (
+      {paths.map((d, i) => (
         <path
           key={`live-${d}`}
           d={d}
           className={styles.beamLive}
-          style={{ animationDelay: `${i * 0.7}s` }}
+          style={{ animationDelay: `${i * 0.7 + (flip ? 0.4 : 0)}s` }}
         />
       ))}
     </svg>
@@ -45,6 +48,11 @@ const inputs = [
   { label: "Lote 0042", meta: "reservado" },
   { label: "Título", meta: "NFT · 1" },
   { label: "Pago", meta: "USDC" },
+];
+
+const outputs = [
+  { asset: "USDC", to: "Productor" },
+  { asset: "Título", to: "Comprador" },
 ];
 
 function SideCell({ flip }: { flip?: boolean }) {
@@ -84,25 +92,29 @@ export function HeroFlow() {
             </div>
           ))}
         </div>
-        <Beams />
-        <div className={styles.node}>
-          <HexMark />
-        </div>
-        <span className={styles.nodeLine} />
-        <div className={styles.doc}>
-          <div className={styles.docHead}>
-            <span className={styles.docTitle}>settle_lot</span>
-            <span className={styles.docChip}>confirmada</span>
+        <Beams paths={inPaths} />
+        <div className={styles.nodeWrap}>
+          <div className={styles.node}>
+            <HexMark />
           </div>
-          <div className={styles.docLegs}>
-            <span>
-              USDC <i /> Productor
-            </span>
-            <span>
-              Título <i /> Comprador
-            </span>
-          </div>
+          <span className={styles.nodeLabel}>settle_lot</span>
         </div>
+        <Beams paths={outPaths} flip />
+        <div className={styles.outputs}>
+          {outputs.map(({ asset, to }) => (
+            <div className={styles.outCard} key={to}>
+              <span className={styles.outAsset}>{asset}</span>
+              <svg viewBox="0 0 24 24" className={styles.outArrow}>
+                <path d="M5 12h14m-6-6 6 6-6 6" />
+              </svg>
+              <span className={styles.outTo}>{to}</span>
+            </div>
+          ))}
+        </div>
+        <span className={styles.txChip}>
+          <span className={styles.txDot} />
+          confirmada · una sola transacción
+        </span>
       </div>
       <SideCell flip />
     </div>
