@@ -140,9 +140,9 @@ transfer-in-transit attacks impossible by construction.
   `["lot", producer, lot_id]` pattern; escrow accounts derive from the Lot
   PDA.
 - **Digital Title**: Metaplex Token Standard `NonFungible`, mint + metadata
-  + master edition via CPI, update authority = Lot PDA, supply 1 minted to
-  the escrow. Standard token program — the title never leaves escrow, so no
-  Token-2022 extension is needed.
+  - master edition via CPI, update authority = Lot PDA, supply 1 minted to
+    the escrow. Standard token program — the title never leaves escrow, so no
+    Token-2022 extension is needed.
 - **Escrow**: USDC token account owned by the Lot PDA; releases use PDA
   signer seeds. Fee split is computed and applied inside `redeem_lot` /
   `claim_timeout`.

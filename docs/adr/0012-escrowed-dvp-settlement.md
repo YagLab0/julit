@@ -6,7 +6,7 @@ Supersedes [ADR-0002](./0002-completion-is-simulated-settlement.md) (simulated s
 
 The pivot plan specified `settle_lot` as an atomic transfer: buyer's USDC goes directly to the producer while the escrowed NFT goes to the buyer, and `redeem_lot` burns the NFT as a post-payment receipt. Adversarial review (`.scratch/business-model-validation/`) found two defects in that ordering:
 
-- The buyer pays the full principal *before* shipment — worse exposure than a letter of credit, which releases only against conforming shipping documents.
+- The buyer pays the full principal _before_ shipment — worse exposure than a letter of credit, which releases only against conforming shipping documents.
 - `redeem` had no economic incentive: post-payment, burning the NFT gives the buyer nothing, so lots would stall in `settled` forever.
 
 ## Decision

@@ -4,7 +4,7 @@
 
 ### 1. "DvP elimina el riesgo de liquidación de forma binaria" — elimina un riesgo que el propio protocolo creó, y empeora la exposición del comprador
 
-El bull compara contra cartas de crédito, pero malinterpreta qué garantiza una LC: el banco libera el pago **contra documentos de embarque conformes** — bill of lading, inspección. La LC *es* un oráculo de entrega mediado por papel y terceros regulados. En JULIT el orden se invierte: `settle_lot` ocurre **antes** de que el cargamento siquiera salga; el comprador paga el principal completo a cambio de un NFT que el propio plan admite que no es título legal. Es decir, la atomicidad es perfecta en la pata que no existía antes de tokenizar (USDC↔NFT) mientras la pata que duele (pago↔mercadería) queda peor que bajo el incumbente: en una LC el comprador no paga si los docs no conforman; acá ya pagó y espera semanas la entrega física. El "riesgo binario eliminado" es real pero minúsculo, y la ventana de exposición del comprador se *alargó*.
+El bull compara contra cartas de crédito, pero malinterpreta qué garantiza una LC: el banco libera el pago **contra documentos de embarque conformes** — bill of lading, inspección. La LC _es_ un oráculo de entrega mediado por papel y terceros regulados. En JULIT el orden se invierte: `settle_lot` ocurre **antes** de que el cargamento siquiera salga; el comprador paga el principal completo a cambio de un NFT que el propio plan admite que no es título legal. Es decir, la atomicidad es perfecta en la pata que no existía antes de tokenizar (USDC↔NFT) mientras la pata que duele (pago↔mercadería) queda peor que bajo el incumbente: en una LC el comprador no paga si los docs no conforman; acá ya pagó y espera semanas la entrega física. El "riesgo binario eliminado" es real pero minúsculo, y la ventana de exposición del comprador se _alargó_.
 
 ### 2. La comparación de costos es apples-to-oranges
 
@@ -20,7 +20,7 @@ Tres problemas: (a) el registro está on-chain y **público** — cualquier comp
 
 ### 5. "Disciplina de claims" — virtud de pitch, no de negocio
 
-Resiste el escrutinio del jurado precisamente porque **concede** que el producto no entrega título ni cubre el riesgo de entrega. Eso es honestidad, no moat. Los compradores enterprise no premian disclaimers bien redactados: preguntan "¿y entonces qué compro con el fee?". Además, noto que el bull **no respondió** tres de mis puntos centrales de ronda 1: la transferibilidad libre del NFT durante el tránsito (título desacoplado del bien), la ausencia de cancel/expiry (lotes brickeables), y el incentivo ausente para firmar redeem — su condición 3 lo despacha con "funciona *si* el registro aporta valor reputacional", es decir, el cierre del ciclo depende de un incentivo no demostrado.
+Resiste el escrutinio del jurado precisamente porque **concede** que el producto no entrega título ni cubre el riesgo de entrega. Eso es honestidad, no moat. Los compradores enterprise no premian disclaimers bien redactados: preguntan "¿y entonces qué compro con el fee?". Además, noto que el bull **no respondió** tres de mis puntos centrales de ronda 1: la transferibilidad libre del NFT durante el tránsito (título desacoplado del bien), la ausencia de cancel/expiry (lotes brickeables), y el incentivo ausente para firmar redeem — su condición 3 lo despacha con "funciona _si_ el registro aporta valor reputacional", es decir, el cierre del ciclo depende de un incentivo no demostrado.
 
 ## Concesiones: lo que el bull acierta
 
