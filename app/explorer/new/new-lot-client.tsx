@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { VerifiedWalletGate } from "../../components/verified-wallet-gate";
 import { RegisterLotForm, type Counterparty } from "./register-lot-form";
+import type { ProducerSpecs } from "./validation";
 
 export type ProducerInfo = {
   name: string;
   walletAddress: string;
   originId: string;
   originName: string;
+  specs: ProducerSpecs;
 };
 
 export function NewLotClient({ producer }: { producer: ProducerInfo }) {

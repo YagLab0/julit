@@ -19,9 +19,16 @@ export default async function NewBatchPage() {
 
   const { data: company } = await supabase
     .from("companies")
-    .select("name, company_type, wallet_address, wallet_verified_at, origin_id")
+    .select(
+      "name, company_type, wallet_address, wallet_verified_at, origin_id, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne"
+    )
     .eq("id", user.id)
     .maybeSingle();
+
+  const specsComplete =
+    company?.purity_pct != null &&
+    company?.water_footprint_m3_per_tonne != null &&
+    company?.carbon_footprint_kg_co2e_per_tonne != null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -54,6 +61,8 @@ export default async function NewBatchPage() {
           <GateCard body="Vinculá la wallet verificada de tu empresa para poder firmar lotes." />
         ) : !company.origin_id ? (
           <GateCard body="El origen de producción de tu empresa se provisiona desde el servidor. Contactá al operador de la demo." />
+        ) : !specsComplete ? (
+          <GateCard body="Las especificaciones de producción de tu empresa se provisionan desde el servidor. Contactá al operador de la demo." />
         ) : (
           <NewLotClient
             producer={{
@@ -61,6 +70,15 @@ export default async function NewBatchPage() {
               walletAddress: company.wallet_address!,
               originId: company.origin_id,
               originName: originName(company.origin_id) ?? company.origin_id,
+              specs: {
+                purityPct: Number(company.purity_pct).toFixed(2),
+                waterM3PerTonne: Number(
+                  company.water_footprint_m3_per_tonne
+                ).toFixed(2),
+                carbonKgCo2ePerTonne: Number(
+                  company.carbon_footprint_kg_co2e_per_tonne
+                ).toFixed(2),
+              },
             }}
           />
         )}

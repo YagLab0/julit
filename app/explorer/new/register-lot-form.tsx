@@ -21,11 +21,13 @@ import {
   findMetadataPda,
 } from "../../lib/solana/metaplex";
 import { useCluster } from "../../components/cluster-context";
+import { decimalFmt } from "../components/lot-display";
 import type { ProducerInfo } from "./new-lot-client";
 import {
   validateLotForm,
   type LotFormValues,
   type FieldKey,
+  type FieldErrors,
 } from "./validation";
 
 const INPUT_CLASS =
@@ -36,9 +38,6 @@ export type Counterparty = { name: string; wallet: string };
 const INITIAL: LotFormValues = {
   lotId: "",
   volumeTonnes: "",
-  purityPct: "",
-  waterM3PerTonne: "",
-  carbonKgCo2ePerTonne: "",
   priceUsdc: "",
   buyerWallet: "",
   claimableAfter: "",
@@ -70,7 +69,7 @@ export function RegisterLotForm({
   const { cluster } = useCluster();
   const { send, isSending } = useSendTransaction();
   const [values, setValues] = useState<LotFormValues>(INITIAL);
-  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [indexing, setIndexing] = useState(false);
   const [cert, setCert] = useState<CertUpload>({ status: "idle" });
 
@@ -127,6 +126,7 @@ export function RegisterLotForm({
     const { errors, payload } = validateLotForm(values, {
       producerWallet: producer.walletAddress,
       originId: producer.originId,
+      producerSpecs: producer.specs,
       contractedBuyers: buyers.map((b) => b.wallet),
       nowUnixSeconds: Math.floor(Date.now() / 1000),
     });
@@ -247,6 +247,47 @@ export function RegisterLotForm({
             </p>
           </Field>
           <Field
+            label="Volumen (toneladas)"
+            hint="Toneladas enteras de Li₂CO₃."
+            error={errors.volumeTonnes}
+          >
+            <input
+              className={INPUT_CLASS}
+              inputMode="numeric"
+              value={values.volumeTonnes}
+              onChange={(e) => update("volumeTonnes")(e.target.value)}
+              placeholder="420"
+            />
+          </Field>
+          <Field
+            label="Precio del lote (USDC)"
+            hint="Cotización total del lote, hasta 6 decimales. El comprador la deposita entera en el escrow."
+            error={errors.priceUsdc}
+          >
+            <input
+              className={INPUT_CLASS}
+              inputMode="decimal"
+              value={values.priceUsdc}
+              onChange={(e) => update("priceUsdc")(e.target.value)}
+              placeholder="12000.123456"
+            />
+          </Field>
+          <Field
+            label="Especificaciones de producción"
+            hint="Provisionadas en la ficha de tu empresa; se declaran en el lote al firmar."
+            error={errors.producerSpecs}
+            span
+          >
+            <p className="rounded-lg border border-border-low bg-cream/50 px-3 py-2 text-sm font-medium">
+              Pureza {decimalFmt.format(Number(producer.specs.purityPct))} % ·
+              Huella hídrica{" "}
+              {decimalFmt.format(Number(producer.specs.waterM3PerTonne))} m³/t ·
+              Huella de carbono{" "}
+              {decimalFmt.format(Number(producer.specs.carbonKgCo2ePerTonne))}{" "}
+              kg CO₂e/t
+            </p>
+          </Field>
+          <Field
             label="Comprador designado"
             hint={
               buyers.length > 0
@@ -308,83 +349,6 @@ export function RegisterLotForm({
                 SHA-256: {cert.digest.slice(0, 12)}…{cert.digest.slice(-8)}
               </p>
             )}
-          </Field>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-border bg-card p-6">
-        <p className="eyebrow">Producción y sostenibilidad</p>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Volumen (toneladas)"
-            hint="Toneladas enteras de Li₂CO₃."
-            error={errors.volumeTonnes}
-          >
-            <input
-              className={INPUT_CLASS}
-              inputMode="numeric"
-              value={values.volumeTonnes}
-              onChange={(e) => update("volumeTonnes")(e.target.value)}
-              placeholder="420"
-            />
-          </Field>
-          <Field
-            label="Pureza química (%)"
-            hint="Grado batería: 99,50–100,00 con hasta 2 decimales."
-            error={errors.purityPct}
-          >
-            <input
-              className={INPUT_CLASS}
-              inputMode="decimal"
-              value={values.purityPct}
-              onChange={(e) => update("purityPct")(e.target.value)}
-              placeholder="99.55"
-            />
-          </Field>
-          <Field
-            label="Huella hídrica (m³/t)"
-            hint="Hasta 2 decimales."
-            error={errors.waterM3PerTonne}
-          >
-            <input
-              className={INPUT_CLASS}
-              inputMode="decimal"
-              value={values.waterM3PerTonne}
-              onChange={(e) => update("waterM3PerTonne")(e.target.value)}
-              placeholder="50.80"
-            />
-          </Field>
-          <Field
-            label="Huella de carbono (kg CO₂e/t)"
-            hint="Hasta 2 decimales."
-            error={errors.carbonKgCo2ePerTonne}
-          >
-            <input
-              className={INPUT_CLASS}
-              inputMode="decimal"
-              value={values.carbonKgCo2ePerTonne}
-              onChange={(e) => update("carbonKgCo2ePerTonne")(e.target.value)}
-              placeholder="8200.00"
-            />
-          </Field>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-border bg-card p-6">
-        <p className="eyebrow">Comercial</p>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Precio del lote (USDC)"
-            hint="Cotización total del lote, hasta 6 decimales. El comprador la deposita entera en el escrow."
-            error={errors.priceUsdc}
-          >
-            <input
-              className={INPUT_CLASS}
-              inputMode="decimal"
-              value={values.priceUsdc}
-              onChange={(e) => update("priceUsdc")(e.target.value)}
-              placeholder="12000.123456"
-            />
           </Field>
         </div>
       </div>

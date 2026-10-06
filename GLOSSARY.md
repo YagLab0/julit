@@ -24,6 +24,10 @@ _Avoid_: Customer, inspector
 The buyer company a lot is created for; the only one entitled to fund and settle it. Every lot has one.
 _Avoid_: Spot buyer, winning bidder
 
+**Production Specification**:
+The chemical purity, water footprint and carbon footprint of a producer's operation at its bound origin; recorded on the producer's company record and declared on every lot it registers.
+_Avoid_: Per-lot spec input, buyer-contracted spec
+
 **Digital Title**:
 The Metaplex NFT (supply 1) minted into the lot's escrow at creation, representing the contractual right over the lot. It is a digital representation of that right, not automatic legal title — and it never leaves escrow: it is burned at Redemption, Timeout Claim or Cancellation.
 _Avoid_: Legal title, transferable receipt, warehouse receipt
