@@ -1,40 +1,45 @@
-// Validation for the create_batch form. Mirrors the batches table contract
+// Validation for the create_lot form. Mirrors the lots table contract
 // (docs/database.md): values are parsed as decimal strings into scaled
 // integers — never through Number — so nothing is rounded or truncated.
 
 const U64_MAX = (1n << 64n) - 1n;
 const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const HEX_64_RE = /^[0-9a-f]{64}$/;
 const INTEGER_RE = /^[0-9]+$/;
 const DECIMAL_RE = /^([0-9]+)(?:\.([0-9]+))?$/;
 
-export type BatchFormValues = {
-  batchId: string;
+export type LotFormValues = {
+  lotId: string;
   volumeTonnes: string;
   purityPct: string;
   waterM3PerTonne: string;
   carbonKgCo2ePerTonne: string;
   priceUsdc: string;
-  auditorWallet: string;
-  reservedBuyerWallet: string;
+  /** Designated buyer wallet — mandatory, must hold an accepted contract. */
+  buyerWallet: string;
+  /** `datetime-local` value; producer may claim escrowed funds after it. */
+  claimableAfter: string;
+  /** SHA-256 hex of the plant certificate uploaded to the API. */
+  plantCertSha256: string;
 };
 
-export type FieldKey = keyof BatchFormValues;
+export type FieldKey = keyof LotFormValues;
 export type FieldErrors = Partial<Record<FieldKey, string>>;
 
-export type BatchFormContext = {
+export type LotFormContext = {
   /** The producer's verified company wallet. */
   producerWallet: string;
   /** The producer's bound origin (from the company profile, not user input). */
   originId: string;
-  /** Wallets of auditors holding an accepted contract with the producer. */
-  contractedAuditors: string[];
   /** Wallets of buyers holding an accepted contract with the producer. */
   contractedBuyers: string[];
+  /** Unix seconds now, injected so tests stay deterministic. */
+  nowUnixSeconds: number;
 };
 
-/** Exact decimal-string payload for a future create_batch instruction. */
-export type CreateBatchPayload = {
-  batchId: string;
+/** Exact decimal-string payload for the create_lot instruction. */
+export type CreateLotPayload = {
+  lotId: string;
   originId: string;
   /** Whole tonnes (u64 decimal string). */
   volumeTonnes: string;
@@ -44,11 +49,13 @@ export type CreateBatchPayload = {
   waterM3PerTonneScaled: string;
   /** carbon × 100 (u64 decimal string). */
   carbonKgCo2ePerTonneScaled: string;
-  /** Total batch quote × 1_000_000 (u64 decimal string). */
+  /** Total lot quote × 1_000_000 (u64 decimal string). */
   priceUsdcScaled: string;
   producerWallet: string;
-  auditorWallet: string;
-  reservedBuyerWallet: string | null;
+  buyerWallet: string;
+  /** Unix seconds (i64 decimal string). */
+  claimableAfterUnix: string;
+  plantCertSha256: string;
 };
 
 /** Parses a non-negative decimal string into a scaled integer, or null. */
@@ -60,17 +67,17 @@ function scaledInt(raw: string, decimals: number): bigint | null {
   return BigInt(m[1] + frac.padEnd(decimals, "0"));
 }
 
-export function validateBatchForm(
-  values: BatchFormValues,
-  ctx: BatchFormContext
-): { errors: FieldErrors; payload: CreateBatchPayload | null } {
+export function validateLotForm(
+  values: LotFormValues,
+  ctx: LotFormContext
+): { errors: FieldErrors; payload: CreateLotPayload | null } {
   const errors: FieldErrors = {};
 
-  const batchId = values.batchId.trim();
-  if (!batchId) {
-    errors.batchId = "Ingresá un identificador de lote.";
-  } else if (new TextEncoder().encode(batchId).length > 32) {
-    errors.batchId = "El identificador no puede superar los 32 bytes.";
+  const lotId = values.lotId.trim();
+  if (!lotId) {
+    errors.lotId = "Ingresá un identificador de lote.";
+  } else if (new TextEncoder().encode(lotId).length > 32) {
+    errors.lotId = "El identificador no puede superar los 32 bytes.";
   }
 
   const volume = INTEGER_RE.test(values.volumeTonnes.trim())
@@ -113,38 +120,37 @@ export function validateBatchForm(
     errors.priceUsdc = "El precio supera el máximo representable.";
   }
 
-  const auditorWallet = values.auditorWallet.trim();
-  if (!auditorWallet) {
-    errors.auditorWallet = "Elegí un auditor contratado.";
+  const buyerWallet = values.buyerWallet.trim();
+  if (!buyerWallet) {
+    errors.buyerWallet = "Elegí el comprador designado del lote.";
   } else if (
-    !BASE58_RE.test(auditorWallet) ||
-    !ctx.contractedAuditors.includes(auditorWallet)
+    !BASE58_RE.test(buyerWallet) ||
+    !ctx.contractedBuyers.includes(buyerWallet)
   ) {
-    errors.auditorWallet =
-      "El auditor debe tener un contrato aceptado con tu empresa.";
+    errors.buyerWallet =
+      "El comprador debe tener un contrato aceptado con tu empresa.";
+  } else if (buyerWallet === ctx.producerWallet) {
+    errors.buyerWallet = "El comprador no puede ser tu propia productora.";
   }
 
-  const reservedBuyerWallet = values.reservedBuyerWallet.trim() || null;
-  if (
-    reservedBuyerWallet &&
-    (!BASE58_RE.test(reservedBuyerWallet) ||
-      !ctx.contractedBuyers.includes(reservedBuyerWallet))
-  ) {
-    errors.reservedBuyerWallet =
-      "El cliente debe tener un contrato aceptado con tu empresa.";
-  } else if (
-    reservedBuyerWallet &&
-    (reservedBuyerWallet === auditorWallet ||
-      reservedBuyerWallet === ctx.producerWallet)
-  ) {
-    errors.reservedBuyerWallet =
-      "El comprador reservado no puede ser la productora ni el auditor.";
+  const claimableMs = Date.parse(values.claimableAfter);
+  if (!values.claimableAfter || Number.isNaN(claimableMs)) {
+    errors.claimableAfter =
+      "Ingresá la fecha límite a partir de la cual podés reclamar el escrow.";
+  } else if (Math.floor(claimableMs / 1000) <= ctx.nowUnixSeconds) {
+    errors.claimableAfter = "La fecha de reclamo debe ser futura.";
+  }
+
+  const certHash = values.plantCertSha256.trim().toLowerCase();
+  if (!HEX_64_RE.test(certHash)) {
+    errors.plantCertSha256 =
+      "Subí el certificado de planta (PDF) para obtener su SHA-256.";
   }
 
   const payload =
     Object.keys(errors).length === 0
       ? {
-          batchId,
+          lotId,
           originId: ctx.originId,
           volumeTonnes: values.volumeTonnes.trim(),
           purityBasisPoints: purity!.toString(),
@@ -152,8 +158,9 @@ export function validateBatchForm(
           carbonKgCo2ePerTonneScaled: carbon!.toString(),
           priceUsdcScaled: price!.toString(),
           producerWallet: ctx.producerWallet,
-          auditorWallet,
-          reservedBuyerWallet,
+          buyerWallet,
+          claimableAfterUnix: Math.floor(claimableMs / 1000).toString(),
+          plantCertSha256: certHash,
         }
       : null;
 

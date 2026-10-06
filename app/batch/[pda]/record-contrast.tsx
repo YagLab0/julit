@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { address } from "@solana/kit";
-import { fetchMaybeBatch, findBatchPda } from "../../generated/julit";
-import { Chip } from "../../batches/components/batch-display";
+import { fetchMaybeLot, findLotPda } from "../../generated/julit";
+import { Chip } from "../../batches/components/lot-display";
 import { createSolanaClient } from "../../lib/solana-client";
 import {
-  contrastBatchRecord,
+  contrastLotRecord,
   type ContrastField,
-  type IndexedBatch,
+  type IndexedLot,
 } from "../verification";
 
 type ContrastState =
@@ -21,13 +21,17 @@ type ContrastState =
 const FIELD_LABELS: Record<ContrastField, string> = {
   pda: "dirección del lote (PDA)",
   programAddress: "programa",
-  batchId: "identificador del lote",
+  lotId: "identificador del lote",
   producer: "productor",
+  buyer: "comprador designado",
+  mint: "título digital",
   origin: "origen",
   volume: "volumen",
   purity: "pureza",
   water: "huella hídrica",
   carbon: "huella de carbono",
+  claimableAfter: "fecha de reclamo",
+  plantCertHash: "certificado de planta",
   status: "estado",
 };
 
@@ -53,11 +57,11 @@ function ContrastCard({
 }
 
 /**
- * On-chain record contrast: after first paint the island derives the batch
+ * On-chain record contrast: after first paint the island derives the lot
  * PDA, reads the account on Devnet and renders the explicit verdict. A
  * failure or an absent account never renders as verified (ADR-0011).
  */
-export function RecordContrast({ batch }: { batch: IndexedBatch }) {
+export function RecordContrast({ lot }: { lot: IndexedLot }) {
   const [state, setState] = useState<ContrastState>({ status: "checking" });
   const [attempt, setAttempt] = useState(0);
 
@@ -66,18 +70,18 @@ export function RecordContrast({ batch }: { batch: IndexedBatch }) {
 
     async function run() {
       try {
-        const [derivedPda] = await findBatchPda({
-          producer: address(batch.producer_wallet),
-          batchId: batch.batch_id,
+        const [derivedPda] = await findLotPda({
+          producer: address(lot.producer_wallet),
+          lotId: lot.lot_id,
         });
         const { rpc } = createSolanaClient("devnet");
-        const account = await fetchMaybeBatch(rpc, derivedPda, {
+        const account = await fetchMaybeLot(rpc, derivedPda, {
           commitment: "confirmed",
         });
         if (!active) return;
 
-        const verdict = contrastBatchRecord({
-          indexed: batch,
+        const verdict = contrastLotRecord({
+          indexed: lot,
           derivedPda,
           account: account.exists
             ? { programAddress: account.programAddress, data: account.data }
@@ -99,7 +103,7 @@ export function RecordContrast({ batch }: { batch: IndexedBatch }) {
     return () => {
       active = false;
     };
-  }, [batch, attempt]);
+  }, [lot, attempt]);
 
   const retry = useCallback(() => {
     setState({ status: "checking" });

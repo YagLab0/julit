@@ -4,16 +4,27 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { address } from "@solana/kit";
-import { getCreateBatchInstructionAsync } from "../../generated/julit";
+import {
+  fetchConfig,
+  findConfigPda,
+  findLotPda,
+  findMintPda,
+  getCreateLotInstructionAsync,
+} from "../../generated/julit";
 import { Field } from "../../components/form-field";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
 import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
 import { useWallet } from "../../lib/wallet/context";
+import { createSolanaClient } from "../../lib/solana-client";
+import {
+  findMasterEditionPda,
+  findMetadataPda,
+} from "../../lib/solana/metaplex";
 import { useCluster } from "../../components/cluster-context";
 import type { ProducerInfo } from "./new-batch-client";
 import {
-  validateBatchForm,
-  type BatchFormValues,
+  validateLotForm,
+  type LotFormValues,
   type FieldKey,
 } from "./validation";
 
@@ -22,36 +33,89 @@ const INPUT_CLASS =
 
 export type Counterparty = { name: string; wallet: string };
 
-const INITIAL: BatchFormValues = {
-  batchId: "",
+const INITIAL: LotFormValues = {
+  lotId: "",
   volumeTonnes: "",
   purityPct: "",
   waterM3PerTonne: "",
   carbonKgCo2ePerTonne: "",
   priceUsdc: "",
-  auditorWallet: "",
-  reservedBuyerWallet: "",
+  buyerWallet: "",
+  claimableAfter: "",
+  plantCertSha256: "",
 };
 
-export function RegisterBatchForm({
+type CertUpload =
+  | { status: "idle" }
+  | { status: "uploading" }
+  | { status: "ready"; digest: string; path: string }
+  | { status: "failed" };
+
+function hexToBytes(hex: string): Uint8Array {
+  const out = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    out[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return out;
+}
+
+export function RegisterLotForm({
   producer,
-  auditors,
   buyers,
 }: {
   producer: ProducerInfo;
-  auditors: Counterparty[];
   buyers: Counterparty[];
 }) {
   const { signer } = useWallet();
   const { cluster } = useCluster();
   const { send, isSending } = useSendTransaction();
-  const [values, setValues] = useState<BatchFormValues>(INITIAL);
+  const [values, setValues] = useState<LotFormValues>(INITIAL);
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [indexing, setIndexing] = useState(false);
+  const [cert, setCert] = useState<CertUpload>({ status: "idle" });
 
   const update = (key: FieldKey) => (v: string) => {
     setValues((prev) => ({ ...prev, [key]: v }));
     setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+  };
+
+  /** Uploads the PDF first: the server recomputes the digest and stores the
+   *  file content-addressed, so the hash declared on-chain provably matches
+   *  the stored certificate. */
+  const handleCertificate = async (file: File | null) => {
+    if (!file) {
+      setCert({ status: "idle" });
+      setValues((prev) => ({ ...prev, plantCertSha256: "" }));
+      return;
+    }
+    setCert({ status: "uploading" });
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      const res = await fetch("/api/companies/plant-certificate", {
+        method: "POST",
+        body: form,
+      });
+      const body = (await res.json().catch(() => null)) as {
+        digest?: string;
+        path?: string;
+        error?: string;
+      } | null;
+      if (!res.ok || !body?.digest || !body.path) {
+        throw new Error(body?.error ?? "Error al subir el certificado.");
+      }
+      setCert({ status: "ready", digest: body.digest, path: body.path });
+      setValues((prev) => ({ ...prev, plantCertSha256: body.digest! }));
+      setErrors((prev) =>
+        prev.plantCertSha256 ? { ...prev, plantCertSha256: undefined } : prev
+      );
+    } catch (err) {
+      setCert({ status: "failed" });
+      setValues((prev) => ({ ...prev, plantCertSha256: "" }));
+      toast.error(
+        err instanceof Error ? err.message : "No se pudo subir el certificado."
+      );
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,11 +124,11 @@ export function RegisterBatchForm({
       toast.error("Conectá la wallet verificada para firmar.");
       return;
     }
-    const { errors, payload } = validateBatchForm(values, {
+    const { errors, payload } = validateLotForm(values, {
       producerWallet: producer.walletAddress,
       originId: producer.originId,
-      contractedAuditors: auditors.map((a) => a.wallet),
       contractedBuyers: buyers.map((b) => b.wallet),
+      nowUnixSeconds: Math.floor(Date.now() / 1000),
     });
     setErrors(errors);
     if (!payload) {
@@ -73,25 +137,41 @@ export function RegisterBatchForm({
     }
 
     try {
-      const instruction = await getCreateBatchInstructionAsync({
+      const { rpc } = createSolanaClient("devnet");
+      const [configPda] = await findConfigPda();
+      const config = await fetchConfig(rpc, configPda, {
+        commitment: "confirmed",
+      });
+      const [lotPda] = await findLotPda({
+        producer: address(payload.producerWallet),
+        lotId: payload.lotId,
+      });
+      const [mint] = await findMintPda({ lot: lotPda });
+      const [metadata] = await findMetadataPda(mint);
+      const [masterEdition] = await findMasterEditionPda(mint);
+
+      const instruction = await getCreateLotInstructionAsync({
         producer: signer,
-        auditor: address(payload.auditorWallet),
-        batchId: payload.batchId,
+        usdcMint: config.data.usdcMint,
+        metadata,
+        masterEdition,
+        lotId: payload.lotId,
         originId: payload.originId,
         volumeTonnes: BigInt(payload.volumeTonnes),
         purityBasisPoints: BigInt(payload.purityBasisPoints),
         waterM3PerTonneScaled: BigInt(payload.waterM3PerTonneScaled),
         carbonKgCo2ePerTonneScaled: BigInt(payload.carbonKgCo2ePerTonneScaled),
-        priceUsdcScaled: BigInt(payload.priceUsdcScaled),
-        reservedBuyer: payload.reservedBuyerWallet
-          ? address(payload.reservedBuyerWallet)
-          : null,
+        priceUsdc: BigInt(payload.priceUsdcScaled),
+        buyer: address(payload.buyerWallet),
+        claimableAfter: BigInt(payload.claimableAfterUnix),
+        plantCertHash: hexToBytes(payload.plantCertSha256),
+        metadataUri: "",
       });
 
       const txSignature = await send({ instructions: [instruction] });
 
       setIndexing(true);
-      const response = await fetch("/api/batches", {
+      const response = await fetch("/api/lots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tx_signature: txSignature }),
@@ -116,8 +196,9 @@ export function RegisterBatchForm({
         return;
       }
 
-      toast.success(`Lote ${payload.batchId} registrado`, {
-        description: "La transacción quedó confirmada e indexada.",
+      toast.success(`Lote ${payload.lotId} publicado`, {
+        description:
+          "La transacción quedó confirmada e indexada como publicada.",
         action: {
           label: "Ver transacción",
           onClick: () =>
@@ -128,6 +209,7 @@ export function RegisterBatchForm({
         },
       });
       setValues(INITIAL);
+      setCert({ status: "idle" });
     } catch (err) {
       setIndexing(false);
       const message = err instanceof Error ? err.message : "";
@@ -141,8 +223,6 @@ export function RegisterBatchForm({
     }
   };
 
-  const isReserved = values.reservedBuyerWallet.trim().length > 0;
-
   return (
     <form onSubmit={handleSubmit} noValidate className="mt-6">
       <div className="rounded-2xl border border-border bg-card p-6">
@@ -151,12 +231,12 @@ export function RegisterBatchForm({
           <Field
             label="Identificador de lote"
             hint="Único por productora. Ej.: LIT-2026-PBL-02"
-            error={errors.batchId}
+            error={errors.lotId}
           >
             <input
               className={INPUT_CLASS}
-              value={values.batchId}
-              onChange={(e) => update("batchId")(e.target.value)}
+              value={values.lotId}
+              onChange={(e) => update("lotId")(e.target.value)}
               placeholder="LIT-2026-OLZ-05"
               maxLength={64}
             />
@@ -167,52 +247,67 @@ export function RegisterBatchForm({
             </p>
           </Field>
           <Field
-            label="Auditores contratados"
+            label="Comprador designado"
             hint={
-              auditors.length > 0
-                ? "Laboratorio que certificará el lote."
-                : "No tenés auditores con contrato aceptado."
+              buyers.length > 0
+                ? "Solo esta empresa podrá fondear el escrow del lote."
+                : "No tenés compradores con contrato aceptado."
             }
-            error={errors.auditorWallet}
+            error={errors.buyerWallet}
             span
           >
             <select
               className={INPUT_CLASS}
-              value={values.auditorWallet}
-              onChange={(e) => update("auditorWallet")(e.target.value)}
+              value={values.buyerWallet}
+              onChange={(e) => update("buyerWallet")(e.target.value)}
             >
               <option value="" disabled>
-                Elegí un auditor…
+                Elegí un comprador…
               </option>
-              {auditors.map((a) => (
-                <option key={a.wallet} value={a.wallet}>
-                  {a.name} · {ellipsify(a.wallet, 4)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field
-            label="Mis clientes (opcional)"
-            hint={
-              isReserved
-                ? "Lote reservado: solo ese cliente podrá adquirirlo."
-                : "Sin cliente = lote spot, disponible para cualquier comprador."
-            }
-            error={errors.reservedBuyerWallet}
-            span
-          >
-            <select
-              className={INPUT_CLASS}
-              value={values.reservedBuyerWallet}
-              onChange={(e) => update("reservedBuyerWallet")(e.target.value)}
-            >
-              <option value="">Lote spot (sin comprador reservado)</option>
               {buyers.map((b) => (
                 <option key={b.wallet} value={b.wallet}>
                   {b.name} · {ellipsify(b.wallet, 4)}
                 </option>
               ))}
             </select>
+          </Field>
+          <Field
+            label="Reclamable desde"
+            hint="Si el comprador no confirma la recepción antes de esta fecha, podés reclamar los fondos del escrow."
+            error={errors.claimableAfter}
+            span
+          >
+            <input
+              type="datetime-local"
+              className={INPUT_CLASS}
+              value={values.claimableAfter}
+              onChange={(e) => update("claimableAfter")(e.target.value)}
+            />
+          </Field>
+          <Field
+            label="Certificado de planta (PDF)"
+            hint="Se guarda direccionado por contenido; el SHA-256 queda declarado en el lote."
+            error={errors.plantCertSha256}
+            span
+          >
+            <input
+              type="file"
+              accept="application/pdf"
+              className={`${INPUT_CLASS} file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-2 file:py-1 file:text-xs file:font-semibold`}
+              onChange={(e) =>
+                void handleCertificate(e.target.files?.[0] ?? null)
+              }
+            />
+            {cert.status === "uploading" && (
+              <p className="mt-1 text-[11px] text-muted">
+                Subiendo y calculando el SHA-256…
+              </p>
+            )}
+            {cert.status === "ready" && (
+              <p className="mt-1 font-mono text-[11px] text-muted">
+                SHA-256: {cert.digest.slice(0, 12)}…{cert.digest.slice(-8)}
+              </p>
+            )}
           </Field>
         </div>
       </div>
@@ -280,7 +375,7 @@ export function RegisterBatchForm({
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <Field
             label="Precio del lote (USDC)"
-            hint="Cotización total del lote, hasta 6 decimales."
+            hint="Cotización total del lote, hasta 6 decimales. El comprador la deposita entera en el escrow."
             error={errors.priceUsdc}
           >
             <input
@@ -307,7 +402,7 @@ export function RegisterBatchForm({
           </Link>
           <button
             type="submit"
-            disabled={isSending || indexing}
+            disabled={isSending || indexing || cert.status === "uploading"}
             className="btn-primary"
           >
             {isSending

@@ -11,28 +11,25 @@ from generate_series(1, 4) as n;
 
 insert into public.companies (id, name, company_type, wallet_address, wallet_verified_at, origin_id) values
   ('00000000-0000-0000-0000-000000000001', 'Producer One', 'producer', repeat('2', 31) || '2', now(), 'pena_blanca'),
-  ('00000000-0000-0000-0000-000000000002', 'Auditor One', 'auditor', repeat('3', 31) || '3', now(), null),
   ('00000000-0000-0000-0000-000000000003', 'Buyer One', 'buyer', repeat('4', 31) || '4', now(), null),
-  ('00000000-0000-0000-0000-000000000004', 'Producer Two', 'producer', repeat('5', 31) || '5', now(), 'condor');
+  ('00000000-0000-0000-0000-000000000004', 'Producer Two', 'producer', repeat('5', 31) || '5', now(), 'condor'),
+  ('00000000-0000-0000-0000-000000000005', 'Buyer Two', 'buyer', repeat('4', 31) || '6', now(), null);
 
 set local role service_role;
 
-delete from public.batches;
+delete from public.lots;
 delete from public.company_contracts;
-
-select throws_ok($$insert into public.companies (id, name, company_type, origin_id)
-    values ('00000000-0000-0000-0000-000000000010', 'Bad auditor', 'auditor', 'pena_blanca')$$,
-  '23514', null, 'An auditor cannot carry an origin');
 
 select throws_ok($$update public.companies set origin_id = 'condor'
     where id = '00000000-0000-0000-0000-000000000001'$$,
   '23514', null, 'A bound origin cannot be changed once set');
 
+-- Producer One offers to Buyer One
 select lives_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
     values ('00000000-0000-0000-0000-000000000001',
-            '00000000-0000-0000-0000-000000000002',
+            '00000000-0000-0000-0000-000000000003',
             '00000000-0000-0000-0000-000000000001')$$,
-  'A producer can offer a contract to an auditor');
+  'A producer can offer a contract to a buyer');
 
 select results_eq($$select status::text from public.company_contracts
     where producer_id = '00000000-0000-0000-0000-000000000001'$$,
@@ -41,14 +38,14 @@ select results_eq($$select status::text from public.company_contracts
 
 select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
     values ('00000000-0000-0000-0000-000000000001',
-            '00000000-0000-0000-0000-000000000002',
+            '00000000-0000-0000-0000-000000000003',
             '00000000-0000-0000-0000-000000000001')$$,
   '23505', null, 'The same producer-counterparty pair cannot duplicate');
 
 select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
-    values ('00000000-0000-0000-0000-000000000002',
+    values ('00000000-0000-0000-0000-000000000003',
             '00000000-0000-0000-0000-000000000001',
-            '00000000-0000-0000-0000-000000000002')$$,
+            '00000000-0000-0000-0000-000000000003')$$,
   '23514', null, 'Only a producer can be the contract producer');
 
 select throws_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
@@ -68,98 +65,77 @@ select throws_ok($$update public.company_contracts set status = 'accepted'
   '23514', null, 'Accepting without responded_at violates consistency');
 
 update public.company_contracts
-set status = 'accepted', responded_at = now()
-where producer_id = '00000000-0000-0000-0000-000000000001';
-
--- Buyer initiates contract with Producer One
-select lives_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
-    values ('00000000-0000-0000-0000-000000000001',
-            '00000000-0000-0000-0000-000000000003',
-            '00000000-0000-0000-0000-000000000003')$$,
-  'A buyer can initiate a contract request with a producer');
-
-update public.company_contracts
 set status = 'accepted', responded_at = now(),
     initiator_signature = repeat('s', 88),
     counterparty_signature = repeat('c', 88),
     initiator_signed_at = now(),
     counterparty_signed_at = now()
-where counterparty_id = '00000000-0000-0000-0000-000000000003';
+where producer_id = '00000000-0000-0000-0000-000000000001';
 
 select throws_ok($$update public.company_contracts set initiator_signature = '   '
     where counterparty_id = '00000000-0000-0000-0000-000000000003'$$,
   '23514', null, 'Whitespace-only signature is rejected');
 
--- Batch indexing: uncontracted auditor is rejected, accepted contract is fine.
-select throws_ok($$insert into public.batches (
-    pda_address, batch_id, producer_wallet, auditor_wallet, origin_id,
+-- Buyer Two initiates a contract with Producer One.
+select lives_ok($$insert into public.company_contracts (producer_id, counterparty_id, initiator_id)
+    values ('00000000-0000-0000-0000-000000000001',
+            '00000000-0000-0000-0000-000000000005',
+            '00000000-0000-0000-0000-000000000005')$$,
+  'A buyer can initiate a contract request with a producer');
+
+-- Lot indexing: the designated buyer must hold an accepted contract.
+select throws_ok($$insert into public.lots (
+    pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc
+    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    plant_cert_sha256, creation_tx_signature, observed_slot
   ) values (
-    repeat('6', 44), 'LIT-T1', repeat('5', 31) || '5', repeat('3', 31) || '3',
-    'condor', 10, 99.5, 50, 8000, 1000
+    repeat('6', 44), 'LIT-T1', repeat('2', 31) || '2', repeat('4', 31) || '6',
+    'pena_blanca', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
+    now() + interval '30 days', repeat('a', 64), repeat('6', 63) || '8', 2000
   )$$,
-  '23514', null, 'An auditor without a contract with that producer is rejected');
+  '23514', null, 'A buyer without an accepted contract with that producer is rejected');
 
-select throws_ok($$insert into public.batches (
-    pda_address, batch_id, producer_wallet, auditor_wallet, origin_id,
+select throws_ok($$insert into public.lots (
+    pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc
+    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    plant_cert_sha256, creation_tx_signature, observed_slot
   ) values (
-    repeat('6', 44), 'LIT-T2', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    'condor', 10, 99.5, 50, 8000, 1000
+    repeat('6', 44), 'LIT-T2', repeat('2', 31) || '2', repeat('4', 31) || '4',
+    'condor', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
+    now() + interval '30 days', repeat('a', 64), repeat('6', 63) || '8', 2000
   )$$,
-  '23514', null, 'A batch origin differing from the producer origin is rejected');
+  '23514', null, 'A lot origin differing from the producer origin is rejected');
 
-select lives_ok($$insert into public.batches (
-    pda_address, batch_id, producer_wallet, auditor_wallet, origin_id,
+select lives_ok($$insert into public.lots (
+    pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc, creation_tx_signature,
-    observed_slot
+    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    plant_cert_sha256, creation_tx_signature, observed_slot
   ) values (
-    repeat('6', 44), 'LIT-T3', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    'pena_blanca', 10, 99.5, 50, 8000, 1000, repeat('6', 63) || '8', 2000
+    repeat('6', 44), 'LIT-T3', repeat('2', 31) || '2', repeat('4', 31) || '4',
+    'pena_blanca', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
+    now() + interval '30 days', repeat('a', 64), repeat('6', 63) || '8', 2000
   )$$,
-  'A batch with an accepted auditor contract and matching origin is indexed');
-
-select throws_ok($$insert into public.batches (
-    pda_address, batch_id, producer_wallet, auditor_wallet, reserved_buyer_wallet,
-    origin_id, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc
-  ) values (
-    repeat('7', 44), 'LIT-T4', repeat('5', 31) || '5', repeat('3', 31) || '3',
-    repeat('4', 31) || '4', 'condor', 10, 99.5, 50, 8000, 1000
-  )$$,
-  '23514', null, 'A reserved buyer without a contract with that producer is rejected');
-
-select lives_ok($$insert into public.batches (
-    pda_address, batch_id, producer_wallet, auditor_wallet, reserved_buyer_wallet,
-    origin_id, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc, creation_tx_signature,
-    observed_slot
-  ) values (
-    repeat('7', 44), 'LIT-T5', repeat('2', 31) || '2', repeat('3', 31) || '3',
-    repeat('4', 31) || '4', 'pena_blanca', 10, 99.5, 50, 8000, 1000,
-    repeat('7', 63) || '8', 2001
-  )$$,
-  'A reserved buyer holding an accepted contract is indexed');
+  'A lot whose buyer holds an accepted contract and whose origin matches is indexed');
 
 -- Bilateral RLS checks
 set local role authenticated;
 
--- Producer 1 sees its 2 contracts (Auditor One and Buyer One)
+-- Producer One sees its 2 contracts (Buyer One and Buyer Two)
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
 select results_eq($$select count(*)::int from public.company_contracts$$,
   $$values (2)$$,
   'Producer One sees contracts where it is the producer');
 
--- Buyer 1 sees its 1 contract with Producer 1
+-- Buyer One sees its 1 contract with Producer One
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated"}', true);
 select results_eq($$select count(*)::int from public.company_contracts$$,
   $$values (1)$$,
   'Buyer One sees contracts where it is the counterparty');
 
--- Producer 2 sees 0 contracts
+-- Producer Two sees 0 contracts
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000004","role":"authenticated"}', true);
 select results_eq($$select count(*)::int from public.company_contracts$$,
   $$values (0)$$,

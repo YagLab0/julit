@@ -8,7 +8,7 @@ import { useWallet } from "../lib/wallet/context";
  * Client gate: renders children only when the connected wallet is the
  * company's verified wallet. Otherwise explains which wallet to connect.
  * `action` describes what requires the wallet ("registrar un lote"),
- * `signAs` the signing role shown on mismatch ("productora", "auditora").
+ * `signAs` the signing role shown on mismatch ("productora", "compradora").
  */
 export function VerifiedWalletGate({
   name,

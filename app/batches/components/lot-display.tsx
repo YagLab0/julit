@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Batch, BatchStatus } from "../data/batches";
+import type { Lot, LotStatus } from "../data/lots";
 import type { Origin } from "../data/origins";
 
 // ---------------------------------------------------------------------------
@@ -44,28 +44,43 @@ const BATTERY_GRADE_PURITY_PCT = 99.5;
 // Status badge and metric chips.
 // ---------------------------------------------------------------------------
 
-const STATUS_LABELS: Record<BatchStatus, string> = {
-  created: "Creado",
-  audited: "Auditado",
-  completed: "Completado",
+const STATUS_LABELS: Record<LotStatus, string> = {
+  listed: "Publicado",
+  funded: "Fondeado",
+  disputed: "En disputa",
+  redeemed: "Liquidado",
+  claimed: "Cobrado",
+  cancelled: "Cancelado",
 };
 
-const STATUS_CLASSES: Record<BatchStatus, { pill: string; dot: string }> = {
-  created: {
-    pill: "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-800",
-    dot: "bg-amber-500",
-  },
-  audited: {
+const STATUS_CLASSES: Record<LotStatus, { pill: string; dot: string }> = {
+  listed: {
     pill: "bg-brand-50 dark:bg-brand-950/50 text-brand-800 dark:text-brand-200 ring-brand-200 dark:ring-brand-800",
     dot: "bg-brand-600",
   },
-  completed: {
+  funded: {
+    pill: "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-800",
+    dot: "bg-amber-500",
+  },
+  disputed: {
+    pill: "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-800",
+    dot: "bg-amber-500",
+  },
+  redeemed: {
+    pill: "bg-secondary text-foreground/75 ring-border",
+    dot: "bg-muted",
+  },
+  claimed: {
+    pill: "bg-secondary text-foreground/75 ring-border",
+    dot: "bg-muted",
+  },
+  cancelled: {
     pill: "bg-secondary text-foreground/75 ring-border",
     dot: "bg-muted",
   },
 };
 
-export function StatusBadge({ status }: { status: BatchStatus }) {
+export function StatusBadge({ status }: { status: LotStatus }) {
   const classes = STATUS_CLASSES[status];
   return (
     <span
@@ -156,13 +171,13 @@ function WaterChip({
   );
 }
 
-/** Declared production and sustainability metrics of one batch. */
-export function BatchMetrics({
-  batch,
+/** Declared production and sustainability metrics of one lot. */
+export function LotMetrics({
+  lot,
   origin,
 }: {
-  batch: Pick<
-    Batch,
+  lot: Pick<
+    Lot,
     | "volume_tonnes"
     | "purity_pct"
     | "water_footprint_m3_per_tonne"
@@ -174,62 +189,34 @@ export function BatchMetrics({
     <div className="grid grid-cols-2 gap-2">
       <Metric
         label="Volumen"
-        value={`${integerFmt.format(batch.volume_tonnes)} t`}
+        value={`${integerFmt.format(lot.volume_tonnes)} t`}
       />
       <Metric
         label="Pureza"
-        value={`${decimalFmt.format(batch.purity_pct)} %`}
-        chip={<PurityChip purityPct={batch.purity_pct} />}
+        value={`${decimalFmt.format(lot.purity_pct)} %`}
+        chip={<PurityChip purityPct={lot.purity_pct} />}
       />
       <Metric
         label="Huella hídrica"
-        value={`${decimalFmt.format(batch.water_footprint_m3_per_tonne)} m³/t`}
+        value={`${decimalFmt.format(lot.water_footprint_m3_per_tonne)} m³/t`}
         chip={
           <WaterChip
-            water={batch.water_footprint_m3_per_tonne}
+            water={lot.water_footprint_m3_per_tonne}
             reference={origin.water_m3_per_tonne ?? undefined}
           />
         }
       />
       <Metric
         label="Huella carbono"
-        value={`${decimalFmt.format(batch.carbon_footprint_kg_co2e_per_tonne)} kg CO₂e/t`}
+        value={`${decimalFmt.format(lot.carbon_footprint_kg_co2e_per_tonne)} kg CO₂e/t`}
         chip={<Chip tone="neutral">Declarado</Chip>}
       />
     </div>
   );
 }
 
-/** Audit findings, explicit: ESG may be false and the EU assessment negative. */
-export function BatchFindings({
-  batch,
-}: {
-  batch: Pick<Batch, "esg_approved" | "eu_regulation_assessment">;
-}) {
-  if (batch.esg_approved === null) return null;
-  return (
-    <div className="flex flex-wrap gap-2">
-      <Chip tone={batch.esg_approved ? "good" : "warn"}>
-        ESG {batch.esg_approved ? "aprobado" : "no aprobado"}
-      </Chip>
-      {batch.eu_regulation_assessment !== null && (
-        <Chip
-          tone={
-            batch.eu_regulation_assessment === "conformant" ? "good" : "warn"
-          }
-        >
-          UE 2023/1542{" "}
-          {batch.eu_regulation_assessment === "conformant"
-            ? "conforme"
-            : "no conforme"}
-        </Chip>
-      )}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Batch list rows.
+// Lot list rows.
 // ---------------------------------------------------------------------------
 
 export type SortKey = "price" | "volume" | "water" | "carbon";
@@ -241,7 +228,7 @@ const SORT_LABELS: Record<SortKey, string> = {
   carbon: "Menor huella de carbono",
 };
 
-const SORTERS: Record<SortKey, (a: Batch, b: Batch) => number> = {
+const SORTERS: Record<SortKey, (a: Lot, b: Lot) => number> = {
   price: (a, b) => a.price_usdc - b.price_usdc,
   volume: (a, b) => b.volume_tonnes - a.volume_tonnes,
   water: (a, b) =>
@@ -250,8 +237,8 @@ const SORTERS: Record<SortKey, (a: Batch, b: Batch) => number> = {
     a.carbon_footprint_kg_co2e_per_tonne - b.carbon_footprint_kg_co2e_per_tonne,
 };
 
-export function sortBatches(batches: Batch[], key: SortKey) {
-  return [...batches].sort(SORTERS[key]);
+export function sortLots(lots: Lot[], key: SortKey) {
+  return [...lots].sort(SORTERS[key]);
 }
 
 export function SortSelect({
@@ -279,13 +266,13 @@ export function SortSelect({
   );
 }
 
-/** Selectable batch row: identifier, total price and declared metrics. */
-export function BatchRow({
-  batch,
+/** Selectable lot row: identifier, total price and declared metrics. */
+export function LotRow({
+  lot,
   selected,
   onSelect,
 }: {
-  batch: Batch;
+  lot: Lot;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -303,17 +290,17 @@ export function BatchRow({
       >
         <div className="flex items-baseline justify-between gap-3">
           <span className="font-mono text-xs font-bold text-foreground">
-            {batch.batch_id}
+            {lot.lot_id}
           </span>
           <span className="font-mono text-sm font-bold tabular-nums text-foreground">
-            {priceFmt.format(batch.price_usdc)}{" "}
+            {priceFmt.format(lot.price_usdc)}{" "}
             <span className="text-[10px] font-semibold text-muted">USDC</span>
           </span>
         </div>
         <p className="mt-1 text-[11px] text-muted">
-          {integerFmt.format(batch.volume_tonnes)} t ·{" "}
-          {decimalFmt.format(batch.purity_pct)} % ·{" "}
-          {decimalFmt.format(batch.water_footprint_m3_per_tonne)} m³/t
+          {integerFmt.format(lot.volume_tonnes)} t ·{" "}
+          {decimalFmt.format(lot.purity_pct)} % ·{" "}
+          {decimalFmt.format(lot.water_footprint_m3_per_tonne)} m³/t
         </p>
       </button>
     </li>

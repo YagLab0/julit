@@ -9,14 +9,13 @@ import { passportPath } from "../../batch/verification";
 import { useCluster } from "../../components/cluster-context";
 import { PassportQr } from "../../components/passport-qr";
 import { formatNumber } from "../data/points";
-import { batchCertificateUrl, type Batch } from "../data/batches";
+import { plantCertificateUrl, type Lot } from "../data/lots";
 import type { Origin } from "../data/origins";
-import { useOriginBatches } from "../data/use-origin-batches";
+import { useOriginLots } from "../data/use-origin-lots";
 import { NoLotes, OriginReference } from "./assets-panel";
 import {
-  BatchFindings,
-  BatchMetrics,
-  BatchRow,
+  LotMetrics,
+  LotRow,
   Skeleton,
   SortSelect,
   StatusBadge,
@@ -25,9 +24,9 @@ import {
   dateFmt,
   integerFmt,
   priceFmt,
-  sortBatches,
+  sortLots,
   type SortKey,
-} from "./batch-display";
+} from "./lot-display";
 import { Modal } from "./modal";
 import { useWallet } from "../../lib/wallet/context";
 import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
@@ -36,17 +35,14 @@ import { getExplorerUrl } from "../../lib/explorer";
 import { buildContractAgreementMessage } from "../../lib/contracts";
 
 // R3F touches WebGL: client-only, never prerendered.
-const BatchModel = dynamic(
-  () => import("./batch-model").then((m) => m.BatchModel),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid h-full w-full animate-pulse place-items-center text-xs text-muted">
-        Cargando 3D…
-      </div>
-    ),
-  }
-);
+const LotModel = dynamic(() => import("./lot-model").then((m) => m.LotModel), {
+  ssr: false,
+  loading: () => (
+    <div className="grid h-full w-full animate-pulse place-items-center text-xs text-muted">
+      Cargando 3D…
+    </div>
+  ),
+});
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -62,24 +58,24 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 /** 3D stage with overlay badge and big-bag volume summary. */
-function BatchStage({ batch }: { batch: Batch }) {
-  const bags = bagCount(batch.volume_tonnes);
+function LotStage({ lot }: { lot: Lot }) {
+  const bags = bagCount(lot.volume_tonnes);
 
   return (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-border bg-gradient-to-b from-card via-card to-background">
-      <BatchModel batchId={batch.batch_id} volumeTonnes={batch.volume_tonnes} />
+      <LotModel lotId={lot.lot_id} volumeTonnes={lot.volume_tonnes} />
 
       <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
         <div className="min-w-0 rounded-lg bg-background/80 px-2.5 py-1.5 shadow-sm ring-1 ring-border backdrop-blur">
           <p className="truncate font-mono text-xs font-bold text-foreground">
-            {batch.batch_id}
+            {lot.lot_id}
           </p>
           <p className="truncate text-[10px] text-muted">
             Li₂CO₃ · grado batería
           </p>
         </div>
         <span className="shrink-0">
-          <StatusBadge status={batch.status} />
+          <StatusBadge status={lot.status} />
         </span>
       </div>
 
@@ -93,27 +89,26 @@ function BatchStage({ batch }: { batch: Batch }) {
   );
 }
 
-/** Selected batch: 3D stack, declared metrics, findings and provenance. */
-function BatchDetail({ batch, origin }: { batch: Batch; origin: Origin }) {
+/** Selected lot: 3D stack, declared metrics, plant certificate and provenance. */
+function LotDetail({ lot, origin }: { lot: Lot; origin: Origin }) {
   const { getExplorerUrl } = useCluster();
-  const certificate = batchCertificateUrl(batch);
+  const certificate = plantCertificateUrl(lot);
 
   return (
     <div className="space-y-3">
-      <BatchStage batch={batch} />
-      <BatchMetrics batch={batch} origin={origin} />
-      <BatchFindings batch={batch} />
+      <LotStage lot={lot} />
+      <LotMetrics lot={lot} origin={origin} />
 
       <div className="space-y-1.5 rounded-xl border border-border bg-card px-3.5 py-3 text-[11px] text-muted">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <span>
             Indexado el{" "}
             <span className="text-foreground/75">
-              {dateFmt.format(new Date(batch.indexed_at))}
+              {dateFmt.format(new Date(lot.indexed_at))}
             </span>
           </span>
           <a
-            href={getExplorerUrl(`/address/${batch.pda_address}`)}
+            href={getExplorerUrl(`/address/${lot.pda_address}`)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
@@ -121,23 +116,22 @@ function BatchDetail({ batch, origin }: { batch: Batch; origin: Origin }) {
             Ver en Explorer
           </a>
         </div>
-        <p className="font-mono break-all">{batch.pda_address}</p>
-        {certificate !== null && batch.audit_sha256 !== null && (
-          <p>
-            <a
-              href={certificate}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
-            >
-              Certificado PDF
-            </a>{" "}
-            · SHA-256{" "}
-            <span className="font-mono">
-              {batch.audit_sha256.slice(0, 8)}…{batch.audit_sha256.slice(-6)}
-            </span>
-          </p>
-        )}
+        <p className="font-mono break-all">{lot.pda_address}</p>
+        <p>
+          <a
+            href={certificate}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+          >
+            Certificado de planta (PDF)
+          </a>{" "}
+          · SHA-256{" "}
+          <span className="font-mono">
+            {lot.plant_cert_sha256.slice(0, 8)}…
+            {lot.plant_cert_sha256.slice(-6)}
+          </span>
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card px-3.5 py-3">
@@ -146,7 +140,7 @@ function BatchDetail({ batch, origin }: { batch: Batch; origin: Origin }) {
             Pasaporte público
           </p>
           <Link
-            href={passportPath(batch.pda_address)}
+            href={passportPath(lot.pda_address)}
             target="_blank"
             className="text-[11px] font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
           >
@@ -154,18 +148,14 @@ function BatchDetail({ batch, origin }: { batch: Batch; origin: Origin }) {
           </Link>
         </div>
         <div className="mt-3">
-          <PassportQr
-            pda={batch.pda_address}
-            batchId={batch.batch_id}
-            compact
-          />
+          <PassportQr pda={lot.pda_address} batchId={lot.lot_id} compact />
         </div>
       </div>
     </div>
   );
 }
 
-/** Placeholder of the batch fiche while the public index read is in flight. */
+/** Placeholder of the lot fiche while the public index read is in flight. */
 function FicheSkeleton() {
   return (
     <div
@@ -199,7 +189,7 @@ function FicheSkeleton() {
   );
 }
 
-/** Origin fiche: 3D viewer of the selected batch, its indexed batches and reference. */
+/** Origin fiche: 3D viewer of the selected lot, its indexed lots and reference. */
 export function OriginModal({
   origin,
   onClose,
@@ -212,11 +202,10 @@ export function OriginModal({
   const { send: sendTransaction } = useSendTransaction();
   const { cluster } = useCluster();
 
-  const { state, retry } = useOriginBatches(origin.id);
+  const { state, retry } = useOriginLots(origin.id);
   const [sort, setSort] = useState<SortKey>("price");
   const [selectedPda, setSelectedPda] = useState<string | null>(null);
 
-  const [buying, setBuying] = useState(false);
   const [producer, setProducer] = useState<{
     id: string;
     name: string;
@@ -266,27 +255,18 @@ export function OriginModal({
     };
   }, [origin.id, producer?.id]);
 
-  const batches = state.status === "ready" ? state.batches : [];
-  const forSale = sortBatches(
-    batches.filter((b) => b.status === "audited"),
+  const lots = state.status === "ready" ? state.lots : [];
+  const listed = sortLots(
+    lots.filter((l) => l.status === "listed"),
     sort
   );
-  const created = batches.filter((b) => b.status === "created");
-  const completed = batches.filter((b) => b.status === "completed");
+  const settled = lots.filter((l) => l.status !== "listed");
   const selected =
-    batches.find((b) => b.pda_address === selectedPda) ??
-    forSale[0] ??
-    created[0] ??
-    completed[0];
-  const availableTonnes = forSale.reduce((sum, b) => sum + b.volume_tonnes, 0);
+    lots.find((l) => l.pda_address === selectedPda) ?? listed[0] ?? settled[0];
+  const availableTonnes = listed.reduce((sum, l) => sum + l.volume_tonnes, 0);
 
-  const isReservedForOther = Boolean(
-    selected?.reserved_buyer_wallet &&
-    wallet?.account?.address !== selected.reserved_buyer_wallet
-  );
-  const isReservedForMe = Boolean(
-    selected?.reserved_buyer_wallet &&
-    wallet?.account?.address === selected.reserved_buyer_wallet
+  const isDesignatedBuyer = Boolean(
+    selected && wallet?.account?.address === selected.buyer_wallet
   );
 
   async function handleRequestContract() {
@@ -383,58 +363,11 @@ export function OriginModal({
     }
   }
 
-  async function handleBuy() {
+  function handleBuy() {
     if (!selected) return;
-    if (isReservedForOther) {
-      toast.error(
-        "Este lote se encuentra reservado exclusivamente para otro cliente corporativo."
-      );
-      return;
-    }
-    if (!wallet) {
-      toast.warning("Billetera no disponible", {
-        description: "Conectá tu billetera para adquirir el lote.",
-      });
-      return;
-    }
-
-    setBuying(true);
-    try {
-      const simulatedSignature = Array.from(
-        { length: 88 },
-        () =>
-          "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"[
-            Math.floor(Math.random() * 58)
-          ]
-      ).join("");
-
-      const res = await fetch("/api/batches/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pda_address: selected.pda_address,
-          completion_tx_signature: simulatedSignature,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(
-          (data as { error?: string }).error ?? "Error desconocido"
-        );
-      }
-
-      toast.success("¡Compra completada con éxito!", {
-        description: `Lote ${selected.batch_id} adquirido (${Number(selected.price_usdc).toLocaleString("es-AR")} USDC).`,
-      });
-
-      retry();
-    } catch (err) {
-      console.error("Error buying batch", err);
-      toast.error("Error al procesar la liquidación del lote.");
-    } finally {
-      setBuying(false);
-    }
+    toast.info("El fondeo en escrow llega en la próxima versión.", {
+      description: `El lote ${selected.lot_id} está reservado para tu wallet: cuando se habilite, el pago queda custodiado hasta que confirmes la recepción.`,
+    });
   }
 
   return (
@@ -488,7 +421,7 @@ export function OriginModal({
         )}
         {state.status === "ready" && (
           <div className="mt-3 grid grid-cols-3 gap-3 sm:max-w-md">
-            <Stat label="Lotes a la venta" value={String(forSale.length)} />
+            <Stat label="Lotes publicados" value={String(listed.length)} />
             <Stat
               label="Disponible"
               value={`${integerFmt.format(availableTonnes)} t`}
@@ -521,7 +454,7 @@ export function OriginModal({
           </div>
         )}
 
-        {state.status === "ready" && batches.length === 0 && (
+        {state.status === "ready" && lots.length === 0 && (
           <div className="p-5">
             <NoLotes />
           </div>
@@ -530,7 +463,7 @@ export function OriginModal({
         {state.status === "ready" && selected && (
           <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <section aria-label="Lote seleccionado" className="min-w-0">
-              <BatchDetail batch={selected} origin={origin} />
+              <LotDetail lot={selected} origin={origin} />
             </section>
 
             <div className="min-w-0 space-y-5">
@@ -544,10 +477,10 @@ export function OriginModal({
                       </p>
                       <p className="mt-0.5 text-[11px] text-muted">
                         {contractStatus === "accepted"
-                          ? "✓ Tu empresa está autorizada para reservar y adquirir lotes exclusivos."
+                          ? "Tu empresa puede ser designada compradora de nuevos lotes."
                           : contractStatus === "pending"
-                            ? "⏳ Solicitud enviada on-chain en Solana (Aguardando confirmación del productor)."
-                            : "Requerido para la asignación preferencial y reserva exclusiva de lotes."}
+                            ? "Solicitud enviada on-chain en Solana (aguardando confirmación del productor)."
+                            : "Requerido para que la productora te designe comprador de un lote."}
                       </p>
                     </div>
                     <div className="shrink-0">
@@ -578,57 +511,39 @@ export function OriginModal({
                 </section>
               )}
 
-              {forSale.length > 0 && (
+              {listed.length > 0 && (
                 <section>
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-foreground">
-                      Lotes en venta ({forSale.length})
+                      Lotes publicados ({listed.length})
                     </h3>
                     <SortSelect value={sort} onChange={setSort} />
                   </div>
                   <ul className="space-y-2">
-                    {forSale.map((batch) => (
-                      <BatchRow
-                        key={batch.pda_address}
-                        batch={batch}
-                        selected={batch.pda_address === selected.pda_address}
-                        onSelect={() => setSelectedPda(batch.pda_address)}
+                    {listed.map((lot) => (
+                      <LotRow
+                        key={lot.pda_address}
+                        lot={lot}
+                        selected={lot.pda_address === selected.pda_address}
+                        onSelect={() => setSelectedPda(lot.pda_address)}
                       />
                     ))}
                   </ul>
                 </section>
               )}
 
-              {created.length > 0 && (
+              {settled.length > 0 && (
                 <section>
                   <h4 className="text-xs font-bold text-foreground">
-                    Creados ({created.length})
+                    En liquidación o cerrados ({settled.length})
                   </h4>
                   <ul className="mt-2 space-y-2">
-                    {created.map((batch) => (
-                      <BatchRow
-                        key={batch.pda_address}
-                        batch={batch}
-                        selected={batch.pda_address === selected.pda_address}
-                        onSelect={() => setSelectedPda(batch.pda_address)}
-                      />
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {completed.length > 0 && (
-                <section>
-                  <h4 className="text-xs font-bold text-foreground">
-                    Completados ({completed.length})
-                  </h4>
-                  <ul className="mt-2 space-y-2">
-                    {completed.map((batch) => (
-                      <BatchRow
-                        key={batch.pda_address}
-                        batch={batch}
-                        selected={batch.pda_address === selected.pda_address}
-                        onSelect={() => setSelectedPda(batch.pda_address)}
+                    {settled.map((lot) => (
+                      <LotRow
+                        key={lot.pda_address}
+                        lot={lot}
+                        selected={lot.pda_address === selected.pda_address}
+                        onSelect={() => setSelectedPda(lot.pda_address)}
                       />
                     ))}
                   </ul>
@@ -667,42 +582,34 @@ export function OriginModal({
             </p>
             <p className="truncate text-[11px] text-muted">
               {integerFmt.format(selected.volume_tonnes)} t de Li₂CO₃ ·{" "}
-              {selected.batch_id}
+              {selected.lot_id}
             </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-            {selected.status === "completed" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-500/30 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-                Lote adquirido
-              </span>
-            )}
-            {selected.status === "audited" && (
+            {selected.status === "listed" && (
               <button
                 type="button"
-                disabled={buying || isReservedForOther}
-                onClick={() => void handleBuy()}
+                disabled={!isDesignatedBuyer}
+                onClick={handleBuy}
                 className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
-                  isReservedForOther
-                    ? "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
-                    : "btn-primary cursor-pointer"
+                  isDesignatedBuyer
+                    ? "btn-primary cursor-pointer"
+                    : "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
                 }`}
                 title={
-                  isReservedForOther ? "Reservado para otra empresa" : undefined
+                  isDesignatedBuyer
+                    ? undefined
+                    : "Este lote está designado a otra empresa"
                 }
               >
-                {buying
-                  ? "Confirmando…"
-                  : isReservedForOther
-                    ? "Reservado para otra empresa"
-                    : isReservedForMe
-                      ? "Comprar lote (Reservado)"
-                      : "Comprar lote"}
+                {isDesignatedBuyer
+                  ? "Comprar lote (designado)"
+                  : "Designado a otra empresa"}
               </button>
             )}
-            {selected.status === "created" && (
+            {selected.status === "funded" && (
               <p className="text-[11px] text-muted sm:max-w-52 sm:text-right">
-                Se habilita para la compra al ser auditado.
+                Fondeado en escrow: pendiente de confirmación de recepción.
               </p>
             )}
           </div>

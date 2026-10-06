@@ -1,58 +1,64 @@
-// Passport index read: the Batch by `pda_address` plus its Origin row,
+// Passport index read: the Lot by `pda_address` plus its Origin row,
 // anonymous under RLS like the catalogue reads. The row is a public index
 // snapshot, not the authoritative ledger, so the page never claims
 // verification. Unlike the catalogue columns, the passport read also selects
-// the producer wallet and the creation transaction signature, and never
-// selects the price: commercial terms stay in the catalogue (ADR-0009) and a
-// column that is not read cannot leak into the client payload.
+// the producer wallet and the per-transition transaction signatures, and
+// never selects the price: commercial terms stay in the catalogue
+// (ADR-0009) and a column that is not read cannot leak into the client
+// payload.
 
 import { cache } from "react";
-import type { Batch } from "../../batches/data/batches";
+import type { Lot } from "../../batches/data/lots";
 import { ORIGIN_COLUMNS, type Origin } from "../../batches/data/origins";
 import { createClient } from "../../lib/supabase/server";
 
-export type PassportBatch = Omit<Batch, "price_usdc"> & {
+export type PassportLot = Omit<Lot, "price_usdc"> & {
   producer_wallet: string;
   creation_tx_signature: string;
+  fund_tx_signature: string | null;
+  redeem_tx_signature: string | null;
+  claim_tx_signature: string | null;
+  cancel_tx_signature: string | null;
+  dispute_tx_signature: string | null;
 };
 
-export const PASSPORT_BATCH_COLUMNS =
-  "pda_address, batch_id, origin_id, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, esg_approved, eu_regulation_assessment, audit_sha256, audit_certificate_path, indexed_at, producer_wallet, creation_tx_signature" as const;
+export const PASSPORT_LOT_COLUMNS =
+  "pda_address, lot_id, origin_id, status, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, buyer_wallet, claimable_after, plant_cert_sha256, plant_certificate_path, indexed_at, producer_wallet, creation_tx_signature, fund_tx_signature, redeem_tx_signature, claim_tx_signature, cancel_tx_signature, dispute_tx_signature" as const;
 
-// Same base58 shape the `batches` table enforces on `pda_address`.
+// Same base58 shape the `lots` table enforces on `pda_address`.
 const PDA_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export type PassportRecord = {
-  batch: PassportBatch;
+  lot: PassportLot;
   origin: Origin;
 };
 
 /**
- * Batch and Origin for `/batch/<pda>`, or null when the address is malformed
+ * Lot and Origin for `/batch/<pda>`, or null when the address is malformed
  * or absent from the index. Cached per request so the page and its
- * per-batch metadata share one read.
+ * per-lot metadata share one read.
  */
 export const getPassportRecord = cache(
   async (pda: string): Promise<PassportRecord | null> => {
     if (!PDA_PATTERN.test(pda)) return null;
 
     const supabase = await createClient();
-    const { data: batch, error: batchError } = await supabase
-      .from("batches")
-      .select(PASSPORT_BATCH_COLUMNS)
+    const { data: lot, error: lotError } = await supabase
+      .from("lots")
+      .select(PASSPORT_LOT_COLUMNS)
       .eq("pda_address", pda)
       .maybeSingle();
-    if (batchError) {
+    if (lotError) {
       throw new Error(
-        `Could not load the passport record: ${batchError.message}`
+        `Could not load the passport record: ${lotError.message}`
       );
     }
-    if (batch === null) return null;
+    if (lot === null) return null;
 
     const { data: origin, error: originError } = await supabase
       .from("origins")
       .select(ORIGIN_COLUMNS)
-      .eq("id", batch.origin_id)
+      .eq("id", lot.origin_id)
       .maybeSingle();
     if (originError) {
       throw new Error(
@@ -62,7 +68,7 @@ export const getPassportRecord = cache(
     if (origin === null) return null;
 
     return {
-      batch: batch as PassportBatch,
+      lot: lot as PassportLot,
       origin: origin as Origin,
     };
   }

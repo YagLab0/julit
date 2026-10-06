@@ -126,4 +126,3 @@ describe("Regex patterns", () => {
     expect(CONTRACT_SIGNATURE_PATTERN.test("short")).toBe(false);
   });
 });
-

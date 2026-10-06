@@ -1,44 +1,48 @@
 import { describe, expect, it } from "vitest";
 import {
-  validateBatchForm,
-  type BatchFormContext,
-  type BatchFormValues,
+  validateLotForm,
+  type LotFormContext,
+  type LotFormValues,
 } from "./validation";
 
 const PRODUCER = "ProducerWa11et111111111111111111111111111";
-const AUDITOR = "AuditAnd1noLabCert111111111111111111111111";
-const AUDITOR_B = "OtherAud1torWa11et99999999999999999999999";
 const BUYER = "C1ienteTesaEnergy3333333333333333333333333";
 const BUYER_B = "UncontractedBuyer88888888888888888888888";
+const CERT = "ab".repeat(32);
 
-const CTX: BatchFormContext = {
+const NOW = Math.floor(Date.parse("2026-10-06T12:00:00Z") / 1000);
+const FUTURE = "2026-11-15T10:00";
+const PAST = "2026-10-01T10:00";
+
+const CTX: LotFormContext = {
   producerWallet: PRODUCER,
   originId: "pena_blanca",
-  contractedAuditors: [AUDITOR],
   contractedBuyers: [BUYER],
+  nowUnixSeconds: NOW,
 };
 
-const VALID: BatchFormValues = {
-  batchId: "LIT-2026-PBL-05",
+const VALID: LotFormValues = {
+  lotId: "LIT-2026-PBL-05",
   volumeTonnes: "420",
   purityPct: "99.55",
   waterM3PerTonne: "50.80",
   carbonKgCo2ePerTonne: "8200.00",
   priceUsdc: "12000.123456",
-  auditorWallet: AUDITOR,
-  reservedBuyerWallet: BUYER,
+  buyerWallet: BUYER,
+  claimableAfter: FUTURE,
+  plantCertSha256: CERT,
 };
 
-function check(overrides: Partial<BatchFormValues> = {}) {
-  return validateBatchForm({ ...VALID, ...overrides }, CTX);
+function check(overrides: Partial<LotFormValues> = {}) {
+  return validateLotForm({ ...VALID, ...overrides }, CTX);
 }
 
-describe("validateBatchForm", () => {
+describe("validateLotForm", () => {
   it("accepts the happy path and returns the scaled payload", () => {
     const { errors, payload } = check();
     expect(errors).toEqual({});
     expect(payload).toEqual({
-      batchId: "LIT-2026-PBL-05",
+      lotId: "LIT-2026-PBL-05",
       originId: "pena_blanca",
       volumeTonnes: "420",
       purityBasisPoints: "9955",
@@ -46,128 +50,139 @@ describe("validateBatchForm", () => {
       carbonKgCo2ePerTonneScaled: "820000",
       priceUsdcScaled: "12000123456",
       producerWallet: PRODUCER,
-      auditorWallet: AUDITOR,
-      reservedBuyerWallet: BUYER,
+      buyerWallet: BUYER,
+      claimableAfterUnix: Math.floor(Date.parse(FUTURE) / 1000).toString(),
+      plantCertSha256: CERT,
     });
   });
 
-  describe("batchId", () => {
+  describe("lotId", () => {
     it("rejects empty", () => {
-      expect(check({ batchId: "" }).errors.batchId).toBeTruthy();
+      expect(check({ lotId: "" }).errors.lotId).toBeTruthy();
     });
     it("rejects identifiers over 32 UTF-8 bytes", () => {
-      expect(check({ batchId: "a".repeat(33) }).errors.batchId).toBeTruthy();
+      expect(check({ lotId: "a".repeat(33) }).errors.lotId).toBeTruthy();
     });
     it("accepts exactly 32 bytes", () => {
-      expect(check({ batchId: "a".repeat(32) }).errors.batchId).toBeUndefined();
+      expect(check({ lotId: "a".repeat(32) }).errors.lotId).toBeUndefined();
     });
-    it("counts multibyte characters by bytes, not chars", () => {
-      // 16 × 'é' = 32 bytes — accepted; 17 × = 34 bytes — rejected
-      expect(check({ batchId: "é".repeat(16) }).errors.batchId).toBeUndefined();
-      expect(check({ batchId: "é".repeat(17) }).errors.batchId).toBeTruthy();
+    it("counts multi-byte UTF-8 toward the 32-byte cap", () => {
+      expect(check({ lotId: "日".repeat(11) }).errors.lotId).toBeTruthy();
+      expect(check({ lotId: "日".repeat(10) }).errors.lotId).toBeUndefined();
     });
   });
 
   describe("volumeTonnes", () => {
-    it("rejects fractional tonnes", () => {
-      expect(check({ volumeTonnes: "1.5" }).errors.volumeTonnes).toBeTruthy();
+    it("rejects non-integers and zero", () => {
+      for (const volumeTonnes of ["", "1.5", "-3", "0", "abc"]) {
+        expect(check({ volumeTonnes }).errors.volumeTonnes).toBeTruthy();
+      }
     });
-    it("rejects zero and negatives", () => {
-      expect(check({ volumeTonnes: "0" }).errors.volumeTonnes).toBeTruthy();
-      expect(check({ volumeTonnes: "-3" }).errors.volumeTonnes).toBeTruthy();
-    });
-    it("rejects non-numeric", () => {
-      expect(check({ volumeTonnes: "abc" }).errors.volumeTonnes).toBeTruthy();
+    it("rejects values beyond u64", () => {
+      expect(
+        check({ volumeTonnes: "18446744073709551616" }).errors.volumeTonnes
+      ).toBeTruthy();
     });
   });
 
-  describe("purityPct — battery grade 99.50–100.00", () => {
-    it("rejects 99.49 (below grade)", () => {
+  describe("purityPct", () => {
+    it("accepts the battery-grade band edges", () => {
+      expect(check({ purityPct: "99.50" }).errors.purityPct).toBeUndefined();
+      expect(check({ purityPct: "99.5" }).errors.purityPct).toBeUndefined();
+      expect(check({ purityPct: "100" }).errors.purityPct).toBeUndefined();
+      expect(check({ purityPct: "100.00" }).errors.purityPct).toBeUndefined();
+    });
+    it("rejects below battery grade and above 100", () => {
       expect(check({ purityPct: "99.49" }).errors.purityPct).toBeTruthy();
-    });
-    it("rejects 99.505 (excess precision, never truncated)", () => {
-      expect(check({ purityPct: "99.505" }).errors.purityPct).toBeTruthy();
-    });
-    it("rejects above 100", () => {
       expect(check({ purityPct: "100.01" }).errors.purityPct).toBeTruthy();
     });
-    it("accepts the bounds", () => {
-      expect(check({ purityPct: "99.50" }).errors.purityPct).toBeUndefined();
-      expect(check({ purityPct: "100" }).errors.purityPct).toBeUndefined();
-      expect(check({ purityPct: "100.00" }).payload?.purityBasisPoints).toBe(
-        "10000"
-      );
+    it("rejects more than 2 decimals", () => {
+      expect(check({ purityPct: "99.551" }).errors.purityPct).toBeTruthy();
     });
   });
 
-  describe("footprints — ≤2 decimals", () => {
-    it("rejects a third decimal place", () => {
+  describe("waterM3PerTonne and carbonKgCo2ePerTonne", () => {
+    it("accepts integers and 2-decimal values", () => {
+      expect(
+        check({ waterM3PerTonne: "50", carbonKgCo2ePerTonne: "8200" }).errors
+      ).toEqual({});
+    });
+    it("rejects more than 2 decimals and garbage", () => {
       expect(
         check({ waterM3PerTonne: "50.801" }).errors.waterM3PerTonne
       ).toBeTruthy();
       expect(
-        check({ carbonKgCo2ePerTonne: "1.005" }).errors.carbonKgCo2ePerTonne
-      ).toBeTruthy();
-    });
-    it("rejects negatives", () => {
-      expect(
-        check({ waterM3PerTonne: "-1" }).errors.waterM3PerTonne
-      ).toBeTruthy();
-    });
-    it("accepts zero and integers", () => {
-      expect(
-        check({ waterM3PerTonne: "0" }).errors.waterM3PerTonne
-      ).toBeUndefined();
-      expect(
-        check({ carbonKgCo2ePerTonne: "8200" }).payload
-          ?.carbonKgCo2ePerTonneScaled
-      ).toBe("820000");
-    });
-  });
-
-  describe("priceUsdc — total batch quote, ≤6 decimals", () => {
-    it("rejects a seventh decimal", () => {
-      expect(check({ priceUsdc: "1.0000001" }).errors.priceUsdc).toBeTruthy();
-    });
-    it("rejects zero", () => {
-      expect(check({ priceUsdc: "0" }).errors.priceUsdc).toBeTruthy();
-    });
-    it("scales six decimals exactly", () => {
-      expect(check({ priceUsdc: "0.000001" }).payload?.priceUsdcScaled).toBe(
-        "1"
-      );
-    });
-  });
-
-  describe("auditorWallet — contracted auditors only", () => {
-    it("requires a selection", () => {
-      expect(check({ auditorWallet: "" }).errors.auditorWallet).toBeTruthy();
-    });
-    it("rejects an auditor without an accepted contract", () => {
-      expect(
-        check({ auditorWallet: AUDITOR_B }).errors.auditorWallet
+        check({ carbonKgCo2ePerTonne: "abc" }).errors.carbonKgCo2ePerTonne
       ).toBeTruthy();
     });
   });
 
-  describe("reservedBuyerWallet — optional, contracted buyers only", () => {
-    it("empty produces a spot batch (null)", () => {
-      const { errors, payload } = check({ reservedBuyerWallet: "" });
-      expect(errors.reservedBuyerWallet).toBeUndefined();
-      expect(payload?.reservedBuyerWallet).toBeNull();
+  describe("priceUsdc", () => {
+    it("rejects zero, garbage and >6 decimals", () => {
+      for (const priceUsdc of ["0", "0.0", "abc", "1.0000001"]) {
+        expect(check({ priceUsdc }).errors.priceUsdc).toBeTruthy();
+      }
+    });
+    it("keeps the exact u64 scaled value", () => {
+      expect(
+        check({ priceUsdc: "12000.123456" }).payload?.priceUsdcScaled
+      ).toBe("12000123456");
+    });
+  });
+
+  describe("buyerWallet", () => {
+    it("is mandatory", () => {
+      expect(check({ buyerWallet: "" }).errors.buyerWallet).toBeTruthy();
     });
     it("rejects a buyer without an accepted contract", () => {
+      expect(check({ buyerWallet: BUYER_B }).errors.buyerWallet).toBeTruthy();
+    });
+    it("rejects the producer as its own buyer", () => {
+      expect(check({ buyerWallet: PRODUCER }).errors.buyerWallet).toBeTruthy();
+    });
+    it("rejects malformed wallets", () => {
       expect(
-        check({ reservedBuyerWallet: BUYER_B }).errors.reservedBuyerWallet
+        check({ buyerWallet: "0OIl-not-base58" }).errors.buyerWallet
       ).toBeTruthy();
     });
-    it("rejects the producer or the auditor as buyer", () => {
+  });
+
+  describe("claimableAfter", () => {
+    it("is mandatory and must parse", () => {
+      expect(check({ claimableAfter: "" }).errors.claimableAfter).toBeTruthy();
       expect(
-        check({ reservedBuyerWallet: PRODUCER }).errors.reservedBuyerWallet
+        check({ claimableAfter: "not-a-date" }).errors.claimableAfter
+      ).toBeTruthy();
+    });
+    it("rejects past and present deadlines", () => {
+      expect(
+        check({ claimableAfter: PAST }).errors.claimableAfter
       ).toBeTruthy();
       expect(
-        check({ reservedBuyerWallet: AUDITOR }).errors.reservedBuyerWallet
+        check({ claimableAfter: "2026-10-06T00:00" }).errors.claimableAfter
       ).toBeTruthy();
+    });
+  });
+
+  describe("plantCertSha256", () => {
+    it("is mandatory", () => {
+      expect(
+        check({ plantCertSha256: "" }).errors.plantCertSha256
+      ).toBeTruthy();
+    });
+    it("rejects malformed digests", () => {
+      expect(
+        check({ plantCertSha256: "not-hex" }).errors.plantCertSha256
+      ).toBeTruthy();
+      expect(
+        check({ plantCertSha256: CERT.slice(0, 63) }).errors.plantCertSha256
+      ).toBeTruthy();
+    });
+    it("normalises uppercase hex", () => {
+      expect(check({ plantCertSha256: CERT.toUpperCase() }).errors).toEqual({});
+      expect(
+        check({ plantCertSha256: CERT.toUpperCase() }).payload?.plantCertSha256
+      ).toBe(CERT);
     });
   });
 });

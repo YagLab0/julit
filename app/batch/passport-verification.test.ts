@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-describe("Cryptographic Passport Zero-Trust Verification", () => {
+describe("Plant certificate digest verification", () => {
   it("computes the correct SHA-256 hex digest for arbitrary bytes", async () => {
-    const text = "JuLit Battery Grade Lithium Carbonate Audit Certificate 2026";
+    const text = "JuLit Plant Certificate 2026";
     const bytes = new TextEncoder().encode(text);
     const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -14,12 +14,12 @@ describe("Cryptographic Passport Zero-Trust Verification", () => {
     expect(hashHex.length).toBe(64);
   });
 
-  it("detects tampering when comparing document hash with on-chain digest", async () => {
+  it("detects tampering when comparing document hash with the declared digest", async () => {
     const authenticBytes = new TextEncoder().encode(
-      "Authentic Laboratory Audit Report"
+      "Authentic Plant Certificate"
     );
     const tamperedBytes = new TextEncoder().encode(
-      "Tampered Laboratory Audit Report"
+      "Tampered Plant Certificate"
     );
 
     const authHashBuffer = await crypto.subtle.digest(

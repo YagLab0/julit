@@ -5,7 +5,7 @@ import { SessionMenu } from "../../components/session-menu";
 import { ThemeToggle } from "../../components/theme-toggle";
 import { originName } from "../../lib/origins";
 import { createClient } from "../../lib/supabase/server";
-import { NewBatchClient } from "./new-batch-client";
+import { NewLotClient } from "./new-batch-client";
 
 export default async function NewBatchPage() {
   const supabase = await createClient();
@@ -42,7 +42,8 @@ export default async function NewBatchPage() {
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
           Dá de alta un lote de carbonato de litio grado batería en Solana
-          Devnet. La wallet verificada de tu empresa firma como productora.
+          Devnet, con comprador designado y certificado de planta. La wallet
+          verificada de tu empresa firma como productora.
         </p>
 
         {!company ? (
@@ -54,7 +55,7 @@ export default async function NewBatchPage() {
         ) : !company.origin_id ? (
           <GateCard body="El origen de producción de tu empresa se provisiona desde el servidor. Contactá al operador de la demo." />
         ) : (
-          <NewBatchClient
+          <NewLotClient
             producer={{
               name: company.name,
               walletAddress: company.wallet_address!,

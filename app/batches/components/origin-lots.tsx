@@ -1,13 +1,13 @@
 "use client";
 
-import { useOriginBatches } from "../data/use-origin-batches";
+import { useOriginLots } from "../data/use-origin-lots";
 import { NoLotes } from "./assets-panel";
-import { BatchCard } from "./batch-card";
-import { Skeleton } from "./batch-display";
+import { LotCard } from "./lot-card";
+import { Skeleton } from "./lot-display";
 
-/** Batch index section for one origin: loading, retry, honest empty or cards. */
-export function OriginBatches({ originId }: { originId: string }) {
-  const { state, retry } = useOriginBatches(originId);
+/** Lot index section for one origin: loading, retry, honest empty or cards. */
+export function OriginLots({ originId }: { originId: string }) {
+  const { state, retry } = useOriginLots(originId);
 
   if (state.status === "loading") {
     return (
@@ -35,12 +35,12 @@ export function OriginBatches({ originId }: { originId: string }) {
     );
   }
 
-  if (state.batches.length === 0) return <NoLotes />;
+  if (state.lots.length === 0) return <NoLotes />;
 
   return (
     <div className="space-y-3">
-      {state.batches.map((batch) => (
-        <BatchCard key={batch.pda_address} batch={batch} />
+      {state.lots.map((lot) => (
+        <LotCard key={lot.pda_address} lot={lot} />
       ))}
     </div>
   );

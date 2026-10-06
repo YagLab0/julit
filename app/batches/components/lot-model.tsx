@@ -6,8 +6,8 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { BRAND_SCALE } from "./brand";
-import { bagCount, MAX_BAGS } from "./batch-display";
-export { bagCount, TONNES_PER_BAG } from "./batch-display";
+import { bagCount, MAX_BAGS } from "./lot-display";
+export { bagCount, TONNES_PER_BAG } from "./lot-display";
 
 const BAG = { w: 0.62, h: 0.72, gap: 0.08 };
 const GRID = 3; // bags per row/column in one layer
@@ -263,10 +263,10 @@ function Controls({
 }
 
 function Scene({
-  batchId,
+  lotId,
   volumeTonnes,
 }: {
-  batchId: string;
+  lotId: string;
   volumeTonnes: number;
 }) {
   const count = Math.min(bagCount(volumeTonnes), MAX_BAGS);
@@ -304,20 +304,20 @@ function Scene({
       </mesh>
 
       <Pallet />
-      {/* Keyed by batch so the drop-in replays on every selection. */}
-      <Bags key={batchId} count={count} />
+      {/* Keyed by lot so the drop-in replays on every selection. */}
+      <Bags key={lotId} count={count} />
       <TokenRing height={stackTop + 0.25} />
       <Controls target={target} distance={4.4 + stackTop * 1.5} />
     </>
   );
 }
 
-/** 3D batch: big bags of Li₂CO₃ on a pallet, ringed by its on-chain token. */
-export function BatchModel({
-  batchId,
+/** 3D lot: big bags of Li₂CO₃ on a pallet, ringed by its on-chain title. */
+export function LotModel({
+  lotId,
   volumeTonnes,
 }: {
-  batchId: string;
+  lotId: string;
   volumeTonnes: number;
 }) {
   return (
@@ -328,7 +328,7 @@ export function BatchModel({
       gl={{ antialias: true, alpha: true }}
       className="cursor-grab active:cursor-grabbing"
     >
-      <Scene batchId={batchId} volumeTonnes={volumeTonnes} />
+      <Scene lotId={lotId} volumeTonnes={volumeTonnes} />
     </Canvas>
   );
 }

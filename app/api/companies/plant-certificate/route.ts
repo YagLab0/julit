@@ -1,26 +1,23 @@
-import { CERTIFICATE_MAX_BYTES } from "../../../../audit/validation";
-import { jsonError } from "../../../../lib/server/api";
+import { jsonError } from "../../../lib/server/api";
 import {
   bytesToHex,
-  certificatePath,
   CERTIFICATES_BUCKET,
-} from "../../../../lib/server/certificates";
-import { createClient } from "../../../../lib/supabase/server";
-import { createServiceClient } from "../../../../lib/supabase/service";
+  plantCertificatePath,
+  PLANT_CERTIFICATE_MAX_BYTES,
+} from "../../../lib/server/certificates";
+import { createClient } from "../../../lib/supabase/server";
+import { createServiceClient } from "../../../lib/supabase/service";
 
 const PDF_MAGIC = "%PDF-";
 
 /**
- * Stores the auditor's certificate PDF at `<pda>/<sha256>.pdf`. The server
- * recomputes the digest, so the on-chain audit_hash built from this response
- * provably matches the stored file. Never upserts: a second upload for the
- * same batch is rejected so an existing certificate cannot be replaced
- * after (or before) certification.
+ * Stores a producer's plant certificate PDF content-addressed at
+ * `<producer_wallet>/<sha256>.pdf`. The server recomputes the digest, so the
+ * hash a lot declares in `create_lot` provably matches the stored file.
+ * Never upserts: the same PDF is idempotent, a different file gets a
+ * different path.
  */
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ pda: string }> }
-) {
+export async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -35,30 +32,11 @@ export async function POST(
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!company || company.company_type !== "auditor") {
-    return jsonError("Solo las auditoras suben certificados.", 403);
+  if (!company || company.company_type !== "producer") {
+    return jsonError("Solo las productoras suben certificados de planta.", 403);
   }
   if (!company.wallet_address || !company.wallet_verified_at) {
     return jsonError("Vinculá la wallet verificada de tu empresa.", 400);
-  }
-
-  const { pda } = await params;
-
-  const service = createServiceClient();
-  const { data: batch } = await service
-    .from("batches")
-    .select("pda_address, auditor_wallet, status")
-    .eq("pda_address", pda)
-    .maybeSingle();
-
-  if (!batch) {
-    return jsonError("Lote no encontrado.", 404);
-  }
-  if (batch.auditor_wallet !== company.wallet_address) {
-    return jsonError("Este lote no está designado a tu wallet.", 403);
-  }
-  if (batch.status !== "created") {
-    return jsonError("Este lote ya fue certificado.", 409);
   }
 
   let form: FormData;
@@ -78,7 +56,7 @@ export async function POST(
   if (file.size === 0) {
     return jsonError("El certificado está vacío.", 400);
   }
-  if (file.size > CERTIFICATE_MAX_BYTES) {
+  if (file.size > PLANT_CERTIFICATE_MAX_BYTES) {
     return jsonError("El certificado supera el máximo de 50 MiB.", 400);
   }
 
@@ -89,8 +67,9 @@ export async function POST(
   }
 
   const digest = bytesToHex(await crypto.subtle.digest("SHA-256", bytes));
-  const path = certificatePath(pda, digest);
+  const path = plantCertificatePath(company.wallet_address, digest);
 
+  const service = createServiceClient();
   const { error } = await service.storage
     .from(CERTIFICATES_BUCKET)
     .upload(path, bytes, {
@@ -104,7 +83,9 @@ export async function POST(
       String(statusCode) === "409" ||
       error.message.includes("already exists")
     ) {
-      return jsonError("Este certificado ya fue subido.", 409);
+      // Content-addressed: the identical PDF is already stored; the digest is
+      // still valid for the lot's plant_cert_hash.
+      return Response.json({ digest, path }, { status: 200 });
     }
     return jsonError("No se pudo guardar el certificado.", 500);
   }

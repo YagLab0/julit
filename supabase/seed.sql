@@ -1,8 +1,6 @@
--- Demo-only accounts: the two producers (one per origin) plus an auditor and
--- a buyer for the demo flow, plus two contract offers to the auditor (one
--- pending, one accepted) so the auditor inbox has real rows. Applied locally
--- by `supabase db reset` and to the linked project by the reviewed
--- `supabase db push --include-seed` runbook.
+-- Demo-only accounts: the two producers (one per origin) plus a buyer for
+-- the demo flow. Applied locally by `supabase db reset` and to the linked
+-- project by the reviewed `supabase db push --include-seed` runbook.
 -- Idempotent: re-running never duplicates or overwrites. Producer and mine
 -- names are fictional; the site coordinates and capacity figures are the
 -- reference values the demo uses.
@@ -10,7 +8,6 @@
 -- Credentials are demo-only (password julit-demo-2026):
 --   productor.olaroz@julit.dev          -> Sales del Altiplano S.A. (producer, pena_blanca)
 --   productor.cauchari-olaroz@julit.dev -> Minera Cóndor S.A.      (producer, condor)
---   auditor@julit.dev                   -> Auditor Demo   (auditor)
 --   comprador@julit.dev                 -> Comprador Demo (buyer)
 
 insert into auth.users (
@@ -34,16 +31,6 @@ insert into auth.users (
     'a1a1a1a1-0000-4000-8000-000000000002',
     'authenticated', 'authenticated',
     'productor.cauchari-olaroz@julit.dev',
-    extensions.crypt('julit-demo-2026', extensions.gen_salt('bf')),
-    now(), now(), now(),
-    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
-    '', '', '', '', '', ''
-  ),
-  (
-    '00000000-0000-0000-0000-000000000000',
-    'a1a1a1a1-0000-4000-8000-000000000003',
-    'authenticated', 'authenticated',
-    'auditor@julit.dev',
     extensions.crypt('julit-demo-2026', extensions.gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
@@ -81,13 +68,6 @@ values
     'email', now(), now(), now()
   ),
   (
-    'a1a1a1a1-0000-4000-8000-000000000003',
-    'a1a1a1a1-0000-4000-8000-000000000003',
-    'a1a1a1a1-0000-4000-8000-000000000003',
-    '{"sub":"a1a1a1a1-0000-4000-8000-000000000003","email":"auditor@julit.dev","email_verified":true}'::jsonb,
-    'email', now(), now(), now()
-  ),
-  (
     'a1a1a1a1-0000-4000-8000-000000000004',
     'a1a1a1a1-0000-4000-8000-000000000004',
     'a1a1a1a1-0000-4000-8000-000000000004',
@@ -99,7 +79,6 @@ on conflict do nothing;
 insert into public.companies (id, name, company_type, origin_id, wallet_address, wallet_verified_at) values
   ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', null, null),
   ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor', null, null),
-  ('a1a1a1a1-0000-4000-8000-000000000003', 'Auditor Demo', 'auditor', null, null, null),
   ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, null, null)
 on conflict (id) do update set
   wallet_address = excluded.wallet_address,

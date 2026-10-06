@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Smoke test for the provisioned demo: proves by code only that
-//   1. the four demo accounts sign in with email + password
-//      (two producers, one auditor, one buyer),
+//   1. the three demo accounts sign in with email + password
+//      (two producers, one buyer),
 //   2. POST /api/companies rejects a producer registration (400),
-//   3. POST /api/companies accepts a fresh auditor registration (201),
+//   3. POST /api/companies accepts a fresh buyer registration (201),
 //   4. the origins catalogue is publicly readable,
 //   5. re-running supabase/seed.sql does not change auth/company counts.
 //
@@ -17,7 +17,7 @@
 //
 // Against a deployed target, the read-only checks reuse the same script:
 //   SMOKE_SUPABASE_URL=... SMOKE_ANON_KEY=... SMOKE_APP_URL=... pnpm smoke
-// The fresh-auditor registration (check 3, it writes) and the seed re-run
+// The fresh-buyer registration (check 3, it writes) and the seed re-run
 // (check 5, needs Docker) are skipped for non-local targets.
 
 import { execFileSync } from "node:child_process";
@@ -32,7 +32,6 @@ const DEMO_PASSWORD = "julit-demo-2026";
 const DEMO_ACCOUNTS = [
   { email: "productor.olaroz@julit.dev", password: DEMO_PASSWORD },
   { email: "productor.cauchari-olaroz@julit.dev", password: DEMO_PASSWORD },
-  { email: "auditor@julit.dev", password: DEMO_PASSWORD },
   { email: "comprador@julit.dev", password: DEMO_PASSWORD },
 ];
 
@@ -139,12 +138,12 @@ try {
 
 if (!isLocalTarget) {
   console.log(
-    "skip - auditor registration check (target is not the local stack)"
+    "skip - buyer registration check (target is not the local stack)"
   );
 } else {
   try {
     jar.clear();
-    const email = `smoke-auditor+${Date.now()}@julit.dev`;
+    const email = `smoke-buyer+${Date.now()}@julit.dev`;
     const { data, error } = await auth.auth.signUp({
       email,
       password: DEMO_PASSWORD,
@@ -152,22 +151,18 @@ if (!isLocalTarget) {
     if (error || !data.session) {
       report(
         false,
-        "auditor registration accepted",
+        "buyer registration accepted",
         error?.message ?? "no session"
       );
     } else {
       const { status } = await postCompany({
-        name: "Smoke Auditor",
-        company_type: "auditor",
+        name: "Smoke Buyer",
+        company_type: "buyer",
       });
-      report(
-        status === 201,
-        "auditor registration accepted",
-        `status ${status}`
-      );
+      report(status === 201, "buyer registration accepted", `status ${status}`);
     }
   } catch (error) {
-    report(false, "auditor registration accepted", error.message);
+    report(false, "buyer registration accepted", error.message);
   }
 }
 
@@ -201,13 +196,13 @@ if (!isLocalTarget) {
       .split("\n")[0];
     const demoEmails =
       "'productor.olaroz@julit.dev','productor.cauchari-olaroz@julit.dev'," +
-      "'auditor@julit.dev','comprador@julit.dev'";
+      "'comprador@julit.dev'";
     const countQuery =
       `select (select count(*) from auth.users where email in (${demoEmails}))` +
       " || ':' || (select count(*) from auth.identities i join auth.users u on u.id = i.user_id" +
       ` where u.email in (${demoEmails}))` +
       " || ':' || (select count(*) from public.companies" +
-      " where name in ('Sales del Altiplano S.A.','Minera Cóndor S.A.','Auditor Demo','Comprador Demo'));";
+      " where name in ('Sales del Altiplano S.A.','Minera Cóndor S.A.','Comprador Demo'));";
     const psql = (args, input) =>
       execFileSync(
         "docker",
@@ -231,7 +226,7 @@ if (!isLocalTarget) {
     );
     const after = psql(["-t", "-A", "-c", countQuery]).trim();
     report(
-      before === "4:4:4" && after === before,
+      before === "3:3:3" && after === before,
       "seed re-run leaves counts unchanged",
       `${before} -> ${after}`
     );
