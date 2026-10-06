@@ -40,17 +40,17 @@ export function ProducerStructureWidget() {
         <span className={styles.evidenceMark}>
           <EvidenceMark />
         </span>
-        <span>Evidencia</span>
+        <span>Cert. de planta</span>
       </div>
       <div className={styles.structure}>
         <span className={styles.structureDot} />
-        Estructura
+        Título digital
       </div>
     </ProcessWidgetMotion>
   );
 }
 
-const backed = ["Datos", "Documentación", "Evaluación"] as const;
+const settlementLegs = ["Pago", "Título", "Liquidación"] as const;
 
 export function BuyerReviewWidget() {
   return (
@@ -60,7 +60,7 @@ export function BuyerReviewWidget() {
         <div className={styles.linked}>
           <span className={styles.spineGhost} />
           <span className={styles.spineLive} data-process-fill="" />
-          {backed.map((label) => (
+          {settlementLegs.map((label) => (
             <div className={styles.station} key={label}>
               <span className={styles.node} data-process-node="">
                 <span className={styles.nodePaint} data-process-paint="" />
@@ -72,13 +72,13 @@ export function BuyerReviewWidget() {
             <span className={styles.node} data-process-node="">
               <span className={styles.nodePaint} data-process-paint="" />
             </span>
-            <span>Respaldo</span>
+            <span>Rastro</span>
           </div>
         </div>
         <div className={styles.pendingStation}>
           <span className={styles.approach} data-process-retreat="" />
           <span className={styles.ring} />
-          <span>Pendiente</span>
+          <span>Entrega</span>
         </div>
       </div>
     </ProcessWidgetMotion>

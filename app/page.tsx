@@ -5,33 +5,49 @@ import { CommerceSection, ParticipantsSection } from "./landing/commerce";
 import { FaqSection, PassportSection } from "./landing/passport-faq";
 import { TeamSection } from "./landing/team";
 import { LandingMotion } from "./landing/landing-motion";
-import { ProcessWidget } from "./landing/process-widgets";
 import styles from "./landing/landing.module.css";
 
 export const metadata: Metadata = {
-  title: "JuLit | Del salar al mercado, con evidencia verificable",
+  title: "JuLit | Del salar al mercado, con liquidación atómica",
   description:
-    "Conocé JuLit: pasaportes digitales para lotes de carbonato de litio y una propuesta de liquidación B2B sobre Solana. Desde Jujuy hacia la cadena global del litio.",
+    "Conocé JuLit: directorio B2B y liquidación atómica de lotes de carbonato de litio sobre Solana. Desde Jujuy hacia la cadena global del litio.",
 };
 
-const processSteps = [
+const lifecycleSteps = [
   {
     number: "01",
-    title: "El productor registra",
+    title: "Descubrimiento",
+    onchain: false,
     description:
-      "Declara el origen, la cantidad y la pureza química del carbonato de litio. Asocia un auditor y define si el lote se ofrece al mercado o se reserva para un comprador.",
+      "Directorio B2B: origen, capacidad y certificación de planta. El acuerdo comercial se negocia en privado entre las empresas.",
   },
   {
     number: "02",
-    title: "El auditor aporta evidencia",
+    title: "Tokenización",
+    onchain: true,
     description:
-      "Evalúa los datos químicos y ambientales y adjunta su informe. La referencia de integridad permite comprobar si el documento coincide con la versión registrada.",
+      "El productor registra el lote ya reservado a su comprador: nace el título digital (un NFT), que queda en custodia del protocolo.",
   },
   {
     number: "03",
-    title: "El comprador revisa y decide",
+    title: "Liquidación",
+    onchain: true,
     description:
-      "Consulta el origen, las condiciones y la evidencia del lote. La propuesta incorpora liquidación en USDC sobre Solana; la demo no realiza transferencias de fondos.",
+      "El comprador designado ejecuta la liquidación: su pago en USDC llega al productor y el título digital llega al comprador, en la misma transacción.",
+  },
+  {
+    number: "04",
+    title: "Entrega",
+    onchain: false,
+    description:
+      "La logística, la aduana y la recepción del cargamento ocurren fuera del protocolo.",
+  },
+  {
+    number: "05",
+    title: "Redención",
+    onchain: true,
+    description:
+      "El comprador confirma la recepción: el título se quema y el lote queda marcado como redimido, con un rastro permanente y verificable.",
   },
 ];
 
@@ -72,7 +88,7 @@ function ArrowIcon() {
 function DemoLink() {
   return (
     <Link
-      href="/batches"
+      href="/explorer"
       prefetch={false}
       className="btn-primary"
       data-landing-press
@@ -138,12 +154,12 @@ export default function Home() {
               Litio de Jujuy. Proyección global
             </p>
             <h1 id="hero-title">
-              Del salar al mercado, con evidencia verificable.
+              Del salar al mercado, con liquidación atómica.
             </h1>
             <p className={styles.heroDescription}>
-              JuLit conecta productores, auditores y compradores de carbonato de
-              litio con un pasaporte digital por lote y una propuesta de
-              liquidación B2B sobre Solana.
+              JuLit conecta productores y compradores de carbonato de litio.
+              Cada lote nace con un título digital, y el pago se liquida en la
+              misma transacción en que el título cambia de manos, sobre Solana.
             </p>
             <div className={styles.heroActions}>
               <DemoLink />
@@ -186,8 +202,8 @@ export default function Home() {
             <path d="M12 11v6m0-10v1" stroke="currentColor" strokeWidth="1.5" />
           </svg>
           <p>
-            Explorá el mapa de orígenes de la demo. La liquidación es simulada:
-            no transfiere USDC ni representa operaciones comerciales reales.
+            La demo corre en Solana Devnet con tokens de prueba: las
+            transacciones son reales, el valor no.
           </p>
         </aside>
         <CommerceSection />
@@ -199,30 +215,36 @@ export default function Home() {
         >
           <div className={styles.processIntro} data-landing-reveal>
             <div>
-              <p className="eyebrow mb-5">Tres actores. Un mismo lote.</p>
+              <p className="eyebrow mb-5">El ciclo de vida de un lote</p>
               <h2 id="process-title" className={styles.sectionHeading}>
-                Del registro a la decisión de compra.
+                Cinco pasos, tres de ellos en la cadena.
               </h2>
             </div>
             <p className={styles.sectionDescription}>
-              Así se organiza el flujo propuesto por JuLit.
+              Así se mueve un lote por JuLit.
               <span className={styles.processCaption}>
-                Representación ilustrativa del proceso.
+                Los pasos de tokenización, liquidación y redención ocurren en la
+                cadena; el descubrimiento y la entrega física quedan fuera del
+                protocolo.
               </span>
             </p>
           </div>
           <ol className={styles.steps}>
-            {processSteps.map((step, index) => (
+            {lifecycleSteps.map((step, index) => (
               <li
                 key={step.number}
-                className={styles.step}
+                className={`${styles.step} ${step.onchain ? styles.stepOnchain : ""}`}
                 data-landing-reveal
                 data-landing-delay={index * 50}
               >
-                <ProcessWidget stage={index} />
-                <span className={styles.stepNumber} aria-hidden="true">
-                  {step.number}
-                </span>
+                <div className={styles.stepHead}>
+                  <span className={styles.stepNumber} aria-hidden="true">
+                    {step.number}
+                  </span>
+                  <span className={styles.stepTag}>
+                    {step.onchain ? "En la cadena" : "Fuera de la cadena"}
+                  </span>
+                </div>
                 <h3>{step.title}</h3>
                 <p>{step.description}</p>
               </li>
@@ -234,19 +256,23 @@ export default function Home() {
         <FaqSection />
         <TeamSection />
 
-        <section className={styles.close} aria-labelledby="close-title">
+        <section
+          id="cierre"
+          className={styles.close}
+          aria-labelledby="close-title"
+        >
           <div className={styles.closeInner}>
             <div className={styles.closeIntro} data-landing-reveal>
               <div>
-                <p className="eyebrow">
-                  Desde Jujuy hacia la cadena global del litio
-                </p>
-                <h2 id="close-title">El próximo paso empieza con evidencia.</h2>
+                <p className="eyebrow">Litio de Jujuy. Proyección global.</p>
+                <h2 id="close-title">
+                  Del salar al mercado, con liquidación atómica.
+                </h2>
               </div>
               <div>
                 <p className={styles.closeDescription}>
-                  Conocé la propuesta de JuLit y explorá los orígenes de la
-                  demo.
+                  Un directorio B2B y un protocolo de entrega contra pago para
+                  el carbonato de litio, construido sobre Solana.
                 </p>
                 <div className={styles.closeAction}>
                   <DemoLink />
@@ -271,8 +297,8 @@ export default function Home() {
                 </nav>
               </div>
               <p className={styles.signature}>
-                JuLit · Pasaportes digitales de lote y una propuesta de
-                liquidación B2B sobre Solana.
+                JuLit · Directorio B2B y liquidación atómica de lotes de
+                carbonato de litio sobre Solana.
               </p>
               <p className={styles.credit}>
                 Fotografía:{" "}

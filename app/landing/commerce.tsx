@@ -16,12 +16,13 @@ export function CommerceSection() {
           <div>
             <p className="eyebrow">La propuesta JuLit</p>
             <h2 id="commerce-heading" className={styles.heading}>
-              Menos fricción entre el origen y la compra.
+              El pago y el lote, en la misma transacción.
             </h2>
           </div>
           <p className={`${styles.description} text-muted`}>
-            Pagos, informes y registros separados dificultan coordinar una
-            operación. JuLit propone conectarlos alrededor de un mismo lote.
+            En el comercio B2B de litio, pagar antes de recibir o entregar antes
+            de cobrar deja a una de las partes expuesta. JuLit propone cerrar
+            esa brecha alrededor de un título digital por lote.
           </p>
         </div>
 
@@ -42,20 +43,22 @@ export function CommerceSection() {
             >
               <path d="M5 11h21m-5-5 5 5-5 5M27 21H6m5-5-5 5 5 5" />
             </svg>
-            <h3>Pagos sin tantas vueltas</h3>
+            <h3>Liquidación sin ventana de riesgo</h3>
             <dl className={styles.pair}>
               <div>
                 <dt>El problema</dt>
                 <dd>
-                  Las cartas de crédito suman comisiones, intermediarios y
-                  demoras que inmovilizan capital.
+                  En una operación común, el pago y la entrega del bien no
+                  ocurren al mismo tiempo; alguien asume el riesgo de que la
+                  otra parte no cumpla.
                 </dd>
               </div>
               <div className={styles.proposal}>
                 <dt>La propuesta</dt>
                 <dd>
-                  Liquidación B2B en USDC sobre Solana, diseñada para reducir la
-                  fricción del pago. En la demo, esta etapa es simulada.
+                  La liquidación es una sola transacción: el pago del comprador
+                  y el título digital del lote cambian de manos juntos, o no
+                  cambia nada.
                 </dd>
               </div>
             </dl>
@@ -76,24 +79,27 @@ export function CommerceSection() {
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <path d="M19 4H8a2 2 0 0 0-2 2v20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V11L19 4Z" />
-              <path d="M19 4v7h7M11 16h6m-6 5h3m4 1 2 2 5-5" />
+              <rect x="11" y="11" width="10" height="10" rx="2" />
+              <circle cx="6" cy="6" r="3" />
+              <circle cx="26" cy="6" r="3" />
+              <circle cx="16" cy="27" r="3" />
+              <path d="m8 8 4 4m12-4-4 4m-4 9v3" />
             </svg>
-            <h3>Documentos cuya integridad se puede comprobar</h3>
+            <h3>Un solo registro para todos</h3>
             <dl className={styles.pair}>
               <div>
                 <dt>El problema</dt>
                 <dd>
-                  Los informes enviados por correo pueden circular en distintas
-                  versiones y perder su relación con el lote.
+                  Cada parte guarda sus propios datos del lote — origen,
+                  cantidad, pureza, estado — y reconciliarlos cuesta tiempo y
+                  genera disputas.
                 </dd>
               </div>
               <div className={styles.proposal}>
                 <dt>La propuesta</dt>
                 <dd>
-                  Asociar el informe del auditor al lote y registrar su huella
-                  digital SHA-256 en Solana para detectar cambios respecto del
-                  documento registrado.
+                  El título digital concentra la referencia del lote y su
+                  historial es consultable públicamente en el Pasaporte.
                 </dd>
               </div>
             </dl>
@@ -114,27 +120,24 @@ export function CommerceSection() {
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <rect x="11" y="11" width="10" height="10" rx="2" />
-              <circle cx="6" cy="6" r="3" />
-              <circle cx="26" cy="6" r="3" />
-              <circle cx="16" cy="27" r="3" />
-              <path d="m8 8 4 4m12-4-4 4m-4 9v3" />
+              <path d="M19 4H8a2 2 0 0 0-2 2v20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V11L19 4Z" />
+              <path d="M19 4v7h7M11 16h6m-6 5h3m4 1 2 2 5-5" />
             </svg>
-            <h3>Una referencia común entre actores</h3>
+            <h3>Evidencia a nivel planta</h3>
             <dl className={styles.pair}>
               <div>
                 <dt>El problema</dt>
                 <dd>
-                  Los sistemas desconectados obligan a cotejar información y
-                  conciliar registros manualmente.
+                  Auditar cada lote por separado no refleja cómo certifica la
+                  industria real y multiplica la fricción documental.
                 </dd>
               </div>
               <div className={styles.proposal}>
                 <dt>La propuesta</dt>
                 <dd>
-                  Un pasaporte por lote que reúna origen, datos declarados y
-                  evidencia de auditoría como referencia compartida entre los
-                  participantes.
+                  El productor declara el certificado de su planta una sola vez;
+                  cada lote registra su referencia y cualquiera puede comprobar
+                  que el documento coincide con la versión registrada.
                 </dd>
               </div>
             </dl>
@@ -160,21 +163,22 @@ export function CommerceSection() {
               <circle cx="15" cy="18" r="4" />
               <path d="m18 21 4 3" />
             </svg>
-            <h3>Evidencia más fácil de consultar</h3>
+            <h3>Operaciones reservadas, no góndola abierta</h3>
             <dl className={styles.pair}>
               <div>
                 <dt>El problema</dt>
                 <dd>
-                  Revisar documentación dispersa complica las evaluaciones de
-                  compradores, auditores y autoridades.
+                  Los acuerdos entre mineras y compradores se negocian en
+                  privado, pero los datos comerciales terminan dispersos o
+                  públicos.
                 </dd>
               </div>
               <div className={styles.proposal}>
                 <dt>La propuesta</dt>
                 <dd>
-                  Un pasaporte público accesible desde un navegador mediante QR.
-                  La información ayuda a la revisión; no sustituye una
-                  evaluación regulatoria ni una certificación oficial.
+                  Todo lote nace reservado a un comprador designado; el acuerdo
+                  se cierra entre las empresas y solo el comprador designado
+                  puede liquidarlo.
                 </dd>
               </div>
             </dl>
@@ -194,7 +198,7 @@ export function ParticipantsSection() {
     >
       <div className={styles.container}>
         <div className={styles.participantsIntroduction} data-landing-reveal>
-          <p className="eyebrow">Diseñado para el comercio B2B</p>
+          <p className="eyebrow">Para cada lado de la operación</p>
           <h2 id="participants-heading" className={styles.heading}>
             Más claridad para quienes producen y quienes compran.
           </h2>
@@ -203,12 +207,19 @@ export function ParticipantsSection() {
         <div className={styles.participantsGrid}>
           <article className={styles.participantCard} data-landing-reveal>
             <ProducerStructureWidget />
-            <h3>Para productores</h3>
-            <p className="text-muted">
-              Presentá el origen y la evidencia de tus lotes en una estructura
-              común. Coordiná la auditoría y las condiciones comerciales sin
-              depender de información dispersa.
-            </p>
+            <p className={`eyebrow ${styles.participantLabel}`}>Productor</p>
+            <h3>Cobrás cuando entregás el título.</h3>
+            <ul className={styles.participantList}>
+              <li>
+                El pago del comprador llega en la misma transacción que
+                transfiere el título digital.
+              </li>
+              <li>
+                Declarás el certificado de planta una sola vez y cada lote lo
+                referencia.
+              </li>
+              <li>El historial del lote queda verificable por cualquiera.</li>
+            </ul>
           </article>
 
           <article
@@ -217,33 +228,24 @@ export function ParticipantsSection() {
             data-landing-delay="50"
           >
             <BuyerReviewWidget />
-            <h3>Para compradores</h3>
-            <p className="text-muted">
-              Revisá los datos declarados, la documentación y la evaluación del
-              auditor antes de decidir. Identificá qué evidencia respalda cada
-              lote y qué queda pendiente de comprobar.
-            </p>
+            <p className={`eyebrow ${styles.participantLabel}`}>Comprador</p>
+            <h3>Pagás solo si recibís el título.</h3>
+            <ul className={styles.participantList}>
+              <li>
+                El pago y el título digital cambian de manos en la misma
+                transacción: no hay ventana de riesgo.
+              </li>
+              <li>
+                Verificás el certificado de planta y el historial del lote antes
+                y después de liquidar.
+              </li>
+              <li>
+                Confirmás la recepción con la redención, que cierra el ciclo con
+                evidencia permanente.
+              </li>
+            </ul>
           </article>
         </div>
-
-        <aside className={styles.auditorNote} data-landing-reveal>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6l8-3Z" />
-            <path d="m8 12 3 3 5-6" />
-          </svg>
-          <p>
-            Los auditores aportan una evaluación independiente. El pasaporte
-            organiza la evidencia; no reemplaza su criterio profesional.
-          </p>
-        </aside>
       </div>
     </section>
   );

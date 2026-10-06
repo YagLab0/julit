@@ -110,35 +110,28 @@
   padding: 36px;
 }
 
-.participantCard p {
-  max-width: 420px;
-  margin-top: 16px;
-  font-size: 0.9375rem;
-  line-height: 1.8;
+.participantLabel {
+  display: block;
+  margin-top: 24px;
 }
 
-.auditorNote {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-top: 32px;
-  border-top: 1px solid var(--border-low);
-  padding-top: 24px;
+.participantCard h3 {
+  margin-top: 10px;
 }
 
-.auditorNote svg {
-  width: 24px;
-  height: 24px;
-  margin-top: 2px;
-  flex-shrink: 0;
-  color: var(--color-brand-700);
-}
-
-.auditorNote p {
-  max-width: 750px;
+.participantList {
+  display: grid;
+  gap: 10px;
+  max-width: 440px;
+  margin: 18px 0 0;
+  padding-left: 18px;
   color: var(--muted);
-  font-size: 0.875rem;
-  line-height: 1.8;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.participantList li::marker {
+  color: var(--color-brand-700);
 }
 
 @media (max-width: 800px) {
