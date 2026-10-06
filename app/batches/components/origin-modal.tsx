@@ -41,6 +41,7 @@ import {
 import {
   fetchConfig,
   findConfigPda,
+  getCancelLotInstructionAsync,
   getClaimTimeoutInstructionAsync,
   getFundLotInstructionAsync,
   getRaiseDisputeInstruction,
@@ -251,6 +252,7 @@ export function OriginModal({
   const [redeeming, setRedeeming] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [disputing, setDisputing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const nowUnits = useQuantizedNow(CLAIM_POLL_MS);
 
   // Load producer company and contract status
@@ -743,6 +745,81 @@ export function OriginModal({
     }
   }
 
+  async function handleCancel() {
+    if (!selected || !isProducer) return;
+    if (!signer) {
+      toast.warning("Billetera sin firma", {
+        description:
+          "Tu billetera no puede firmar transacciones; reconectala para cancelar la reserva.",
+      });
+      return;
+    }
+    if (cluster !== "devnet") {
+      toast.warning("Cambiá a Solana Devnet", {
+        description: "La cancelación corre sobre Devnet.",
+      });
+      return;
+    }
+
+    setCancelling(true);
+    try {
+      const cancelIx = await getCancelLotInstructionAsync({
+        lot: address(selected.pda_address),
+        producer: signer,
+        mint: address(selected.mint_address),
+      });
+      const txSignature = await sendTransaction({
+        instructions: [cancelIx],
+      });
+
+      const res = await fetch("/api/lots/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lot_pda: selected.pda_address,
+          tx_signature: txSignature,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error("La cancelación quedó on-chain pero falló el índice.", {
+          description:
+            err?.error ??
+            "El título ya fue quemado; el índice puede tardar en reflejarlo.",
+        });
+        return;
+      }
+
+      retry();
+      toast.success(`Reserva cancelada: lote ${selected.lot_id}`, {
+        description:
+          "El título digital fue quemado; la reserva quedó liberada.",
+        action: {
+          label: "Ver en Explorer",
+          onClick: () =>
+            window.open(
+              getExplorerUrl(`/tx/${txSignature}`, cluster),
+              "_blank"
+            ),
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(msg)) {
+        toast.info("Transacción cancelada", {
+          description: "Cancelaste la firma en tu billetera.",
+        });
+      } else {
+        toast.error("No se pudo cancelar la reserva.", {
+          description: "Reintentá en unos segundos.",
+        });
+      }
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   return (
     <Modal onClose={onClose} labelledBy="origin-modal-title" maxWidth={1040}>
       <header className="shrink-0 border-b border-border px-5 pt-4 pb-3">
@@ -960,27 +1037,39 @@ export function OriginModal({
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
             {selected.status === "listed" && (
-              <button
-                type="button"
-                disabled={!isDesignatedBuyer || funding}
-                onClick={() => void handleBuy()}
-                className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
-                  isDesignatedBuyer && !funding
-                    ? "btn-primary cursor-pointer"
-                    : "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
-                }`}
-                title={
-                  isDesignatedBuyer
-                    ? undefined
-                    : "Este lote está designado a otra empresa"
-                }
-              >
-                {funding
-                  ? "Fondeando…"
-                  : isDesignatedBuyer
-                    ? "Comprar lote (designado)"
-                    : "Designado a otra empresa"}
-              </button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+                <button
+                  type="button"
+                  disabled={!isDesignatedBuyer || funding}
+                  onClick={() => void handleBuy()}
+                  className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
+                    isDesignatedBuyer && !funding
+                      ? "btn-primary cursor-pointer"
+                      : "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
+                  }`}
+                  title={
+                    isDesignatedBuyer
+                      ? undefined
+                      : "Este lote está designado a otra empresa"
+                  }
+                >
+                  {funding
+                    ? "Fondeando…"
+                    : isDesignatedBuyer
+                      ? "Comprar lote (designado)"
+                      : "Designado a otra empresa"}
+                </button>
+                {isProducer && (
+                  <button
+                    type="button"
+                    disabled={cancelling}
+                    onClick={() => void handleCancel()}
+                    className="btn-secondary w-full px-4 py-1.5 text-xs transition sm:w-auto"
+                  >
+                    {cancelling ? "Cancelando…" : "Cancelar reserva"}
+                  </button>
+                )}
+              </div>
             )}
             {(selected.status === "funded" ||
               selected.status === "disputed") && (

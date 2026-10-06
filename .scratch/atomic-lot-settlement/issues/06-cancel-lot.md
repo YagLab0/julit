@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] `cancel_lot` burns escrowed NFT + marks `cancelled`, producer-signed, `listed` only
-- [ ] Rejected on `funded` and every later state
-- [ ] `POST /api/lots/cancel` verifies by RPC before writing
-- [ ] Producer cancel action on listed lots
-- [ ] LiteSVM tests cover success + wrong signer + post-funding rejection
+- [x] `cancel_lot` burns escrowed NFT + marks `cancelled`, producer-signed, `listed` only
+- [x] Rejected on `funded` and every later state
+- [x] `POST /api/lots/cancel` verifies by RPC before writing
+- [x] Producer cancel action on listed lots
+- [x] LiteSVM tests cover success + wrong signer + post-funding rejection

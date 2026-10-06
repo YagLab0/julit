@@ -227,6 +227,22 @@ export function verifyLotClaim(
   });
 }
 
+export function verifyLotCancellation(
+  input: VerifyLotTransitionInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "cancelled",
+    allowedIndex: ["listed"],
+    onChainParty: "producer",
+    missingIx: "La transacción no contiene una cancelación JuLit.",
+    wrongLot: "La transacción no cancela este lote.",
+    wrongSigner: "La cancelación no la firmó tu wallet verificada.",
+    wrongOnChainParty: "Solo la productora del lote puede cancelarlo.",
+    wrongOnChainStatus: "El lote no quedó cancelado en la cadena.",
+    staleIndex: "El lote ya no está publicado.",
+  });
+}
+
 export function verifyLotDispute(
   input: VerifyLotTransitionInput
 ): { ok: true } | { ok: false; rejection: LotRejection } {

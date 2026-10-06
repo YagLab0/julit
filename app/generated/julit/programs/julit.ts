@@ -17,12 +17,14 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
+  parseCancelLotInstruction,
   parseClaimTimeoutInstruction,
   parseCreateLotInstruction,
   parseFundLotInstruction,
   parseInitializeInstruction,
   parseRaiseDisputeInstruction,
   parseRedeemLotInstruction,
+  type ParsedCancelLotInstruction,
   type ParsedClaimTimeoutInstruction,
   type ParsedCreateLotInstruction,
   type ParsedFundLotInstruction,
@@ -71,6 +73,7 @@ export function identifyJulitAccount(
 }
 
 export enum JulitInstruction {
+  CancelLot,
   ClaimTimeout,
   CreateLot,
   FundLot,
@@ -83,6 +86,17 @@ export function identifyJulitInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): JulitInstruction {
   const data = "data" in instruction ? instruction.data : instruction;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([163, 16, 141, 83, 136, 45, 122, 222]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.CancelLot;
+  }
   if (
     containsBytes(
       data,
@@ -158,6 +172,9 @@ export type ParsedJulitInstruction<
   TProgram extends string = "BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky",
 > =
   | ({
+      instructionType: JulitInstruction.CancelLot;
+    } & ParsedCancelLotInstruction<TProgram>)
+  | ({
       instructionType: JulitInstruction.ClaimTimeout;
     } & ParsedClaimTimeoutInstruction<TProgram>)
   | ({
@@ -181,6 +198,13 @@ export function parseJulitInstruction<TProgram extends string>(
 ): ParsedJulitInstruction<TProgram> {
   const instructionType = identifyJulitInstruction(instruction);
   switch (instructionType) {
+    case JulitInstruction.CancelLot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.CancelLot,
+        ...parseCancelLotInstruction(instruction),
+      };
+    }
     case JulitInstruction.ClaimTimeout: {
       assertIsInstructionWithAccounts(instruction);
       return {

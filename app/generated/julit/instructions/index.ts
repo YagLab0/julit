@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from "./cancelLot";
 export * from "./claimTimeout";
 export * from "./createLot";
 export * from "./fundLot";

@@ -300,6 +300,22 @@ fn claim_timeout_ix(
     }
 }
 
+fn cancel_lot_ix(producer: &Pubkey, lot: &Pubkey) -> Instruction {
+    let mint = title_mint(lot);
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::CancelLot {
+            lot: *lot,
+            producer: *producer,
+            escrow_title: ata(lot, &mint),
+            mint,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::CancelLot {}.data(),
+    }
+}
+
 fn raise_dispute_ix(buyer: &Pubkey, lot: &Pubkey) -> Instruction {
     Instruction {
         program_id: julit::ID,
@@ -854,4 +870,57 @@ fn create_lot_rejects_non_battery_grade() {
     );
     let err = send_err(&mut svm, vec![ix], &[&payer]);
     assert!(err.contains("NotBatteryGrade") || err.contains("600"), "{err}");
+}
+
+#[test]
+fn cancel_lot_burns_title_and_marks_cancelled() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (_buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    send(&mut svm, vec![cancel_lot_ix(&payer.pubkey(), &lot)], &[&payer]);
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Cancelled);
+    // The Digital Title is gone — escrow empty, supply zero.
+    let mint = title_mint(&lot);
+    assert_eq!(token_balance(&svm, &ata(&lot, &mint)), 0);
+    let mint_acct =
+        spl_token::state::Mint::unpack(&svm.get_account(&mint).unwrap().data).unwrap();
+    assert_eq!(mint_acct.supply, 0);
+}
+
+#[test]
+fn cancel_lot_rejects_wrong_signer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    // The buyer cannot cancel the producer's reservation.
+    let err = send_err(
+        &mut svm,
+        vec![cancel_lot_ix(&buyer.pubkey(), &lot)],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("WrongProducer") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn cancel_lot_rejects_funded_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, _buyer, lot) =
+        funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![cancel_lot_ix(&payer.pubkey(), &lot)],
+        &[&payer],
+    );
+    assert!(err.contains("LotNotListed") || err.contains("601"), "{err}");
+
+    // Escrowed funds untouched — the funded lot is still intact.
+    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 400_000_000);
 }

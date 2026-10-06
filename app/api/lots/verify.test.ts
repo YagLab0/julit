@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  verifyLotCancellation,
   verifyLotClaim,
   verifyLotCreation,
   verifyLotDispute,
@@ -531,6 +532,95 @@ describe("verifyLotDispute", () => {
           producer: WALLET,
           buyer: BUYER,
           status: "funded",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+});
+
+function cancelBase(
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
+  return fundBase({
+    signerWallet: PRODUCER,
+    indexedStatus: "listed",
+    transaction: {
+      signature: "sig",
+      slot: 100,
+      failed: false,
+      lifecycleInstruction: { lot: LOT_PDA, signer: PRODUCER },
+    },
+    lotAccount: {
+      programOwned: true,
+      producer: PRODUCER,
+      buyer: BUYER,
+      status: "cancelled",
+    },
+    ...overrides,
+  });
+}
+
+describe("verifyLotCancellation", () => {
+  it("accepts a confirmed cancel_lot by the lot producer", () => {
+    expect(verifyLotCancellation(cancelBase())).toEqual({ ok: true });
+  });
+
+  it("rejects a cancellation signed by the buyer", () => {
+    const r = verifyLotCancellation(
+      cancelBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects when the caller is not the on-chain producer", () => {
+    const r = verifyLotCancellation(
+      cancelBase({
+        lotAccount: {
+          programOwned: true,
+          producer: "OtherProducer11111111111111111111111",
+          buyer: BUYER,
+          status: "cancelled",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects funded and later index states — cancellation is impossible", () => {
+    for (const indexedStatus of [
+      "funded",
+      "disputed",
+      "redeemed",
+      "claimed",
+      "cancelled",
+    ] as const) {
+      const r = verifyLotCancellation(cancelBase({ indexedStatus }));
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.rejection.status).toBe(409);
+    }
+    expect(verifyLotCancellation(cancelBase({ indexedStatus: null })).ok).toBe(
+      false
+    );
+  });
+
+  it("rejects when the on-chain status is not cancelled", () => {
+    const r = verifyLotCancellation(
+      cancelBase({
+        lotAccount: {
+          programOwned: true,
+          producer: PRODUCER,
+          buyer: BUYER,
+          status: "listed",
         },
       })
     );

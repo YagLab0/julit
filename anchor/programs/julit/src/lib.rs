@@ -328,6 +328,43 @@ pub mod julit {
         lot.status = LotStatus::Disputed;
         Ok(())
     }
+
+    /// The producer cancels a reservation the buyer never funded:
+    /// `Listed → Cancelled`. The Digital Title is burned inside its
+    /// escrow — a cancelled reservation can never settle. Once `Funded`
+    /// cancellation is impossible: committed funds only exit through
+    /// `redeem_lot`, `claim_timeout`, or a frozen `Disputed` state.
+    pub fn cancel_lot(ctx: Context<CancelLot>) -> Result<()> {
+        let lot_info = ctx.accounts.lot.to_account_info();
+        let lot = &mut ctx.accounts.lot;
+        require!(lot.status == LotStatus::Listed, LotError::LotNotListed);
+        let producer_key = lot.producer;
+        let lot_id_bytes = lot.lot_id.as_bytes().to_vec();
+        let bump = [lot.bump];
+        let signer_seeds: &[&[u8]] = &[
+            b"lot",
+            producer_key.as_ref(),
+            lot_id_bytes.as_slice(),
+            &bump,
+        ];
+        let signer = &[signer_seeds];
+
+        token::burn(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    from: ctx.accounts.escrow_title.to_account_info(),
+                    authority: lot_info,
+                },
+                signer,
+            ),
+            1,
+        )?;
+
+        lot.status = LotStatus::Cancelled;
+        Ok(())
+    }
 }
 
 /// Burns nothing: the caller already burned the title. Moves `price − fee`
@@ -677,6 +714,41 @@ pub struct ClaimTimeout<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct CancelLot<'info> {
+    /// The lot being cancelled; the PDA seeds prove the account is the real one.
+    #[account(
+        mut,
+        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
+        bump = lot.bump,
+    )]
+    pub lot: Account<'info, Lot>,
+
+    /// Only the lot's producer may cancel its own reservation.
+    #[account(
+        mut,
+        constraint = producer.key() == lot.producer @ LotError::WrongProducer
+    )]
+    pub producer: Signer<'info>,
+
+    /// The escrow holding the Digital Title; its single token is burned.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_title: Account<'info, TokenAccount>,
+
+    /// The Digital Title mint; burn reduces its supply to zero.
+    #[account(
+        mut,
+        constraint = mint.key() == lot.mint @ LotError::WrongTitleMint
+    )]
+    pub mint: Account<'info, Mint>,
+
+    pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
