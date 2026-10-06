@@ -8,7 +8,7 @@ import type { CompanyType } from "../lib/company";
 export function CompanyOnboardingForm() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [companyType, setCompanyType] = useState<CompanyType>("auditor");
+  const [companyType, setCompanyType] = useState<CompanyType>("buyer");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 

@@ -9,7 +9,7 @@ Branch builds green.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] `origin/batch-registration-feature` merges into `audit-features` with conflicts resolved
 - [ ] One respond endpoint remains: the merged `PATCH /api/companies/contracts/[id]`; inbox calls it; `POST .../respond` is gone

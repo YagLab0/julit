@@ -1,21 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { BatchStatus, JULIT_PROGRAM_ADDRESS } from "../generated/julit";
+import { LotStatus, JULIT_PROGRAM_ADDRESS } from "../generated/julit";
 import {
   certificateVerdict,
-  contrastBatchRecord,
+  contrastLotRecord,
   passportPath,
   scaledDecimal,
   type ContrastField,
-  type IndexedBatch,
-  type OnChainBatch,
+  type IndexedLot,
+  type OnChainLot,
 } from "./verification";
 
-const INDEXED: IndexedBatch = {
-  pda_address: "BatchPda1111111111111111111111111111111111",
-  batch_id: "LIT-2026-CNR-01",
+const PLANT_CERT = "a".repeat(64);
+const CLAIMABLE_ISO = "2026-11-15T00:00:00.000Z";
+const CLAIMABLE_SECS = BigInt(Math.trunc(Date.parse(CLAIMABLE_ISO) / 1000));
+
+const INDEXED: IndexedLot = {
+  pda_address: "LotPda111111111111111111111111111111111111",
+  lot_id: "LIT-2026-CNR-01",
   producer_wallet: "ProducerWallet111111111111111111111111111",
+  buyer_wallet: "BuyerWallet111111111111111111111111111111",
+  mint_address: "MintPda111111111111111111111111111111111111",
   origin_id: "condor",
-  status: "created",
+  status: "listed",
+  claimable_after: CLAIMABLE_ISO,
+  plant_cert_sha256: PLANT_CERT,
   volume_tonnes: "120",
   purity_pct: "99.52",
   water_footprint_m3_per_tonne: "38.75",
@@ -23,31 +31,35 @@ const INDEXED: IndexedBatch = {
 };
 
 function account(
-  data: Partial<OnChainBatch["data"]> = {},
+  data: Partial<OnChainLot["data"]> = {},
   programAddress: string = JULIT_PROGRAM_ADDRESS
-): OnChainBatch {
+): OnChainLot {
   return {
     programAddress,
     data: {
-      batchId: "LIT-2026-CNR-01",
+      lotId: "LIT-2026-CNR-01",
       originId: "condor",
       producer: "ProducerWallet111111111111111111111111111",
+      buyer: "BuyerWallet111111111111111111111111111111",
+      mint: "MintPda111111111111111111111111111111111111",
       volumeTonnes: 120n,
       purityBasisPoints: 9952n,
       waterM3PerTonneScaled: 3875n,
       carbonKgCo2ePerTonneScaled: 412050n,
-      status: BatchStatus.Created,
+      claimableAfter: CLAIMABLE_SECS,
+      plantCertHash: new Uint8Array(32).fill(0xaa),
+      status: LotStatus.Listed,
       ...data,
     },
   };
 }
 
 function contrast(overrides: {
-  indexed?: Partial<IndexedBatch>;
+  indexed?: Partial<IndexedLot>;
   derivedPda?: string;
-  account?: OnChainBatch | null;
+  account?: OnChainLot | null;
 }) {
-  return contrastBatchRecord({
+  return contrastLotRecord({
     indexed: { ...INDEXED, ...overrides.indexed },
     derivedPda: overrides.derivedPda ?? INDEXED.pda_address,
     account: overrides.account === undefined ? account() : overrides.account,
@@ -58,7 +70,7 @@ function mismatch(fields: ContrastField[]) {
   return { state: "mismatch", fields } as const;
 }
 
-describe("contrastBatchRecord", () => {
+describe("contrastLotRecord", () => {
   it("returns verified when every field matches", () => {
     expect(contrast({})).toEqual({ state: "verified" });
   });
@@ -76,10 +88,10 @@ describe("contrastBatchRecord", () => {
     ).toEqual({ state: "verified" });
   });
 
-  it("names batchId when the on-chain batch id differs", () => {
+  it("names lotId when the on-chain lot id differs", () => {
     expect(
-      contrast({ account: account({ batchId: "LIT-2026-CNR-02" }) })
-    ).toEqual(mismatch(["batchId"]));
+      contrast({ account: account({ lotId: "LIT-2026-CNR-02" }) })
+    ).toEqual(mismatch(["lotId"]));
   });
 
   it("names producer when the on-chain producer differs", () => {
@@ -90,6 +102,26 @@ describe("contrastBatchRecord", () => {
         }),
       })
     ).toEqual(mismatch(["producer"]));
+  });
+
+  it("names buyer when the designated buyer differs", () => {
+    expect(
+      contrast({
+        account: account({
+          buyer: "OtherBuyer11111111111111111111111111111111",
+        }),
+      })
+    ).toEqual(mismatch(["buyer"]));
+  });
+
+  it("names mint when the Digital Title mint differs", () => {
+    expect(
+      contrast({
+        account: account({
+          mint: "OtherMint1111111111111111111111111111111111",
+        }),
+      })
+    ).toEqual(mismatch(["mint"]));
   });
 
   it("names origin when the on-chain origin differs", () => {
@@ -124,9 +156,25 @@ describe("contrastBatchRecord", () => {
     ).toEqual(mismatch(["carbon"]));
   });
 
+  it("names claimableAfter when the deadline differs", () => {
+    expect(
+      contrast({
+        account: account({ claimableAfter: CLAIMABLE_SECS + 60n }),
+      })
+    ).toEqual(mismatch(["claimableAfter"]));
+  });
+
+  it("names plantCertHash when the certificate digest differs", () => {
+    expect(
+      contrast({
+        account: account({ plantCertHash: new Uint8Array(32).fill(0xbb) }),
+      })
+    ).toEqual(mismatch(["plantCertHash"]));
+  });
+
   it("names status when the on-chain status differs", () => {
     expect(
-      contrast({ account: account({ status: BatchStatus.Audited }) })
+      contrast({ account: account({ status: LotStatus.Funded }) })
     ).toEqual(mismatch(["status"]));
   });
 
@@ -153,9 +201,9 @@ describe("contrastBatchRecord", () => {
   it("names every differing field", () => {
     expect(
       contrast({
-        account: account({ batchId: "X", status: BatchStatus.Completed }),
+        account: account({ lotId: "X", status: LotStatus.Redeemed }),
       })
-    ).toEqual(mismatch(["batchId", "status"]));
+    ).toEqual(mismatch(["lotId", "status"]));
   });
 
   it("returns missing when the account does not exist at the derived PDA", () => {
@@ -239,7 +287,7 @@ describe("certificateVerdict", () => {
 });
 
 describe("passportPath", () => {
-  it("derives the passport route from the batch PDA", () => {
+  it("derives the passport route from the lot PDA", () => {
     expect(passportPath(INDEXED.pda_address)).toBe(
       `/batch/${INDEXED.pda_address}`
     );

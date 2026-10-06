@@ -14,44 +14,96 @@ import {
 } from "@solana/kit";
 import { JULIT_PROGRAM_ADDRESS } from "../programs";
 
-/** InvalidBatchId: Batch id must be 1-32 bytes */
-export const JULIT_ERROR__INVALID_BATCH_ID = 0x1770; // 6000
+/** InvalidLotId: Lot id must be 1-32 bytes */
+export const JULIT_ERROR__INVALID_LOT_ID = 0x1770; // 6000
+/** InvalidOriginId: Origin id must be 1-32 bytes */
+export const JULIT_ERROR__INVALID_ORIGIN_ID = 0x1771; // 6001
 /** InvalidVolume: Volume must be at least one tonne */
-export const JULIT_ERROR__INVALID_VOLUME = 0x1771; // 6001
+export const JULIT_ERROR__INVALID_VOLUME = 0x1772; // 6002
 /** NotBatteryGrade: Only battery grade (99.50-100.00%) is accepted */
-export const JULIT_ERROR__NOT_BATTERY_GRADE = 0x1772; // 6002
+export const JULIT_ERROR__NOT_BATTERY_GRADE = 0x1773; // 6003
 /** InvalidPrice: Price must be greater than zero */
-export const JULIT_ERROR__INVALID_PRICE = 0x1773; // 6003
-/** AuditorIsProducer: Auditor cannot be the producer */
-export const JULIT_ERROR__AUDITOR_IS_PRODUCER = 0x1774; // 6004
-/** BuyerIsParty: Reserved buyer cannot be the producer or the auditor */
-export const JULIT_ERROR__BUYER_IS_PARTY = 0x1775; // 6005
-/** NotDesignatedAuditor: Only the designated auditor can certify this batch */
-export const JULIT_ERROR__NOT_DESIGNATED_AUDITOR = 0x1776; // 6006
-/** AlreadyCertified: Batch is already audited */
-export const JULIT_ERROR__ALREADY_CERTIFIED = 0x1777; // 6007
+export const JULIT_ERROR__INVALID_PRICE = 0x1774; // 6004
+/** BuyerIsProducer: Buyer cannot be the producer */
+export const JULIT_ERROR__BUYER_IS_PRODUCER = 0x1775; // 6005
+/** InvalidFeeBps: Fee must be at most 10000 bps */
+export const JULIT_ERROR__INVALID_FEE_BPS = 0x1776; // 6006
+/** InvalidTreasury: Invalid treasury address */
+export const JULIT_ERROR__INVALID_TREASURY = 0x1777; // 6007
+/** InvalidClaimWindow: claim_min_secs must be > 0 and < claim_max_secs */
+export const JULIT_ERROR__INVALID_CLAIM_WINDOW = 0x1778; // 6008
+/** ClaimWindowOutOfBounds: claimable_after is outside the configured claim window */
+export const JULIT_ERROR__CLAIM_WINDOW_OUT_OF_BOUNDS = 0x1779; // 6009
+/** MetadataUriTooLong: Metadata URI exceeds 200 bytes */
+export const JULIT_ERROR__METADATA_URI_TOO_LONG = 0x177a; // 6010
+/** WrongUsdcMint: Mint is not the configured settlement mint */
+export const JULIT_ERROR__WRONG_USDC_MINT = 0x177b; // 6011
+/** WrongMetadataProgram: Not the Metaplex Token Metadata program */
+export const JULIT_ERROR__WRONG_METADATA_PROGRAM = 0x177c; // 6012
+/** WrongBuyer: Only the designated buyer may fund this lot */
+export const JULIT_ERROR__WRONG_BUYER = 0x177d; // 6013
+/** LotNotListed: Lot is not open for funding */
+export const JULIT_ERROR__LOT_NOT_LISTED = 0x177e; // 6014
+/** LotNotFunded: Lot is not funded or disputed */
+export const JULIT_ERROR__LOT_NOT_FUNDED = 0x177f; // 6015
+/** WrongTitleMint: Mint is not this lot's Digital Title */
+export const JULIT_ERROR__WRONG_TITLE_MINT = 0x1780; // 6016
+/** WrongProducer: Account is not the lot's producer */
+export const JULIT_ERROR__WRONG_PRODUCER = 0x1781; // 6017
+/** WrongTreasury: Account is not the configured treasury */
+export const JULIT_ERROR__WRONG_TREASURY = 0x1782; // 6018
+/** ClaimTooEarly: claimable_after has not been reached */
+export const JULIT_ERROR__CLAIM_TOO_EARLY = 0x1783; // 6019
+/** MathOverflow: Arithmetic overflow */
+export const JULIT_ERROR__MATH_OVERFLOW = 0x1784; // 6020
 
 export type JulitError =
-  | typeof JULIT_ERROR__ALREADY_CERTIFIED
-  | typeof JULIT_ERROR__AUDITOR_IS_PRODUCER
-  | typeof JULIT_ERROR__BUYER_IS_PARTY
-  | typeof JULIT_ERROR__INVALID_BATCH_ID
+  | typeof JULIT_ERROR__BUYER_IS_PRODUCER
+  | typeof JULIT_ERROR__CLAIM_TOO_EARLY
+  | typeof JULIT_ERROR__CLAIM_WINDOW_OUT_OF_BOUNDS
+  | typeof JULIT_ERROR__INVALID_CLAIM_WINDOW
+  | typeof JULIT_ERROR__INVALID_FEE_BPS
+  | typeof JULIT_ERROR__INVALID_LOT_ID
+  | typeof JULIT_ERROR__INVALID_ORIGIN_ID
   | typeof JULIT_ERROR__INVALID_PRICE
+  | typeof JULIT_ERROR__INVALID_TREASURY
   | typeof JULIT_ERROR__INVALID_VOLUME
+  | typeof JULIT_ERROR__LOT_NOT_FUNDED
+  | typeof JULIT_ERROR__LOT_NOT_LISTED
+  | typeof JULIT_ERROR__MATH_OVERFLOW
+  | typeof JULIT_ERROR__METADATA_URI_TOO_LONG
   | typeof JULIT_ERROR__NOT_BATTERY_GRADE
-  | typeof JULIT_ERROR__NOT_DESIGNATED_AUDITOR;
+  | typeof JULIT_ERROR__WRONG_BUYER
+  | typeof JULIT_ERROR__WRONG_METADATA_PROGRAM
+  | typeof JULIT_ERROR__WRONG_PRODUCER
+  | typeof JULIT_ERROR__WRONG_TITLE_MINT
+  | typeof JULIT_ERROR__WRONG_TREASURY
+  | typeof JULIT_ERROR__WRONG_USDC_MINT;
 
 let julitErrorMessages: Record<JulitError, string> | undefined;
 if (process.env.NODE_ENV !== "production") {
   julitErrorMessages = {
-    [JULIT_ERROR__ALREADY_CERTIFIED]: `Batch is already audited`,
-    [JULIT_ERROR__AUDITOR_IS_PRODUCER]: `Auditor cannot be the producer`,
-    [JULIT_ERROR__BUYER_IS_PARTY]: `Reserved buyer cannot be the producer or the auditor`,
-    [JULIT_ERROR__INVALID_BATCH_ID]: `Batch id must be 1-32 bytes`,
+    [JULIT_ERROR__BUYER_IS_PRODUCER]: `Buyer cannot be the producer`,
+    [JULIT_ERROR__CLAIM_TOO_EARLY]: `claimable_after has not been reached`,
+    [JULIT_ERROR__CLAIM_WINDOW_OUT_OF_BOUNDS]: `claimable_after is outside the configured claim window`,
+    [JULIT_ERROR__INVALID_CLAIM_WINDOW]: `claim_min_secs must be > 0 and < claim_max_secs`,
+    [JULIT_ERROR__INVALID_FEE_BPS]: `Fee must be at most 10000 bps`,
+    [JULIT_ERROR__INVALID_LOT_ID]: `Lot id must be 1-32 bytes`,
+    [JULIT_ERROR__INVALID_ORIGIN_ID]: `Origin id must be 1-32 bytes`,
     [JULIT_ERROR__INVALID_PRICE]: `Price must be greater than zero`,
+    [JULIT_ERROR__INVALID_TREASURY]: `Invalid treasury address`,
     [JULIT_ERROR__INVALID_VOLUME]: `Volume must be at least one tonne`,
+    [JULIT_ERROR__LOT_NOT_FUNDED]: `Lot is not funded or disputed`,
+    [JULIT_ERROR__LOT_NOT_LISTED]: `Lot is not open for funding`,
+    [JULIT_ERROR__MATH_OVERFLOW]: `Arithmetic overflow`,
+    [JULIT_ERROR__METADATA_URI_TOO_LONG]: `Metadata URI exceeds 200 bytes`,
     [JULIT_ERROR__NOT_BATTERY_GRADE]: `Only battery grade (99.50-100.00%) is accepted`,
-    [JULIT_ERROR__NOT_DESIGNATED_AUDITOR]: `Only the designated auditor can certify this batch`,
+    [JULIT_ERROR__WRONG_BUYER]: `Only the designated buyer may fund this lot`,
+    [JULIT_ERROR__WRONG_METADATA_PROGRAM]: `Not the Metaplex Token Metadata program`,
+    [JULIT_ERROR__WRONG_PRODUCER]: `Account is not the lot's producer`,
+    [JULIT_ERROR__WRONG_TITLE_MINT]: `Mint is not this lot's Digital Title`,
+    [JULIT_ERROR__WRONG_TREASURY]: `Account is not the configured treasury`,
+    [JULIT_ERROR__WRONG_USDC_MINT]: `Mint is not the configured settlement mint`,
   };
 }
 

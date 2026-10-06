@@ -18,7 +18,7 @@ reservation or buyer data appears anywhere (ADR-0013).
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] `/batch/<PDA_ADDRESS>` of the two production `created` batches renders the complete record anonymously — no session, no wallet
 - [ ] `created` shows the explicit certification-pending state with no findings and no certificate

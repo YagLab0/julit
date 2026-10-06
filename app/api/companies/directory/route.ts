@@ -18,8 +18,8 @@ export async function GET(request: Request) {
   }
 
   const type = new URL(request.url).searchParams.get("type");
-  if (type !== "producer" && type !== "auditor" && type !== "buyer") {
-    return jsonError("Tipo inválido: usá producer, auditor o buyer.", 400);
+  if (type !== "producer" && type !== "buyer") {
+    return jsonError("Tipo inválido: usá producer o buyer.", 400);
   }
 
   const service = createServiceClient();

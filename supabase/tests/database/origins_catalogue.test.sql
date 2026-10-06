@@ -75,13 +75,13 @@ reset role;
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-000000000101', 'catalogue-producer@example.test'),
-  ('00000000-0000-0000-0000-000000000102', 'catalogue-auditor@example.test');
+  ('00000000-0000-0000-0000-000000000102', 'catalogue-buyer@example.test');
 
 insert into public.companies
   (id, name, company_type, wallet_address, wallet_verified_at, origin_id) values
   ('00000000-0000-0000-0000-000000000101', 'Catalogue Producer', 'producer',
     repeat('3', 31) || '2', now(), 'condor'),
-  ('00000000-0000-0000-0000-000000000102', 'Catalogue Auditor', 'auditor',
+  ('00000000-0000-0000-0000-000000000102', 'Catalogue Buyer', 'buyer',
     repeat('3', 31) || '3', now(), null);
 
 set local role service_role;
@@ -90,18 +90,19 @@ insert into public.company_contracts (producer_id, counterparty_id, status, resp
   values ('00000000-0000-0000-0000-000000000101',
           '00000000-0000-0000-0000-000000000102', 'accepted', now());
 
-select results_eq($$insert into public.batches (
-    pda_address, batch_id, producer_wallet, auditor_wallet, origin_id,
-    volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc, creation_tx_signature,
-    observed_slot
+select results_eq($$insert into public.lots (
+    pda_address, lot_id, producer_wallet, buyer_wallet, origin_id,
+    mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
+    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    plant_cert_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('3', 31) || '4', 'LIT-2026-CAT-01', repeat('3', 31) || '2',
-    repeat('3', 31) || '3', 'condor', 25, 99.50, 100, 200, 3000,
-    repeat('3', 63) || '5', 1002
+    repeat('3', 31) || '3', 'condor', repeat('3', 31) || '6', 25, 99.50,
+    100, 200, 3000, now() + interval '30 days',
+    repeat('a', 64), repeat('3', 63) || '5', 1002
   ) returning origin_id$$,
   $$values ('condor'::text)$$,
-  'A batch references the Cóndor origin catalogue row');
+  'A lot references the Cóndor origin catalogue row');
 
 reset role;
 select * from finish();

@@ -4,7 +4,7 @@ import { SessionMenu } from "../components/session-menu";
 import { ThemeToggle } from "../components/theme-toggle";
 import { isCompanyType } from "../lib/company";
 import { createClient } from "../lib/supabase/server";
-import { AccountClient, type AcquiredBatch } from "./account-client";
+import { AccountClient, type AcquiredLot } from "./account-client";
 import { CompanyOnboardingForm } from "./company-onboarding-form";
 
 export default async function AccountPage() {
@@ -34,17 +34,17 @@ export default async function AccountPage() {
         }
       : null;
 
-  let acquiredBatches: AcquiredBatch[] = [];
+  let acquiredLots: AcquiredLot[] = [];
   if (company?.companyType === "buyer" && company.walletAddress) {
-    const { data: batches } = await supabase
-      .from("batches")
+    const { data: lots } = await supabase
+      .from("lots")
       .select(
-        "batch_id, pda_address, volume_tonnes, purity_pct, price_usdc, completion_tx_signature, origin_id, indexed_at"
+        "lot_id, pda_address, status, volume_tonnes, purity_pct, price_usdc, fund_tx_signature, redeem_tx_signature, origin_id, indexed_at"
       )
       .eq("buyer_wallet", company.walletAddress)
-      .eq("status", "completed")
+      .in("status", ["funded", "disputed", "redeemed", "claimed"])
       .order("indexed_at", { ascending: false });
-    acquiredBatches = batches ?? [];
+    acquiredLots = (lots ?? []) as AcquiredLot[];
   }
 
   return (
@@ -67,7 +67,7 @@ export default async function AccountPage() {
           <AccountClient
             email={user.email ?? ""}
             company={company}
-            acquiredBatches={acquiredBatches}
+            acquiredLots={acquiredLots}
           />
         ) : (
           <div className="mx-auto mt-10 max-w-md">

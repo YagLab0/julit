@@ -17,18 +17,28 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
-  parseCertifyBatchInstruction,
-  parseCreateBatchInstruction,
-  type ParsedCertifyBatchInstruction,
-  type ParsedCreateBatchInstruction,
+  parseCancelLotInstruction,
+  parseClaimTimeoutInstruction,
+  parseCreateLotInstruction,
+  parseFundLotInstruction,
+  parseInitializeInstruction,
+  parseRaiseDisputeInstruction,
+  parseRedeemLotInstruction,
+  type ParsedCancelLotInstruction,
+  type ParsedClaimTimeoutInstruction,
+  type ParsedCreateLotInstruction,
+  type ParsedFundLotInstruction,
+  type ParsedInitializeInstruction,
+  type ParsedRaiseDisputeInstruction,
+  type ParsedRedeemLotInstruction,
 } from "../instructions";
 
 export const JULIT_PROGRAM_ADDRESS =
-  "D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg" as Address<"D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg">;
+  "BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky" as Address<"BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky">;
 
 export enum JulitAccount {
-  Audit,
-  Batch,
+  Config,
+  Lot,
 }
 
 export function identifyJulitAccount(
@@ -39,23 +49,23 @@ export function identifyJulitAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([242, 65, 202, 147, 141, 103, 253, 134]),
+        new Uint8Array([155, 12, 170, 224, 30, 250, 204, 130]),
       ),
       0,
     )
   ) {
-    return JulitAccount.Audit;
+    return JulitAccount.Config;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([156, 194, 70, 44, 22, 88, 137, 44]),
+        new Uint8Array([2, 198, 93, 153, 205, 31, 101, 252]),
       ),
       0,
     )
   ) {
-    return JulitAccount.Batch;
+    return JulitAccount.Lot;
   }
   throw new Error(
     "The provided account could not be identified as a julit account.",
@@ -63,8 +73,13 @@ export function identifyJulitAccount(
 }
 
 export enum JulitInstruction {
-  CertifyBatch,
-  CreateBatch,
+  CancelLot,
+  ClaimTimeout,
+  CreateLot,
+  FundLot,
+  Initialize,
+  RaiseDispute,
+  RedeemLot,
 }
 
 export function identifyJulitInstruction(
@@ -75,23 +90,78 @@ export function identifyJulitInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([125, 158, 1, 110, 72, 174, 248, 42]),
+        new Uint8Array([163, 16, 141, 83, 136, 45, 122, 222]),
       ),
       0,
     )
   ) {
-    return JulitInstruction.CertifyBatch;
+    return JulitInstruction.CancelLot;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([159, 198, 248, 43, 248, 31, 235, 86]),
+        new Uint8Array([130, 234, 45, 53, 120, 90, 86, 178]),
       ),
       0,
     )
   ) {
-    return JulitInstruction.CreateBatch;
+    return JulitInstruction.ClaimTimeout;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([127, 218, 254, 227, 228, 250, 69, 159]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.CreateLot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([120, 168, 108, 255, 107, 63, 28, 146]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.FundLot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([175, 175, 109, 31, 13, 152, 155, 237]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.Initialize;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([41, 243, 1, 51, 150, 95, 246, 73]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.RaiseDispute;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([123, 49, 49, 64, 118, 149, 146, 79]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.RedeemLot;
   }
   throw new Error(
     "The provided instruction could not be identified as a julit instruction.",
@@ -99,32 +169,82 @@ export function identifyJulitInstruction(
 }
 
 export type ParsedJulitInstruction<
-  TProgram extends string = "D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg",
+  TProgram extends string = "BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky",
 > =
   | ({
-      instructionType: JulitInstruction.CertifyBatch;
-    } & ParsedCertifyBatchInstruction<TProgram>)
+      instructionType: JulitInstruction.CancelLot;
+    } & ParsedCancelLotInstruction<TProgram>)
   | ({
-      instructionType: JulitInstruction.CreateBatch;
-    } & ParsedCreateBatchInstruction<TProgram>);
+      instructionType: JulitInstruction.ClaimTimeout;
+    } & ParsedClaimTimeoutInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.CreateLot;
+    } & ParsedCreateLotInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.FundLot;
+    } & ParsedFundLotInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.Initialize;
+    } & ParsedInitializeInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.RaiseDispute;
+    } & ParsedRaiseDisputeInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.RedeemLot;
+    } & ParsedRedeemLotInstruction<TProgram>);
 
 export function parseJulitInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
 ): ParsedJulitInstruction<TProgram> {
   const instructionType = identifyJulitInstruction(instruction);
   switch (instructionType) {
-    case JulitInstruction.CertifyBatch: {
+    case JulitInstruction.CancelLot: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: JulitInstruction.CertifyBatch,
-        ...parseCertifyBatchInstruction(instruction),
+        instructionType: JulitInstruction.CancelLot,
+        ...parseCancelLotInstruction(instruction),
       };
     }
-    case JulitInstruction.CreateBatch: {
+    case JulitInstruction.ClaimTimeout: {
       assertIsInstructionWithAccounts(instruction);
       return {
-        instructionType: JulitInstruction.CreateBatch,
-        ...parseCreateBatchInstruction(instruction),
+        instructionType: JulitInstruction.ClaimTimeout,
+        ...parseClaimTimeoutInstruction(instruction),
+      };
+    }
+    case JulitInstruction.CreateLot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.CreateLot,
+        ...parseCreateLotInstruction(instruction),
+      };
+    }
+    case JulitInstruction.FundLot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.FundLot,
+        ...parseFundLotInstruction(instruction),
+      };
+    }
+    case JulitInstruction.Initialize: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.Initialize,
+        ...parseInitializeInstruction(instruction),
+      };
+    }
+    case JulitInstruction.RaiseDispute: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.RaiseDispute,
+        ...parseRaiseDisputeInstruction(instruction),
+      };
+    }
+    case JulitInstruction.RedeemLot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.RedeemLot,
+        ...parseRedeemLotInstruction(instruction),
       };
     }
     default:

@@ -13,6 +13,7 @@ import { useSendTransaction } from "../lib/hooks/use-send-transaction";
 import { createMemoInstruction } from "../lib/solana/memo";
 import { useCluster } from "../components/cluster-context";
 import { WalletButton } from "../components/wallet-button";
+import { StatusBadge } from "../explorer/components/lot-display";
 import { buildContractAgreementMessage } from "../lib/contracts";
 
 export type AccountCompany = {
@@ -23,13 +24,15 @@ export type AccountCompany = {
   originId: string | null;
 };
 
-export type AcquiredBatch = {
-  batch_id: string;
+export type AcquiredLot = {
+  lot_id: string;
   pda_address: string;
+  status: "funded" | "disputed" | "redeemed" | "claimed";
   volume_tonnes: number;
   purity_pct: number;
   price_usdc: number;
-  completion_tx_signature: string;
+  fund_tx_signature: string | null;
+  redeem_tx_signature: string | null;
   origin_id: string;
   indexed_at: string;
 };
@@ -78,20 +81,14 @@ const NEXT_STEPS: Record<
 > = {
   producer: {
     title: "Registrar lotes",
-    body: "Creá un lote con sus métricas de producción y sostenibilidad, elegí el auditor designado y, opcionalmente, reservalo para un cliente.",
-    href: "/batches/new",
+    body: "Creá un lote con sus métricas de producción y sostenibilidad, designá el comprador y subí el certificado de planta.",
+    href: "/explorer/new",
     linkLabel: "Registrar lote",
-  },
-  auditor: {
-    title: "Certificar lotes",
-    body: "Subí el certificado de auditoría y declará los hallazgos ESG y de la regulación europea de tus lotes asignados.",
-    href: "/audit",
-    linkLabel: "Certificar lotes",
   },
   buyer: {
     title: "Comprar lotes",
-    body: "Mientras llega la compra simulada, podés explorar el catálogo público de lotes auditados.",
-    href: "/batches",
+    body: "Explorá el catálogo público: los lotes publicados que te designen compradora se fondean con escrow en Devnet.",
+    href: "/explorer",
     linkLabel: "Ver catálogo",
   },
 };
@@ -99,11 +96,11 @@ const NEXT_STEPS: Record<
 export function AccountClient({
   email,
   company,
-  acquiredBatches = [],
+  acquiredLots = [],
 }: {
   email: string;
   company: AccountCompany;
-  acquiredBatches?: AcquiredBatch[];
+  acquiredLots?: AcquiredLot[];
 }) {
   const nextStep = NEXT_STEPS[company.companyType];
 
@@ -129,12 +126,12 @@ export function AccountClient({
 
       {company.companyType === "buyer" && (
         <>
-          <BuyerPortfolioCard batches={acquiredBatches} />
+          <BuyerPortfolioCard lots={acquiredLots} />
           <BuyerContractsCard />
         </>
       )}
 
-      {company.companyType !== "buyer" && (
+      {company.companyType === "producer" && (
         <ContractsCard companyType={company.companyType} />
       )}
 
@@ -158,16 +155,13 @@ export function AccountClient({
   );
 }
 
-function BuyerPortfolioCard({ batches }: { batches: AcquiredBatch[] }) {
+function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
   const { cluster } = useCluster();
-  const totalVolume = batches.reduce(
+  const totalVolume = lots.reduce(
     (sum, b) => sum + Number(b.volume_tonnes || 0),
     0
   );
-  const totalUsdc = batches.reduce(
-    (sum, b) => sum + Number(b.price_usdc || 0),
-    0
-  );
+  const totalUsdc = lots.reduce((sum, b) => sum + Number(b.price_usdc || 0), 0);
 
   return (
     <section className="rounded-2xl border border-border-low bg-card p-5">
@@ -177,12 +171,11 @@ function BuyerPortfolioCard({ batches }: { batches: AcquiredBatch[] }) {
             Portafolio de Lotes Adquiridos
           </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Lotes adjudicados a tu empresa mediante liquidación simulada en
-            Devnet.
+            Lotes designados a tu empresa con pago en escrow en Devnet.
           </p>
         </div>
         <span className="font-mono text-xs text-muted">
-          {batches.length} {batches.length === 1 ? "lote" : "lotes"}
+          {lots.length} {lots.length === 1 ? "lote" : "lotes"}
         </span>
       </div>
 
@@ -210,22 +203,22 @@ function BuyerPortfolioCard({ batches }: { batches: AcquiredBatch[] }) {
             Liquidación
           </p>
           <p className="mt-1 text-xs font-semibold text-brand-700 dark:text-brand-400">
-            Simulada en Devnet
+            Escrow DvP en Devnet
           </p>
         </div>
       </div>
 
-      {batches.length === 0 ? (
+      {lots.length === 0 ? (
         <div className="mt-4 rounded-xl border border-dashed border-border-low p-6 text-center">
           <p className="text-xs font-medium text-muted">
             Tu empresa todavía no tiene lotes adquiridos.
           </p>
           <p className="mt-1 text-xs text-muted">
-            Navegá el catálogo de lotes auditados para iniciar la compra
-            simulada.
+            Navegá el catálogo: los lotes publicados que te designen compradora
+            se fondean con escrow.
           </p>
           <Link
-            href="/batches"
+            href="/explorer"
             className="btn-primary mt-3 inline-block text-xs"
           >
             Ir al catálogo
@@ -233,38 +226,35 @@ function BuyerPortfolioCard({ batches }: { batches: AcquiredBatch[] }) {
         </div>
       ) : (
         <div className="mt-4 space-y-2">
-          {batches.map((batch) => (
+          {lots.map((lot) => (
             <div
-              key={batch.batch_id}
+              key={lot.lot_id}
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-low bg-background p-3 text-sm"
             >
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs font-bold text-foreground">
-                    {batch.batch_id}
+                    {lot.lot_id}
                   </span>
-                  <span className="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-700 dark:text-brand-400">
-                    Completado
-                  </span>
+                  <StatusBadge status={lot.status} />
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
-                  {batch.volume_tonnes} t ·{" "}
-                  {Number(batch.purity_pct).toFixed(2)} % Li₂CO₃ · Origen:{" "}
-                  {originName(batch.origin_id)}
+                  {lot.volume_tonnes} t · {Number(lot.purity_pct).toFixed(2)} %
+                  Li₂CO₃ · Origen: {originName(lot.origin_id)}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <Link
-                  href={`/batch/${batch.pda_address || batch.batch_id}`}
+                  href={`/batch/${lot.pda_address || lot.lot_id}`}
                   className="btn-secondary text-xs px-2.5 py-1.5"
                 >
                   Ver Pasaporte
                 </Link>
-                {batch.completion_tx_signature && (
+                {lot.redeem_tx_signature && (
                   <a
                     href={getExplorerUrl(
-                      `/tx/${batch.completion_tx_signature}`,
+                      `/tx/${lot.redeem_tx_signature}`,
                       cluster
                     )}
                     target="_blank"
@@ -300,6 +290,7 @@ function BuyerContractsCard() {
   >([]);
   const [selectedProducerId, setSelectedProducerId] = useState<string>("");
   const [requesting, setRequesting] = useState(false);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
 
   async function loadContracts() {
     try {
@@ -423,6 +414,31 @@ function BuyerContractsCard() {
     }
   }
 
+  async function respondOffer(id: string, action: "accept" | "decline") {
+    setRespondingId(id);
+    try {
+      const res = await fetch(`/api/companies/contracts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        toast.error(err?.error ?? "No se pudo responder el contrato.");
+        return;
+      }
+      await loadContracts();
+    } finally {
+      setRespondingId(null);
+    }
+  }
+
+  const pendingIncoming = contracts.filter(
+    (c) => c.posture === "responder" && c.status === "pending"
+  );
+
   return (
     <section className="rounded-2xl border border-border-low bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -488,6 +504,40 @@ function BuyerContractsCard() {
         </div>
       )}
 
+      {pendingIncoming.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {pendingIncoming.map((c) => (
+            <div
+              key={c.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
+            >
+              <p className="text-xs">
+                <span className="font-medium">{c.producer?.name}</span>{" "}
+                <span className="text-muted">te ofrece un contrato</span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void respondOffer(c.id, "accept")}
+                  disabled={respondingId !== null}
+                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
+                >
+                  Aceptar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void respondOffer(c.id, "decline")}
+                  disabled={respondingId !== null}
+                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="mt-4">
         {loading ? (
           <p className="text-xs text-muted">Cargando contratos…</p>
@@ -530,7 +580,10 @@ function BuyerContractsCard() {
                         <>
                           <span>{ellipsify(c.initiator_signature, 8)}</span>
                           <a
-                            href={getExplorerUrl(`/tx/${c.initiator_signature}`, cluster)}
+                            href={getExplorerUrl(
+                              `/tx/${c.initiator_signature}`,
+                              cluster
+                            )}
                             target="_blank"
                             rel="noreferrer"
                             className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
@@ -547,7 +600,10 @@ function BuyerContractsCard() {
                         Aceptación:{" "}
                         <span>{ellipsify(c.counterparty_signature, 8)}</span>
                         <a
-                          href={getExplorerUrl(`/tx/${c.counterparty_signature}`, cluster)}
+                          href={getExplorerUrl(
+                            `/tx/${c.counterparty_signature}`,
+                            cluster
+                          )}
                           target="_blank"
                           rel="noreferrer"
                           className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
@@ -603,7 +659,7 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
   useEffect(() => {
     if (!isProducer) return;
     let cancelled = false;
-    fetch("/api/companies/directory?type=auditor")
+    fetch("/api/companies/directory?type=buyer")
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { companies?: { id: string; name: string }[] } | null) => {
         if (!cancelled) setDirectory(data?.companies ?? []);
@@ -640,43 +696,13 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
     setReload((n) => n + 1);
   }
 
-  async function respond(id: string, action: "accept" | "decline") {
-    setBusy(true);
-    setError(null);
-
-    const response = await fetch(`/api/companies/contracts/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      setError(payload?.error ?? "No se pudo responder el contrato.");
-      setBusy(false);
-      return;
-    }
-
-    setBusy(false);
-    setReload((n) => n + 1);
-  }
-
-  const pendingIncoming = (contracts ?? []).filter(
-    (c) => !isProducer && c.posture === "responder" && c.status === "pending"
-  );
-
   return (
     <section className="rounded-2xl border border-border-low bg-card p-5">
-      <h2 className="text-sm font-semibold">
-        {isProducer
-          ? "Contratos de auditoría"
-          : "Contratos con productoras"}
-      </h2>
+      <h2 className="text-sm font-semibold">Contratos comerciales</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
         {isProducer
-          ? "Ofrecé un contrato a una auditora para poder asignarla a tus lotes."
-          : "Aceptá contratos de productoras para certificar sus lotes."}
+          ? "Ofrecé un contrato a una compradora para habilitarla como cliente de tus lotes."
+          : "Aceptá contratos de productoras para que te designen sus lotes."}
       </p>
 
       {isProducer && (
@@ -691,10 +717,10 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
             value={counterpartyId}
             onChange={(e) => setCounterpartyId(e.target.value)}
             disabled={busy || directory === null}
-            aria-label="Auditora"
+            aria-label="Compradora"
             className="rounded-lg border border-border-low bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
           >
-            <option value="">Elegir auditora…</option>
+            <option value="">Elegir compradora…</option>
             {(directory ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -711,40 +737,6 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
         </form>
       )}
 
-      {pendingIncoming.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {pendingIncoming.map((c) => (
-            <div
-              key={c.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
-            >
-              <p className="text-xs">
-                <span className="font-medium">{c.producer?.name}</span>{" "}
-                <span className="text-muted">te ofrece un contrato</span>
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => void respond(c.id, "accept")}
-                  disabled={busy}
-                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
-                >
-                  Aceptar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void respond(c.id, "decline")}
-                  disabled={busy}
-                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
-                >
-                  Rechazar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {contracts !== null && contracts.length > 0 && (
         <ul className="mt-4 space-y-1.5">
           {contracts.map((c) => {
@@ -759,7 +751,7 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
                   <span className="text-muted">
                     (
                     {COMPANY_TYPE_LABELS[
-                      other?.company_type ?? "auditor"
+                      other?.company_type ?? "buyer"
                     ].toLowerCase()}
                     {c.posture === "responder"
                       ? " · oferta recibida"

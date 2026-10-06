@@ -3,10 +3,9 @@ import { createClient } from "../../../../lib/supabase/server";
 import { createServiceClient } from "../../../../lib/supabase/service";
 
 /**
- * Returns the accepted counterparties of the session's producer company,
- * as { name, wallet }[] filtered by type — the data the batch registration
- * dropdowns consume. Only counterparties with a verified wallet can be
- * designated on a batch.
+ * Returns the accepted buyers of the session's producer company, as
+ * { name, wallet }[] — the data the lot registration dropdown consumes.
+ * Only counterparties with a verified wallet can be designated on a lot.
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -18,8 +17,8 @@ export async function GET(request: Request) {
   }
 
   const type = new URL(request.url).searchParams.get("type");
-  if (type !== "auditor" && type !== "buyer") {
-    return jsonError("Tipo inválido: usá auditor o buyer.", 400);
+  if (type !== "buyer") {
+    return jsonError("Tipo inválido: usá buyer.", 400);
   }
 
   const service = createServiceClient();

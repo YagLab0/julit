@@ -1,21 +1,30 @@
 // Pure record contrast: indexed row + derived PDA + decoded on-chain account
 // in, verdict out (ADR-0011). No I/O and no Number math — index decimal
 // strings and on-chain scaled integers are both parsed to scaled BigInt with
-// fixed multipliers. Price, reservation and buyer stay out of the contrast,
-// like they stay out of the passport (ADR-0013).
+// fixed multipliers. Price stays out of the contrast, like it stays out of
+// the passport (ADR-0013).
 
+import type { ReadonlyUint8Array } from "@solana/kit";
 import {
-  BatchStatus as OnChainBatchStatus,
+  LotStatus as OnChainLotStatus,
   JULIT_PROGRAM_ADDRESS,
 } from "../generated/julit";
-import type { BatchStatus as IndexedBatchStatus } from "../batches/data/batches";
-import type { PassportBatch } from "./data/passport";
+import type { LotStatus as IndexedLotStatus } from "../explorer/data/lots";
+import type { PassportLot } from "./data/passport";
 
 /** The indexed fields the contrast checks; decimals arrive as exact strings
  *  or numbers and are scaled without Number math. */
-export type IndexedBatch = Pick<
-  PassportBatch,
-  "pda_address" | "batch_id" | "producer_wallet" | "origin_id" | "status"
+export type IndexedLot = Pick<
+  PassportLot,
+  | "pda_address"
+  | "lot_id"
+  | "producer_wallet"
+  | "buyer_wallet"
+  | "origin_id"
+  | "mint_address"
+  | "status"
+  | "claimable_after"
+  | "plant_cert_sha256"
 > & {
   volume_tonnes: string | number;
   purity_pct: string | number;
@@ -23,18 +32,22 @@ export type IndexedBatch = Pick<
   carbon_footprint_kg_co2e_per_tonne: string | number;
 };
 
-/** The decoded batch account plus its owner programme; the decoded Account
- *  from `fetchMaybeBatch` is structurally assignable to this shape. */
-export type OnChainBatch = {
+/** The decoded lot account plus its owner programme; the decoded Account
+ *  from `fetchMaybeLot` is structurally assignable to this shape. */
+export type OnChainLot = {
   programAddress: string;
   data: {
-    batchId: string;
+    lotId: string;
     originId: string;
     producer: string;
+    buyer: string;
+    mint: string;
     volumeTonnes: bigint;
     purityBasisPoints: bigint;
     waterM3PerTonneScaled: bigint;
     carbonKgCo2ePerTonneScaled: bigint;
+    claimableAfter: bigint;
+    plantCertHash: ReadonlyUint8Array;
     status: number;
   };
 };
@@ -42,13 +55,17 @@ export type OnChainBatch = {
 export type ContrastField =
   | "pda"
   | "programAddress"
-  | "batchId"
+  | "lotId"
   | "producer"
+  | "buyer"
+  | "mint"
   | "origin"
   | "volume"
   | "purity"
   | "water"
   | "carbon"
+  | "claimableAfter"
+  | "plantCertHash"
   | "status";
 
 export type RecordContrast =
@@ -56,10 +73,13 @@ export type RecordContrast =
   | { state: "missing" }
   | { state: "mismatch"; fields: readonly ContrastField[] };
 
-const ONCHAIN_STATUS: Readonly<Record<number, IndexedBatchStatus>> = {
-  [OnChainBatchStatus.Created]: "created",
-  [OnChainBatchStatus.Audited]: "audited",
-  [OnChainBatchStatus.Completed]: "completed",
+const ONCHAIN_STATUS: Readonly<Record<number, IndexedLotStatus>> = {
+  [OnChainLotStatus.Listed]: "listed",
+  [OnChainLotStatus.Funded]: "funded",
+  [OnChainLotStatus.Disputed]: "disputed",
+  [OnChainLotStatus.Redeemed]: "redeemed",
+  [OnChainLotStatus.Claimed]: "claimed",
+  [OnChainLotStatus.Cancelled]: "cancelled",
 };
 
 /**
@@ -81,16 +101,29 @@ export function scaledDecimal(
   return BigInt(whole) * base + BigInt(frac.padEnd(scale, "0") || "0");
 }
 
+/** 32-byte hash -> lowercase hex, or null when the length is wrong. */
+function bytesToHexLower(bytes: ReadonlyUint8Array): string | null {
+  if (bytes.length !== 32) return null;
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Indexed timestamptz -> unix seconds, or null when unparseable. */
+function unixSeconds(value: string): bigint | null {
+  const ms = Date.parse(value);
+  if (Number.isNaN(ms)) return null;
+  return BigInt(Math.trunc(ms / 1000));
+}
+
 /**
- * Contrast the indexed record with the batch's on-chain account: the account
+ * Contrast the indexed record with the lot's on-chain account: the account
  * exists at the derived PDA, belongs to the JuLit programme, and every field
  * matches the index. A missing account is "missing"; any difference is a
  * "mismatch" naming the differing fields.
  */
-export function contrastBatchRecord(input: {
-  indexed: IndexedBatch;
+export function contrastLotRecord(input: {
+  indexed: IndexedLot;
   derivedPda: string;
-  account: OnChainBatch | null;
+  account: OnChainLot | null;
 }): RecordContrast {
   const { indexed, derivedPda, account } = input;
 
@@ -106,9 +139,11 @@ export function contrastBatchRecord(input: {
   if (derivedPda !== indexed.pda_address) fields.push("pda");
   if (account.programAddress !== JULIT_PROGRAM_ADDRESS)
     fields.push("programAddress");
-  if (account.data.batchId !== indexed.batch_id) fields.push("batchId");
+  if (account.data.lotId !== indexed.lot_id) fields.push("lotId");
   if (account.data.producer !== indexed.producer_wallet)
     fields.push("producer");
+  if (account.data.buyer !== indexed.buyer_wallet) fields.push("buyer");
+  if (account.data.mint !== indexed.mint_address) fields.push("mint");
   if (account.data.originId !== indexed.origin_id) fields.push("origin");
   if (scaledDecimal(indexed.volume_tonnes, 0) !== account.data.volumeTonnes)
     fields.push("volume");
@@ -124,6 +159,13 @@ export function contrastBatchRecord(input: {
     account.data.carbonKgCo2ePerTonneScaled
   )
     fields.push("carbon");
+  if (unixSeconds(indexed.claimable_after) !== account.data.claimableAfter)
+    fields.push("claimableAfter");
+  if (
+    bytesToHexLower(account.data.plantCertHash) !==
+    indexed.plant_cert_sha256.toLowerCase()
+  )
+    fields.push("plantCertHash");
   if (ONCHAIN_STATUS[account.data.status] !== indexed.status)
     fields.push("status");
 
@@ -136,7 +178,7 @@ const HEX_64 = /^[0-9a-f]{64}$/;
 
 /**
  * Certificate digest comparison: the PDF's computed SHA-256 against the hex
- * digest recorded for the batch, case-insensitive. Anything that is not an
+ * digest recorded for the lot, case-insensitive. Anything that is not an
  * exact 64-hex equality — including malformed input — is a mismatch.
  */
 export function certificateVerdict(
@@ -150,7 +192,7 @@ export function certificateVerdict(
 }
 
 /**
- * The batch's passport route. The public URL the QR encodes is always derived
+ * The lot's passport route. The public URL the QR encodes is always derived
  * per view — the request origin plus this path — so it can never drift apart
  * from the record (database contract).
  */

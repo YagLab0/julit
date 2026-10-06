@@ -6,7 +6,7 @@
   --background: #ffffff;
   --foreground: #0a0a0a;
   /* Primary action color = brand. Change --color-brand-* below (and the
-     matching values in app/batches/components/brand.ts for the map/JS realm)
+     matching values in app/explorer/components/brand.ts for the map/JS realm)
      to retheme the whole app. */
   --primary: var(--color-brand-600);
   --primary-foreground: #ffffff;
@@ -195,7 +195,7 @@
   }
 }
 
-/* JuLit /batches: origin markers over MapLibre (ported from lithium-passport) */
+/* JuLit /explorer: origin markers over MapLibre (ported from lithium-passport) */
 /* The dot stays on the plant coordinate; the raised card clears the diorama. */
 .lp-mine-marker {
   --mine-card-lift: -54px;

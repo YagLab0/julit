@@ -1,5 +1,3 @@
-import { contractDirection } from "../../../../lib/company-contracts";
-import type { CompanyType } from "../../../../lib/company";
 import { jsonError, readJsonBody } from "../../../../lib/server/api";
 import { createClient } from "../../../../lib/supabase/server";
 import { createServiceClient } from "../../../../lib/supabase/service";
@@ -7,8 +5,7 @@ import { createServiceClient } from "../../../../lib/supabase/service";
 /**
  * The contract responder accepts or declines a pending offer:
  * { action: "accept" } → accepted, { action: "decline" } → revoked.
- * The responder is the counterparty for producer→auditor offers and the
- * producer for buyer→producer offers (ADR-0008).
+ * The responder is whichever party did not initiate the offer (ADR-0019).
  */
 export async function PATCH(
   request: Request,
@@ -32,7 +29,7 @@ export async function PATCH(
   const service = createServiceClient();
   const { data: contract } = await service
     .from("company_contracts")
-    .select("id, producer_id, counterparty_id, status")
+    .select("id, producer_id, counterparty_id, initiator_id, status")
     .eq("id", id)
     .maybeSingle();
 
@@ -50,16 +47,7 @@ export async function PATCH(
     return jsonError("Este contrato no involucra a tu empresa.", 403);
   }
 
-  const { data: counterparty } = await service
-    .from("companies")
-    .select("company_type")
-    .eq("id", contract.counterparty_id)
-    .single();
-
-  const direction = counterparty
-    ? contractDirection(counterparty.company_type as CompanyType)
-    : null;
-  if (direction?.responder !== callerRole) {
+  if (contract.initiator_id === user.id) {
     return jsonError(
       "Solo la empresa que recibe la oferta puede responderla.",
       403

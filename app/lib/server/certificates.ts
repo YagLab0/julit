@@ -1,10 +1,14 @@
 import type { ReadonlyUint8Array } from "@solana/kit";
 
-/** Storage conventions for audit certificates: `<pda>/<sha256>.pdf`. */
-export const CERTIFICATES_BUCKET = "audit-certificates";
+/** Storage conventions for plant certificates: `<producer_wallet>/<sha256>.pdf`. */
+export const CERTIFICATES_BUCKET = "plant-certificates";
+export const PLANT_CERTIFICATE_MAX_BYTES = 50 * 1024 * 1024;
 
-export function certificatePath(pda: string, digest: string): string {
-  return `${pda}/${digest}.pdf`;
+export function plantCertificatePath(
+  producerWallet: string,
+  digest: string
+): string {
+  return `${producerWallet}/${digest}.pdf`;
 }
 
 export function bytesToHex(bytes: ReadonlyUint8Array | ArrayBuffer): string {

@@ -16,44 +16,117 @@
         --line: #d5ddd4;
         --accent: #d5ef86;
       }
-      * { box-sizing: border-box; }
-      body { margin: 0; }
-      button { font: inherit; }
-      [hidden] { display: none !important; }
-      .presentation { min-height: 100svh; display: flex; flex-direction: column; }
-      .masthead, .controls {
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      button {
+        font: inherit;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .presentation {
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+      }
+      .masthead,
+      .controls {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 20px;
         padding: 24px clamp(24px, 5vw, 88px);
       }
-      .masthead { border-bottom: 1px solid var(--line); }
-      .brand { font-size: 28px; font-weight: 800; letter-spacing: -1.5px; }
-      .brand span { color: #648335; }
-      .masthead-label, .eyebrow, .time, .counter, .hint {
+      .masthead {
+        border-bottom: 1px solid var(--line);
+      }
+      .brand {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+      }
+      .brand span {
+        color: #648335;
+      }
+      .masthead-label,
+      .eyebrow,
+      .time,
+      .counter,
+      .hint {
         font-size: 12px;
         font-weight: 600;
         letter-spacing: 1.5px;
         text-transform: uppercase;
       }
-      .masthead-label, .time, .hint { color: var(--muted); }
-      main { flex: 1; display: grid; }
+      .masthead-label,
+      .time,
+      .hint {
+        color: var(--muted);
+      }
+      main {
+        flex: 1;
+        display: grid;
+      }
       .slide {
         width: 100%;
         max-width: 1560px;
         margin: auto;
         padding: clamp(32px, 5vh, 68px) clamp(24px, 7vw, 112px);
       }
-      .slide-meta { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-      .eyebrow { color: #50742c; }
-      h1, h2, p { margin: 0; }
-      h1, h2 { font-weight: 600; letter-spacing: -0.055em; line-height: 1.04; text-wrap: balance; }
-      h1 { font-size: clamp(48px, 6.3vw, 96px); }
-      h2 { font-size: clamp(38px, 4.8vw, 72px); max-width: 1100px; }
-      .lead { color: var(--muted); font-size: clamp(18px, 1.8vw, 26px); line-height: 1.5; max-width: 890px; margin-top: 24px; text-wrap: pretty; }
-      .cover-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 64px; align-items: center; }
-      .team { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 28px; font-size: 18px; line-height: 1.5; }
+      .slide-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .eyebrow {
+        color: #50742c;
+      }
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+      h1,
+      h2 {
+        font-weight: 600;
+        letter-spacing: -0.055em;
+        line-height: 1.04;
+        text-wrap: balance;
+      }
+      h1 {
+        font-size: clamp(48px, 6.3vw, 96px);
+      }
+      h2 {
+        font-size: clamp(38px, 4.8vw, 72px);
+        max-width: 1100px;
+      }
+      .lead {
+        color: var(--muted);
+        font-size: clamp(18px, 1.8vw, 26px);
+        line-height: 1.5;
+        max-width: 890px;
+        margin-top: 24px;
+        text-wrap: pretty;
+      }
+      .cover-grid {
+        display: grid;
+        grid-template-columns: 1.7fr 1fr;
+        gap: 64px;
+        align-items: center;
+      }
+      .team {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 24px;
+        margin-top: 28px;
+        font-size: 18px;
+        line-height: 1.5;
+      }
       .cover-mark {
         aspect-ratio: 1;
         width: min(100%, 340px);
@@ -65,90 +138,376 @@
         text-align: center;
         background: #e9eee2;
       }
-      .cover-mark svg { width: clamp(72px, 10vw, 152px); height: auto; display: block; margin: 0 auto; color: var(--green); }
-      .cover-mark span { margin-top: 14px; color: var(--muted); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
-      .cover-bottom { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px 32px; font-size: 14px; color: var(--muted); }
-      .metrics { display: grid; grid-template-columns: 1fr 1fr 1.1fr; margin-top: 38px; border-top: 1px solid var(--line); }
-      .metric { padding: 28px 24px 0 0; }
-      .metric + .metric { border-left: 1px solid var(--line); padding-left: 28px; }
-      .metric-value { display: block; font-size: clamp(40px, 5vw, 72px); line-height: 1.1; letter-spacing: -3px; margin-bottom: 12px; }
-      .metric-value small { font-size: 0.45em; letter-spacing: -1px; }
-      .metric p { font-size: 17px; color: var(--muted); line-height: 1.5; }
-      .metric-title { font-size: clamp(28px, 3vw, 42px); line-height: 1.15; letter-spacing: -1.5px; }
-      .takeaway { margin-top: 32px; border-left: 3px solid #729440; padding-left: 20px; font-size: clamp(18px, 1.6vw, 24px); line-height: 1.4; }
-      .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 40px; }
-      .step { border-top: 1px solid var(--line); padding-top: 22px; }
-      .step-number { font-size: 13px; color: #50742c; letter-spacing: 2px; }
-      .step h3 { margin: 16px 0 12px; font-size: clamp(23px, 2.2vw, 32px); font-weight: 500; letter-spacing: -1px; }
-      .step p { color: var(--muted); font-size: 17px; line-height: 1.5; }
-      .hash-strip { margin-top: 32px; padding: 18px 24px; background: #e7edde; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; font-size: 17px; line-height: 1.4; }
-      .hash-strip strong { font-size: 13px; letter-spacing: 1px; }
-      .closing-grid { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-      .closing-panel { padding-top: 20px; border-top: 1px solid var(--line); }
-      .closing-panel h3 { font-size: 24px; font-weight: 500; margin: 0 0 14px; }
-      .closing-panel .big { display: block; font-size: clamp(36px, 4.2vw, 64px); font-weight: 500; letter-spacing: -2px; margin-bottom: 12px; }
-      .closing-panel p { color: var(--muted); font-size: 17px; line-height: 1.5; }
-      .closing-line { margin-top: 32px; font-size: clamp(22px, 2.3vw, 34px); font-weight: 500; letter-spacing: -1px; }
-      .note { margin-top: 18px; font-size: 12px; line-height: 1.5; color: var(--muted); max-width: 960px; }
-      .controls { border-top: 1px solid var(--line); }
-      .navigation, .page-dots { display: flex; gap: 8px; align-items: center; }
-      button { cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--green); border-radius: 6px; min-height: 44px; }
-      button:focus-visible { outline: 3px solid #729440; outline-offset: 4px; }
-      button:active:not(:disabled) { transform: scale(0.97); }
-      button:disabled { opacity: 0.3; cursor: default; }
-      .arrow { width: 48px; font-size: 24px; }
-      .fullscreen { padding: 0 16px; font-size: 13px; }
-      .dot { width: 32px; border: 0; position: relative; }
-      .dot::after { content: ''; display: block; width: 7px; height: 7px; background: #bcc8b9; border-radius: 50%; margin: auto; }
-      .dot[aria-current="step"]::after { background: var(--green); width: 22px; border-radius: 4px; }
-      .counter { min-width: 48px; }
-      @media (hover: hover) and (pointer: fine) { button:hover:not(:disabled) { background: #e7edde; } }
+      .cover-mark svg {
+        width: clamp(72px, 10vw, 152px);
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        color: var(--green);
+      }
+      .cover-mark span {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      .cover-bottom {
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 32px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.1fr;
+        margin-top: 38px;
+        border-top: 1px solid var(--line);
+      }
+      .metric {
+        padding: 28px 24px 0 0;
+      }
+      .metric + .metric {
+        border-left: 1px solid var(--line);
+        padding-left: 28px;
+      }
+      .metric-value {
+        display: block;
+        font-size: clamp(40px, 5vw, 72px);
+        line-height: 1.1;
+        letter-spacing: -3px;
+        margin-bottom: 12px;
+      }
+      .metric-value small {
+        font-size: 0.45em;
+        letter-spacing: -1px;
+      }
+      .metric p {
+        font-size: 17px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .metric-title {
+        font-size: clamp(28px, 3vw, 42px);
+        line-height: 1.15;
+        letter-spacing: -1.5px;
+      }
+      .takeaway {
+        margin-top: 32px;
+        border-left: 3px solid #729440;
+        padding-left: 20px;
+        font-size: clamp(18px, 1.6vw, 24px);
+        line-height: 1.4;
+      }
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        margin-top: 40px;
+      }
+      .step {
+        border-top: 1px solid var(--line);
+        padding-top: 22px;
+      }
+      .step-number {
+        font-size: 13px;
+        color: #50742c;
+        letter-spacing: 2px;
+      }
+      .step h3 {
+        margin: 16px 0 12px;
+        font-size: clamp(23px, 2.2vw, 32px);
+        font-weight: 500;
+        letter-spacing: -1px;
+      }
+      .step p {
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.5;
+      }
+      .hash-strip {
+        margin-top: 32px;
+        padding: 18px 24px;
+        background: #e7edde;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 24px;
+        font-size: 17px;
+        line-height: 1.4;
+      }
+      .hash-strip strong {
+        font-size: 13px;
+        letter-spacing: 1px;
+      }
+      .closing-grid {
+        margin-top: 36px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+      }
+      .closing-panel {
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+      }
+      .closing-panel h3 {
+        font-size: 24px;
+        font-weight: 500;
+        margin: 0 0 14px;
+      }
+      .closing-panel .big {
+        display: block;
+        font-size: clamp(36px, 4.2vw, 64px);
+        font-weight: 500;
+        letter-spacing: -2px;
+        margin-bottom: 12px;
+      }
+      .closing-panel p {
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.5;
+      }
+      .closing-line {
+        margin-top: 32px;
+        font-size: clamp(22px, 2.3vw, 34px);
+        font-weight: 500;
+        letter-spacing: -1px;
+      }
+      .note {
+        margin-top: 18px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--muted);
+        max-width: 960px;
+      }
+      .controls {
+        border-top: 1px solid var(--line);
+      }
+      .navigation,
+      .page-dots {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      button {
+        cursor: pointer;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--green);
+        border-radius: 6px;
+        min-height: 44px;
+      }
+      button:focus-visible {
+        outline: 3px solid #729440;
+        outline-offset: 4px;
+      }
+      button:active:not(:disabled) {
+        transform: scale(0.97);
+      }
+      button:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .arrow {
+        width: 48px;
+        font-size: 24px;
+      }
+      .fullscreen {
+        padding: 0 16px;
+        font-size: 13px;
+      }
+      .dot {
+        width: 32px;
+        border: 0;
+        position: relative;
+      }
+      .dot::after {
+        content: "";
+        display: block;
+        width: 7px;
+        height: 7px;
+        background: #bcc8b9;
+        border-radius: 50%;
+        margin: auto;
+      }
+      .dot[aria-current="step"]::after {
+        background: var(--green);
+        width: 22px;
+        border-radius: 4px;
+      }
+      .counter {
+        min-width: 48px;
+      }
+      @media (hover: hover) and (pointer: fine) {
+        button:hover:not(:disabled) {
+          background: #e7edde;
+        }
+      }
       @media (max-width: 760px) {
-        .masthead, .controls { padding: 16px 24px; }
-        .masthead-label { font-size: 10px; letter-spacing: 1px; }
-        .slide { padding: 32px 24px; }
-        .cover-grid { grid-template-columns: 1fr; gap: 32px; }
-        .cover-mark { width: 140px; justify-self: start; }
-        .cover-mark svg { width: 64px; }
-        .cover-mark span { font-size: 9px; letter-spacing: 1px; margin-top: 8px; }
-        .cover-bottom { margin-top: 32px; }
-        .metrics, .flow, .closing-grid { grid-template-columns: 1fr; gap: 24px; margin-top: 28px; }
-        .metric { padding: 20px 0 0; }
-        .metric + .metric { padding: 20px 0 0; border-left: 0; border-top: 1px solid var(--line); }
-        .metric-value { font-size: 48px; }
-        .hint { display: none; }
-        .controls { flex-wrap: wrap; gap: 12px; }
-        .page-dots { gap: 0; }
-        .fullscreen { padding: 0 10px; }
-        .slide-meta { flex-wrap: wrap; }
+        .masthead,
+        .controls {
+          padding: 16px 24px;
+        }
+        .masthead-label {
+          font-size: 10px;
+          letter-spacing: 1px;
+        }
+        .slide {
+          padding: 32px 24px;
+        }
+        .cover-grid {
+          grid-template-columns: 1fr;
+          gap: 32px;
+        }
+        .cover-mark {
+          width: 140px;
+          justify-self: start;
+        }
+        .cover-mark svg {
+          width: 64px;
+        }
+        .cover-mark span {
+          font-size: 9px;
+          letter-spacing: 1px;
+          margin-top: 8px;
+        }
+        .cover-bottom {
+          margin-top: 32px;
+        }
+        .metrics,
+        .flow,
+        .closing-grid {
+          grid-template-columns: 1fr;
+          gap: 24px;
+          margin-top: 28px;
+        }
+        .metric {
+          padding: 20px 0 0;
+        }
+        .metric + .metric {
+          padding: 20px 0 0;
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+        .metric-value {
+          font-size: 48px;
+        }
+        .hint {
+          display: none;
+        }
+        .controls {
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .page-dots {
+          gap: 0;
+        }
+        .fullscreen {
+          padding: 0 10px;
+        }
+        .slide-meta {
+          flex-wrap: wrap;
+        }
       }
       @media screen and (min-width: 761px) and (max-height: 800px) {
-        .masthead, .controls { padding-top: 16px; padding-bottom: 16px; }
-        .slide { padding-top: 24px; padding-bottom: 24px; }
-        .slide-meta { margin-bottom: 18px; }
-        h2 { font-size: clamp(38px, 4.3vw, 60px); }
-        .lead { font-size: 20px; margin-top: 18px; }
-        .metrics, .flow, .closing-grid { margin-top: 26px; }
-        .step, .closing-panel { padding-top: 16px; }
-        .step h3 { margin-top: 12px; font-size: 26px; }
-        .metric { padding-top: 22px; }
-        .metric-value { font-size: 56px; }
-        .metric-title { font-size: 36px; }
-        .hash-strip { margin-top: 24px; padding: 14px 20px; }
-        .takeaway, .closing-line { margin-top: 24px; }
-        .note { margin-top: 14px; }
+        .masthead,
+        .controls {
+          padding-top: 16px;
+          padding-bottom: 16px;
+        }
+        .slide {
+          padding-top: 24px;
+          padding-bottom: 24px;
+        }
+        .slide-meta {
+          margin-bottom: 18px;
+        }
+        h2 {
+          font-size: clamp(38px, 4.3vw, 60px);
+        }
+        .lead {
+          font-size: 20px;
+          margin-top: 18px;
+        }
+        .metrics,
+        .flow,
+        .closing-grid {
+          margin-top: 26px;
+        }
+        .step,
+        .closing-panel {
+          padding-top: 16px;
+        }
+        .step h3 {
+          margin-top: 12px;
+          font-size: 26px;
+        }
+        .metric {
+          padding-top: 22px;
+        }
+        .metric-value {
+          font-size: 56px;
+        }
+        .metric-title {
+          font-size: 36px;
+        }
+        .hash-strip {
+          margin-top: 24px;
+          padding: 14px 20px;
+        }
+        .takeaway,
+        .closing-line {
+          margin-top: 24px;
+        }
+        .note {
+          margin-top: 14px;
+        }
       }
-      @media (prefers-reduced-motion: reduce) { button:active:not(:disabled) { transform: none; } }
+      @media (prefers-reduced-motion: reduce) {
+        button:active:not(:disabled) {
+          transform: none;
+        }
+      }
       @media print {
-        .masthead, .controls { display: none; }
-        .presentation, main { display: block; }
-        .slide, .slide[hidden] { display: block !important; break-after: page; min-height: 170mm; padding: 12mm; margin: 0; }
-        .slide:last-child { break-after: auto; }
-        h1 { font-size: 58px; }
-        h2 { font-size: 46px; }
-        .lead { font-size: 20px; }
-        .metric-value { font-size: 52px; }
-        @page { size: A4 landscape; margin: 10mm; }
+        .masthead,
+        .controls {
+          display: none;
+        }
+        .presentation,
+        main {
+          display: block;
+        }
+        .slide,
+        .slide[hidden] {
+          display: block !important;
+          break-after: page;
+          min-height: 170mm;
+          padding: 12mm;
+          margin: 0;
+        }
+        .slide:last-child {
+          break-after: auto;
+        }
+        h1 {
+          font-size: 58px;
+        }
+        h2 {
+          font-size: 46px;
+        }
+        .lead {
+          font-size: 20px;
+        }
+        .metric-value {
+          font-size: 52px;
+        }
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
+        }
       }
     </style>
   </head>
@@ -164,89 +523,260 @@
           <div class="cover-grid">
             <div>
               <h1 id="cover-title">Del litio<br />a la liquidez.</h1>
-              <p class="lead">Liquidación B2B y pasaporte digital sobre Solana.</p>
-              <div class="team" aria-label="Integrantes del equipo"><span>Mauro Benjamin Mamani</span><span>Mayko Fernandez</span><span>Samuel Paredes</span><span>Mauricio Rios</span></div>
+              <p class="lead">
+                Liquidación B2B y pasaporte digital sobre Solana.
+              </p>
+              <div class="team" aria-label="Integrantes del equipo">
+                <span>Mauro Benjamin Mamani</span><span>Mayko Fernandez</span
+                ><span>Samuel Paredes</span><span>Mauricio Rios</span>
+              </div>
             </div>
             <div class="cover-mark" aria-hidden="true">
               <svg viewBox="0 0 32 36" fill="none">
-                <path d="M16 1 31 9.5v17L16 35 1 26.5v-17Z" fill="currentColor" />
-                <path d="M21 10v10a5 5 0 0 1-10 0" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+                <path
+                  d="M16 1 31 9.5v17L16 35 1 26.5v-17Z"
+                  fill="currentColor"
+                />
+                <path
+                  d="M21 10v10a5 5 0 0 1-10 0"
+                  stroke="white"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                />
               </svg>
               <span>Jujuy, Argentina</span>
             </div>
           </div>
-          <div class="cover-bottom"><span>Origen trazable</span><span>Evidencia verificable</span><span>Liquidación propuesta en USDC</span></div>
+          <div class="cover-bottom">
+            <span>Origen trazable</span><span>Evidencia verificable</span
+            ><span>Liquidación propuesta en USDC</span>
+          </div>
         </section>
 
         <section class="slide" hidden aria-labelledby="finance-title">
-          <div class="slide-meta"><span class="eyebrow">01 / El dolor financiero</span><span class="time">Mauro Benjamin Mamani · 0:00–0:30</span></div>
-          <h2 id="finance-title">El lote se entrega.<br />El dinero espera.</h2>
-          <p class="lead">Contratos de suministro a largo plazo. Entregas mensuales de carbonato de litio grado batería. Pagos atados a cartas de crédito bancarias.</p>
-          <div class="metrics">
-            <div class="metric"><strong class="metric-value"><small>Hasta</small> 3%</strong><p>de comisión bancaria</p></div>
-            <div class="metric"><strong class="metric-value">15–45 <small>días</small></strong><p>para liquidar el pago</p></div>
-            <div class="metric"><strong class="metric-value metric-title">Millones<br />inmovilizados.</strong><p>Capital que no vuelve a la operación.</p></div>
+          <div class="slide-meta">
+            <span class="eyebrow">01 / El dolor financiero</span
+            ><span class="time">Mauro Benjamin Mamani · 0:00–0:30</span>
           </div>
-          <p class="takeaway">El problema no es vender el litio. Es cobrar a tiempo.</p>
+          <h2 id="finance-title">El lote se entrega.<br />El dinero espera.</h2>
+          <p class="lead">
+            Contratos de suministro a largo plazo. Entregas mensuales de
+            carbonato de litio grado batería. Pagos atados a cartas de crédito
+            bancarias.
+          </p>
+          <div class="metrics">
+            <div class="metric">
+              <strong class="metric-value"><small>Hasta</small> 3%</strong>
+              <p>de comisión bancaria</p>
+            </div>
+            <div class="metric">
+              <strong class="metric-value">15–45 <small>días</small></strong>
+              <p>para liquidar el pago</p>
+            </div>
+            <div class="metric">
+              <strong class="metric-value metric-title"
+                >Millones<br />inmovilizados.</strong
+              >
+              <p>Capital que no vuelve a la operación.</p>
+            </div>
+          </div>
+          <p class="takeaway">
+            El problema no es vender el litio. Es cobrar a tiempo.
+          </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="risk-title">
-          <div class="slide-meta"><span class="eyebrow">02 / El riesgo documental</span><span class="time">Mayko Fernandez · 0:30–1:00</span></div>
-          <h2 id="risk-title">Muchos PDFs.<br />Poca confianza.</h2>
-          <p class="lead">La huella hídrica y de carbono circula por correo. Sin una referencia verificable, comprobar la integridad y el origen del informe se vuelve difícil.</p>
-          <div class="flow">
-            <div class="step"><span class="step-number">01 / EVIDENCIA</span><h3>Archivos aislados</h3><p>Reportes ambientales dispersos entre empresas y laboratorios.</p></div>
-            <div class="step"><span class="step-number">02 / CONFIANZA</span><h3>Greenwashing</h3><p>Riesgo de manipulación y afirmaciones sin respaldo verificable.</p></div>
-            <div class="step"><span class="step-number">03 / DESTINO</span><h3>Exigencias de la UE</h3><p>El Battery Passport eleva la necesidad de trazabilidad y datos conectados.</p></div>
+          <div class="slide-meta">
+            <span class="eyebrow">02 / El riesgo documental</span
+            ><span class="time">Mayko Fernandez · 0:30–1:00</span>
           </div>
-          <p class="takeaway">Los sistemas no se comunican. La verificación se vuelve burocracia.</p>
+          <h2 id="risk-title">Muchos PDFs.<br />Poca confianza.</h2>
+          <p class="lead">
+            La huella hídrica y de carbono circula por correo. Sin una
+            referencia verificable, comprobar la integridad y el origen del
+            informe se vuelve difícil.
+          </p>
+          <div class="flow">
+            <div class="step">
+              <span class="step-number">01 / EVIDENCIA</span>
+              <h3>Archivos aislados</h3>
+              <p>
+                Reportes ambientales dispersos entre empresas y laboratorios.
+              </p>
+            </div>
+            <div class="step">
+              <span class="step-number">02 / CONFIANZA</span>
+              <h3>Greenwashing</h3>
+              <p>
+                Riesgo de manipulación y afirmaciones sin respaldo verificable.
+              </p>
+            </div>
+            <div class="step">
+              <span class="step-number">03 / DESTINO</span>
+              <h3>Exigencias de la UE</h3>
+              <p>
+                El Battery Passport eleva la necesidad de trazabilidad y datos
+                conectados.
+              </p>
+            </div>
+          </div>
+          <p class="takeaway">
+            Los sistemas no se comunican. La verificación se vuelve burocracia.
+          </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="solution-title">
-          <div class="slide-meta"><span class="eyebrow">03 / La solución JuLit</span><span class="time">Samuel Paredes · 1:00–1:30</span></div>
-          <h2 id="solution-title">Un lote.<br />Una evidencia verificable.</h2>
-          <p class="lead">Un pasaporte digital que conecta a la minera, al auditor y al comprador sobre Solana.</p>
-          <div class="flow">
-            <div class="step"><span class="step-number">01 / MINERA</span><h3>Registra el lote</h3><p>Identifica el origen y los datos del cargamento.</p></div>
-            <div class="step"><span class="step-number">02 / LABORATORIO</span><h3>Adjunta el informe</h3><p>Asocia la evidencia técnica y las métricas ambientales.</p></div>
-            <div class="step"><span class="step-number">03 / SOLANA</span><h3>Registra el hash</h3><p>SHA-256 del documento como referencia de integridad en una cuenta PDA.</p></div>
+          <div class="slide-meta">
+            <span class="eyebrow">03 / La solución JuLit</span
+            ><span class="time">Samuel Paredes · 1:00–1:30</span>
           </div>
-          <div class="hash-strip"><strong>PDF → SHA-256 → PDA</strong><span>Si cambia el archivo, cambia el hash: la alteración se detecta al comparar.</span></div>
-          <p class="note">El hash prueba integridad del archivo, no la veracidad de sus datos ni la correspondencia física con el cargamento.</p>
+          <h2 id="solution-title">Un lote.<br />Una evidencia verificable.</h2>
+          <p class="lead">
+            Un pasaporte digital que conecta a la minera, al auditor y al
+            comprador sobre Solana.
+          </p>
+          <div class="flow">
+            <div class="step">
+              <span class="step-number">01 / MINERA</span>
+              <h3>Registra el lote</h3>
+              <p>Identifica el origen y los datos del cargamento.</p>
+            </div>
+            <div class="step">
+              <span class="step-number">02 / LABORATORIO</span>
+              <h3>Adjunta el informe</h3>
+              <p>Asocia la evidencia técnica y las métricas ambientales.</p>
+            </div>
+            <div class="step">
+              <span class="step-number">03 / SOLANA</span>
+              <h3>Registra el hash</h3>
+              <p>
+                SHA-256 del documento como referencia de integridad en una
+                cuenta PDA.
+              </p>
+            </div>
+          </div>
+          <div class="hash-strip">
+            <strong>PDF → SHA-256 → PDA</strong
+            ><span
+              >Si cambia el archivo, cambia el hash: la alteración se detecta al
+              comparar.</span
+            >
+          </div>
+          <p class="note">
+            El hash prueba integridad del archivo, no la veracidad de sus datos
+            ni la correspondencia física con el cargamento.
+          </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="closing-title">
-          <div class="slide-meta"><span class="eyebrow">04 / Liquidación y pasaporte</span><span class="time">Mauricio Rios · 1:30–2:00</span></div>
-          <h2 id="closing-title">Menos burocracia.<br />Más liquidez para Jujuy.</h2>
-          <div class="closing-grid">
-            <div class="closing-panel"><h3>Liquidación propuesta en USDC</h3><strong class="big">Objetivo: &lt; 1 s</strong><p>El comprador verifica el lote certificado y liquida la operación. Costos de red de centavos de dólar.</p></div>
-            <div class="closing-panel"><h3>Pasaporte accesible por QR</h3><strong class="big">Sin wallet.</strong><p>Acceso público a las métricas ESG, la evidencia del lote y su registro en Solana Explorer.</p></div>
+          <div class="slide-meta">
+            <span class="eyebrow">04 / Liquidación y pasaporte</span
+            ><span class="time">Mauricio Rios · 1:30–2:00</span>
           </div>
-          <p class="closing-line">JuLit transforma evidencia en confianza y confianza en liquidez.</p>
-          <p class="note">Propuesta del protocolo. La demo actual simula la liquidación: no transfiere USDC. Los tiempos y costos son objetivos, no garantías. El pasaporte de lote no equivale al Battery Passport oficial ni garantiza cumplimiento aduanero. Toyota es un ejemplo del guion, no un cliente confirmado.</p>
+          <h2 id="closing-title">
+            Menos burocracia.<br />Más liquidez para Jujuy.
+          </h2>
+          <div class="closing-grid">
+            <div class="closing-panel">
+              <h3>Liquidación propuesta en USDC</h3>
+              <strong class="big">Objetivo: &lt; 1 s</strong>
+              <p>
+                El comprador verifica el lote certificado y liquida la
+                operación. Costos de red de centavos de dólar.
+              </p>
+            </div>
+            <div class="closing-panel">
+              <h3>Pasaporte accesible por QR</h3>
+              <strong class="big">Sin wallet.</strong>
+              <p>
+                Acceso público a las métricas ESG, la evidencia del lote y su
+                registro en Solana Explorer.
+              </p>
+            </div>
+          </div>
+          <p class="closing-line">
+            JuLit transforma evidencia en confianza y confianza en liquidez.
+          </p>
+          <p class="note">
+            Propuesta del protocolo. La demo actual simula la liquidación: no
+            transfiere USDC. Los tiempos y costos son objetivos, no garantías.
+            El pasaporte de lote no equivale al Battery Passport oficial ni
+            garantiza cumplimiento aduanero. Toyota es un ejemplo del guion, no
+            un cliente confirmado.
+          </p>
           <p class="takeaway">Muchas gracias.</p>
         </section>
       </main>
 
       <footer class="controls">
-        <div class="navigation"><button class="arrow" id="previous" type="button" aria-label="Diapositiva anterior" disabled>←</button><button class="arrow" id="next" type="button" aria-label="Diapositiva siguiente">→</button><span class="counter" id="counter" role="status" aria-live="polite" aria-atomic="true">1 / 5</span></div>
+        <div class="navigation">
+          <button
+            class="arrow"
+            id="previous"
+            type="button"
+            aria-label="Diapositiva anterior"
+            disabled
+          >
+            ←</button
+          ><button
+            class="arrow"
+            id="next"
+            type="button"
+            aria-label="Diapositiva siguiente"
+          >
+            →</button
+          ><span
+            class="counter"
+            id="counter"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            >1 / 5</span
+          >
+        </div>
         <nav class="page-dots" aria-label="Elegir diapositiva">
-          <button class="dot" type="button" aria-label="1. Inicio" aria-current="step"></button>
-          <button class="dot" type="button" aria-label="2. El dolor financiero"></button>
-          <button class="dot" type="button" aria-label="3. El riesgo documental"></button>
-          <button class="dot" type="button" aria-label="4. La solución JuLit"></button>
-          <button class="dot" type="button" aria-label="5. Liquidación y cierre"></button>
+          <button
+            class="dot"
+            type="button"
+            aria-label="1. Inicio"
+            aria-current="step"
+          ></button>
+          <button
+            class="dot"
+            type="button"
+            aria-label="2. El dolor financiero"
+          ></button>
+          <button
+            class="dot"
+            type="button"
+            aria-label="3. El riesgo documental"
+          ></button>
+          <button
+            class="dot"
+            type="button"
+            aria-label="4. La solución JuLit"
+          ></button>
+          <button
+            class="dot"
+            type="button"
+            aria-label="5. Liquidación y cierre"
+          ></button>
         </nav>
-        <div class="navigation"><span class="hint">← → para navegar</span><button class="fullscreen" id="fullscreen" type="button">Pantalla completa</button></div>
+        <div class="navigation">
+          <span class="hint">← → para navegar</span
+          ><button class="fullscreen" id="fullscreen" type="button">
+            Pantalla completa
+          </button>
+        </div>
       </footer>
     </div>
     <script>
-      const slides = [...document.querySelectorAll('.slide')];
-      const dots = [...document.querySelectorAll('.dot')];
-      const previous = document.getElementById('previous');
-      const next = document.getElementById('next');
-      const counter = document.getElementById('counter');
-      const fullscreen = document.getElementById('fullscreen');
+      const slides = [...document.querySelectorAll(".slide")];
+      const dots = [...document.querySelectorAll(".dot")];
+      const previous = document.getElementById("previous");
+      const next = document.getElementById("next");
+      const counter = document.getElementById("counter");
+      const fullscreen = document.getElementById("fullscreen");
       let current = 0;
 
       function showSlide(index) {
@@ -258,49 +788,63 @@
         current = target;
         slides[current].hidden = false;
         dots.forEach((dot, i) => {
-          if (i === current) dot.setAttribute('aria-current', 'step');
-          else dot.removeAttribute('aria-current');
+          if (i === current) dot.setAttribute("aria-current", "step");
+          else dot.removeAttribute("aria-current");
         });
         previous.disabled = current === 0;
         next.disabled = current === slides.length - 1;
         counter.textContent = `${current + 1} / ${slides.length}`;
-        if (focusWillHide || (focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        if (
+          focusWillHide ||
+          (focused === previous && previous.disabled) ||
+          (focused === next && next.disabled)
+        ) {
           dots[current].focus({ preventScroll: true });
         }
         window.scrollTo(0, 0);
       }
 
-      previous.addEventListener('click', () => showSlide(current - 1));
-      next.addEventListener('click', () => showSlide(current + 1));
-      dots.forEach((dot, i) => dot.addEventListener('click', () => showSlide(i)));
-      document.addEventListener('keydown', (event) => {
-        if (event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input, textarea, select, [contenteditable]')) return;
-        if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+      previous.addEventListener("click", () => showSlide(current - 1));
+      next.addEventListener("click", () => showSlide(current + 1));
+      dots.forEach((dot, i) =>
+        dot.addEventListener("click", () => showSlide(i))
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.target.closest("input, textarea, select, [contenteditable]")
+        )
+          return;
+        if (event.key === "ArrowRight" || event.key === "PageDown") {
           event.preventDefault();
           showSlide(current + 1);
-        } else if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+        } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
           event.preventDefault();
           showSlide(current - 1);
-        } else if (event.key === 'Home') {
+        } else if (event.key === "Home") {
           event.preventDefault();
           showSlide(0);
-        } else if (event.key === 'End') {
+        } else if (event.key === "End") {
           event.preventDefault();
           showSlide(slides.length - 1);
         }
       });
 
       if (!document.fullscreenEnabled) fullscreen.hidden = true;
-      fullscreen.addEventListener('click', async () => {
+      fullscreen.addEventListener("click", async () => {
         try {
           if (document.fullscreenElement) await document.exitFullscreen();
           else await document.documentElement.requestFullscreen();
         } catch {
-          counter.textContent = 'Pantalla completa no disponible';
+          counter.textContent = "Pantalla completa no disponible";
         }
       });
-      document.addEventListener('fullscreenchange', () => {
-        fullscreen.textContent = document.fullscreenElement ? 'Salir de pantalla completa' : 'Pantalla completa';
+      document.addEventListener("fullscreenchange", () => {
+        fullscreen.textContent = document.fullscreenElement
+          ? "Salir de pantalla completa"
+          : "Pantalla completa";
       });
     </script>
   </body>

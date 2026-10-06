@@ -74,9 +74,7 @@ export async function GET() {
       const producer = partyById.get(c.producer_id) ?? null;
       const role: ContractRole =
         c.producer_id === company.id ? "producer" : "counterparty";
-      const posture = counterparty
-        ? contractPosture(role, counterparty.company_type as CompanyType)
-        : null;
+      const posture = contractPosture(company.id, c.initiator_id);
       return {
         id: c.id,
         status: c.status,
@@ -99,8 +97,8 @@ export async function GET() {
 }
 
 /**
- * Creates a contract offer under the two sanctioned flows (ADR-0008):
- * a producer offering to an auditor, or a buyer offering to a producer.
+ * Creates a contract offer between a producer and a buyer — the only
+ * sanctioned pair (ADR-0019). Either side may initiate.
  * Supports both on-chain SPL Memo / cryptographic signatures and direct offers.
  */
 export async function POST(request: Request) {
@@ -146,7 +144,7 @@ export async function POST(request: Request) {
 
   if (!offer) {
     return jsonError(
-      "Solo una productora puede ofrecer a una auditora, o una compradora a una productora.",
+      "Los contratos solo vinculan una productora con una compradora.",
       400
     );
   }
@@ -170,7 +168,10 @@ export async function POST(request: Request) {
   // If cryptographic or on-chain signature is attached, validate it
   if (signature) {
     if (!CONTRACT_SIGNATURE_PATTERN.test(signature)) {
-      return jsonError("La firma del contrato no tiene un formato válido.", 400);
+      return jsonError(
+        "La firma del contrato no tiene un formato válido.",
+        400
+      );
     }
     if (!initiatorWallet) {
       return jsonError(
