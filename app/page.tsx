@@ -82,22 +82,6 @@ export default function Home() {
       <a href="#contenido" className={styles.skipLink}>
         Saltar al contenido
       </a>
-      <header className={styles.header}>
-        <a href="#inicio" className={styles.brand} aria-label="JuLit, inicio">
-          <BrandMark />
-          JuLit
-        </a>
-        <nav className={styles.navigation} aria-label="Navegación principal">
-          <SectionLinks />
-        </nav>
-        <div className={styles.headerActions}>
-          <Link href="/sign-in" prefetch={false} className={styles.login}>
-            Ingresar
-          </Link>
-          <DemoLink />
-        </div>
-      </header>
-
       <main id="contenido">
         <section
           id="inicio"
@@ -105,6 +89,28 @@ export default function Home() {
           aria-labelledby="hero-title"
         >
           <div className={styles.heroBackdrop} aria-hidden="true" />
+          <header className={styles.header}>
+            <a
+              href="#inicio"
+              className={styles.brand}
+              aria-label="JuLit, inicio"
+            >
+              <BrandMark />
+              JuLit
+            </a>
+            <nav
+              className={styles.navigation}
+              aria-label="Navegación principal"
+            >
+              <SectionLinks />
+            </nav>
+            <div className={styles.headerActions}>
+              <Link href="/sign-in" prefetch={false} className={styles.login}>
+                Ingresar
+              </Link>
+              <DemoLink />
+            </div>
+          </header>
           <div className={styles.heroContent} data-landing-reveal>
             <p className={styles.heroEyebrow}>
               Litio de Jujuy. Proyección global

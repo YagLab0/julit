@@ -1,7 +1,9 @@
 .wrap {
   display: grid;
+  width: calc(100% - 96px);
+  max-width: 1240px;
   height: clamp(420px, 42vw, 520px);
-  margin-top: 56px;
+  margin: 56px auto;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--border);

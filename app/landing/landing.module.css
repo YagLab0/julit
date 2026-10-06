@@ -86,31 +86,30 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  max-width: 1440px;
-  margin: auto;
-  padding: 28px 56px;
+  padding: 18px 44px;
+  border-bottom: 1px solid var(--border-low);
 }
 
 .brand {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 9px;
-  font-size: 25px;
+  gap: 8px;
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: -1.1px;
+  letter-spacing: -0.9px;
   text-decoration: none;
 }
 
 .brand svg {
-  width: 30px;
-  height: 34px;
+  width: 25px;
+  height: 28px;
   color: var(--color-brand-700);
 }
 
 .navigation {
   display: flex;
-  gap: 28px;
+  gap: 26px;
   align-items: center;
 }
 .navigation a,
@@ -178,12 +177,8 @@
 .hero {
   position: relative;
   isolation: isolate;
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: 88px 56px 56px;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 28px;
+  border-bottom: 1px solid var(--border);
   background: var(--card);
 }
 
@@ -206,6 +201,7 @@
 .heroContent {
   max-width: 800px;
   margin: 0 auto;
+  padding: 72px 40px 0;
   text-align: center;
 }
 .heroEyebrow {
@@ -419,14 +415,9 @@
   }
 }
 
-@media (max-width: 1399px) {
-  .hero {
-    margin-inline: 32px;
-  }
-}
 @media (max-width: 1023px) {
   .header {
-    padding: 24px 32px;
+    padding: 16px 28px;
     flex-wrap: wrap;
   }
   .header .navigation {
@@ -443,8 +434,8 @@
   .headerActions {
     gap: 18px;
   }
-  .hero {
-    padding: 72px 40px 48px;
+  .heroContent {
+    padding: 56px 32px 0;
   }
   .closeIntro {
     gap: 50px;
@@ -452,7 +443,7 @@
 }
 @media (max-width: 767px) {
   .header {
-    padding: 22px 24px;
+    padding: 14px 20px;
     gap: 12px;
   }
   .header .navigation {
@@ -461,10 +452,8 @@
   .headerActions {
     gap: 16px;
   }
-  .hero {
-    margin-inline: 16px;
-    padding: 56px 28px 40px;
-    border-radius: 22px;
+  .heroContent {
+    padding: 48px 24px 0;
   }
   .hero h1 {
     font-size: clamp(40px, 8.7vw, 60px);
@@ -506,28 +495,28 @@
 }
 @media (max-width: 374px) {
   .header {
-    padding-inline: 20px;
+    padding-inline: 16px;
   }
   .headerActions {
     gap: 10px;
   }
   .brand {
-    font-size: 22px;
+    font-size: 19px;
     gap: 6px;
   }
   .brand svg {
-    width: 25px;
+    width: 22px;
   }
   .header :global(.btn-primary) {
     padding: 11px 12px;
     gap: 7px;
     font-size: 11px;
   }
-  .hero {
-    padding-inline: 24px;
+  .heroContent {
+    padding-inline: 20px;
   }
   .hero h1 {
-    font-size: 42px;
+    font-size: 40px;
   }
   .heroEyebrow {
     font-size: 10px;
