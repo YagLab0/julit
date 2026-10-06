@@ -1,8 +1,234 @@
+import type { ReactNode } from "react";
 import styles from "./commerce.module.css";
+import { SolutionShowcase } from "./solution-showcase";
 import {
   BuyerReviewWidget,
   ProducerStructureWidget,
 } from "./participant-widgets";
+
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={styles.checkIcon}
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="m8 12.5 2.5 2.5L16 9.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SettlementMock() {
+  return (
+    <div className={styles.mockCard}>
+      <p className={styles.mockHead}>
+        settle_lot <em className={styles.headPill}>atómica</em>
+      </p>
+      <ul className={styles.txList}>
+        <li>
+          <span className={styles.txAsset}>USDC</span>
+          <i className={styles.txArrow} />
+          <b>Productor</b>
+        </li>
+        <li>
+          <span className={styles.txAsset}>Fee del protocolo</span>
+          <i className={styles.txArrow} />
+          <b>Tesorería</b>
+        </li>
+        <li>
+          <span className={styles.txAsset}>Título digital</span>
+          <i className={styles.txArrow} />
+          <b>Comprador</b>
+        </li>
+      </ul>
+      <p className={styles.mockFoot}>
+        <CheckIcon /> Las tres patas se ejecutan, o ninguna
+      </p>
+    </div>
+  );
+}
+
+function PassportMock() {
+  return (
+    <div className={styles.mockCard}>
+      <p className={styles.mockHead}>
+        Pasaporte del lote <em className={styles.headPill}>público</em>
+      </p>
+      <ul className={styles.mockRows}>
+        <li>
+          <span>Lote</span>
+          <b>0042 · Salinas Grandes</b>
+        </li>
+        <li>
+          <span>Métricas</span>
+          <b>Cantidad y pureza declaradas</b>
+        </li>
+        <li>
+          <span>Título digital</span>
+          <b>NFT · suministro 1</b>
+        </li>
+        <li>
+          <span>Estado</span>
+          <b className={styles.tagTeal}>Liquidado</b>
+        </li>
+        <li>
+          <span>Transacciones</span>
+          <b>create · settle</b>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function CertificateMock() {
+  return (
+    <div className={styles.mockCard}>
+      <div className={styles.docRow}>
+        <span className={styles.docIcon}>
+          <i className={styles.docBadge}>PDF</i>
+        </span>
+        <span className={styles.docMeta}>
+          <b className={styles.fileName}>certificado-planta.pdf</b>
+          <span className={styles.fileCaption}>
+            Declarado una sola vez por el productor
+          </span>
+        </span>
+      </div>
+      <div className={styles.hashRow}>
+        <span>SHA-256</span>
+        <code>9f2c…a41b</code>
+        <span className={styles.hashCheck}>
+          <CheckIcon /> coincide
+        </span>
+      </div>
+      <div className={styles.hashRow}>
+        <span>Referenciado por</span>
+        <b className={styles.fileName}>3 lotes</b>
+      </div>
+    </div>
+  );
+}
+
+function ReservedMock() {
+  return (
+    <div className={styles.mockCard}>
+      <div className={styles.lotRow}>
+        <b className={styles.fileName}>Lote 0042</b>
+        <span className={styles.lockPill}>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <rect x="5" y="11" width="14" height="9" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          Comprador designado
+        </span>
+      </div>
+      <p className={styles.fileCaption}>Carbonato de litio · Jujuy</p>
+      <div className={styles.hashRow}>
+        <span>Acuerdo comercial</span>
+        <span className={styles.hashCheck}>negociado en privado</span>
+      </div>
+      <div className={styles.hashRow}>
+        <span>Liquidación</span>
+        <span className={styles.hashCheck}>
+          solo el comprador designado <CheckIcon />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TabIcon({ path }: { path: string }) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={styles.tabIcon}
+    >
+      <path d={path} />
+    </svg>
+  );
+}
+
+const slides: {
+  tab: string;
+  title: string;
+  problem: string;
+  solution: string;
+  icon: ReactNode;
+  mock: ReactNode;
+}[] = [
+  {
+    tab: "Liquidación atómica",
+    title: "Liquidación sin ventana de riesgo",
+    problem:
+      "El pago y la entrega del bien no ocurren al mismo tiempo; alguien asume el riesgo de que la otra parte no cumpla.",
+    solution:
+      "El pago del comprador y el título digital del lote cambian de manos juntos, o no cambia nada.",
+    icon: <TabIcon path="M4 8h13m-4-4 4 4-4 4M20 16H7m4 4-4-4 4-4" />,
+    mock: <SettlementMock />,
+  },
+  {
+    tab: "Registro público",
+    title: "Un solo registro para todos",
+    problem:
+      "Cada parte guarda sus propios datos del lote y reconciliarlos cuesta tiempo y genera disputas.",
+    solution:
+      "El título digital concentra la referencia del lote y su historial es consultable públicamente en el Pasaporte.",
+    icon: (
+      <TabIcon path="M6 4h9l3 3v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm4 6h4m-4 4h4" />
+    ),
+    mock: <PassportMock />,
+  },
+  {
+    tab: "Certificado de planta",
+    title: "Evidencia a nivel planta",
+    problem:
+      "Auditar cada lote por separado no refleja cómo certifica la industria real y multiplica la fricción documental.",
+    solution:
+      "El productor declara el certificado de su planta una sola vez; cada lote registra su referencia y cualquiera puede comprobar que el documento coincide.",
+    icon: (
+      <TabIcon path="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8l-4-5zm0 0v5h4M9 15l2 2 4-4" />
+    ),
+    mock: <CertificateMock />,
+  },
+  {
+    tab: "Comprador designado",
+    title: "Operaciones reservadas, no góndola abierta",
+    problem:
+      "Los acuerdos entre mineras y compradores se negocian en privado, pero los datos comerciales terminan dispersos o públicos.",
+    solution:
+      "Todo lote nace reservado a un comprador designado; el acuerdo se cierra entre las empresas y solo ese comprador puede liquidarlo.",
+    icon: (
+      <TabIcon path="M8 11V7a4 4 0 0 1 8 0v4M5 11h14v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9z" />
+    ),
+    mock: <ReservedMock />,
+  },
+];
 
 export function CommerceSection() {
   return (
@@ -16,170 +242,17 @@ export function CommerceSection() {
           <div>
             <p className="eyebrow">La propuesta JuLit</p>
             <h2 id="commerce-heading" className={styles.heading}>
-              Menos fricción entre el origen y la compra.
+              El pago y el lote, en la misma transacción.
             </h2>
           </div>
           <p className={`${styles.description} text-muted`}>
-            Pagos, informes y registros separados dificultan coordinar una
-            operación. JuLit propone conectarlos alrededor de un mismo lote.
+            En el comercio B2B de litio, pagar antes de recibir o entregar antes
+            de cobrar deja a una de las partes expuesta. JuLit propone cerrar
+            esa brecha alrededor de un título digital por lote.
           </p>
         </div>
 
-        <div className={styles.commerceGrid}>
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 11h21m-5-5 5 5-5 5M27 21H6m5-5-5 5 5 5" />
-            </svg>
-            <h3>Pagos sin tantas vueltas</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  Las cartas de crédito suman comisiones, intermediarios y
-                  demoras que inmovilizan capital.
-                </dd>
-              </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  Liquidación B2B en USDC sobre Solana, diseñada para reducir la
-                  fricción del pago. En la demo, esta etapa es simulada.
-                </dd>
-              </div>
-            </dl>
-          </article>
-
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-            data-landing-delay="50"
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 4H8a2 2 0 0 0-2 2v20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V11L19 4Z" />
-              <path d="M19 4v7h7M11 16h6m-6 5h3m4 1 2 2 5-5" />
-            </svg>
-            <h3>Documentos cuya integridad se puede comprobar</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  Los informes enviados por correo pueden circular en distintas
-                  versiones y perder su relación con el lote.
-                </dd>
-              </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  Asociar el informe del auditor al lote y registrar su huella
-                  digital SHA-256 en Solana para detectar cambios respecto del
-                  documento registrado.
-                </dd>
-              </div>
-            </dl>
-          </article>
-
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-            data-landing-delay="100"
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="11" y="11" width="10" height="10" rx="2" />
-              <circle cx="6" cy="6" r="3" />
-              <circle cx="26" cy="6" r="3" />
-              <circle cx="16" cy="27" r="3" />
-              <path d="m8 8 4 4m12-4-4 4m-4 9v3" />
-            </svg>
-            <h3>Una referencia común entre actores</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  Los sistemas desconectados obligan a cotejar información y
-                  conciliar registros manualmente.
-                </dd>
-              </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  Un pasaporte por lote que reúna origen, datos declarados y
-                  evidencia de auditoría como referencia compartida entre los
-                  participantes.
-                </dd>
-              </div>
-            </dl>
-          </article>
-
-          <article
-            className={`${styles.commerceCard} bg-background`}
-            data-landing-reveal
-            data-landing-delay="150"
-          >
-            <svg
-              className={styles.icon}
-              viewBox="0 0 32 32"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="4" y="5" width="24" height="22" rx="3" />
-              <path d="M4 11h24M8 8h.01M11 8h.01" />
-              <circle cx="15" cy="18" r="4" />
-              <path d="m18 21 4 3" />
-            </svg>
-            <h3>Evidencia más fácil de consultar</h3>
-            <dl className={styles.pair}>
-              <div>
-                <dt>El problema</dt>
-                <dd>
-                  Revisar documentación dispersa complica las evaluaciones de
-                  compradores, auditores y autoridades.
-                </dd>
-              </div>
-              <div className={styles.proposal}>
-                <dt>La propuesta</dt>
-                <dd>
-                  Un pasaporte público accesible desde un navegador mediante QR.
-                  La información ayuda a la revisión; no sustituye una
-                  evaluación regulatoria ni una certificación oficial.
-                </dd>
-              </div>
-            </dl>
-          </article>
-        </div>
+        <SolutionShowcase slides={slides} />
       </div>
     </section>
   );
@@ -194,7 +267,7 @@ export function ParticipantsSection() {
     >
       <div className={styles.container}>
         <div className={styles.participantsIntroduction} data-landing-reveal>
-          <p className="eyebrow">Diseñado para el comercio B2B</p>
+          <p className="eyebrow">Para cada lado de la operación</p>
           <h2 id="participants-heading" className={styles.heading}>
             Más claridad para quienes producen y quienes compran.
           </h2>
@@ -203,12 +276,19 @@ export function ParticipantsSection() {
         <div className={styles.participantsGrid}>
           <article className={styles.participantCard} data-landing-reveal>
             <ProducerStructureWidget />
-            <h3>Para productores</h3>
-            <p className="text-muted">
-              Presentá el origen y la evidencia de tus lotes en una estructura
-              común. Coordiná la auditoría y las condiciones comerciales sin
-              depender de información dispersa.
-            </p>
+            <p className={`eyebrow ${styles.participantLabel}`}>Productor</p>
+            <h3>Cobrás cuando entregás el título.</h3>
+            <ul className={styles.participantList}>
+              <li>
+                El pago del comprador llega en la misma transacción que
+                transfiere el título digital.
+              </li>
+              <li>
+                Declarás el certificado de planta una sola vez y cada lote lo
+                referencia.
+              </li>
+              <li>El historial del lote queda verificable por cualquiera.</li>
+            </ul>
           </article>
 
           <article
@@ -217,33 +297,24 @@ export function ParticipantsSection() {
             data-landing-delay="50"
           >
             <BuyerReviewWidget />
-            <h3>Para compradores</h3>
-            <p className="text-muted">
-              Revisá los datos declarados, la documentación y la evaluación del
-              auditor antes de decidir. Identificá qué evidencia respalda cada
-              lote y qué queda pendiente de comprobar.
-            </p>
+            <p className={`eyebrow ${styles.participantLabel}`}>Comprador</p>
+            <h3>Pagás solo si recibís el título.</h3>
+            <ul className={styles.participantList}>
+              <li>
+                El pago y el título digital cambian de manos en la misma
+                transacción: no hay ventana de riesgo.
+              </li>
+              <li>
+                Verificás el certificado de planta y el historial del lote antes
+                y después de liquidar.
+              </li>
+              <li>
+                Confirmás la recepción con la redención, que cierra el ciclo con
+                evidencia permanente.
+              </li>
+            </ul>
           </article>
         </div>
-
-        <aside className={styles.auditorNote} data-landing-reveal>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6l8-3Z" />
-            <path d="m8 12 3 3 5-6" />
-          </svg>
-          <p>
-            Los auditores aportan una evaluación independiente. El pasaporte
-            organiza la evidencia; no reemplaza su criterio profesional.
-          </p>
-        </aside>
       </div>
     </section>
   );

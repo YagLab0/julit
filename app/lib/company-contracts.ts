@@ -2,7 +2,7 @@ import type { CompanyType } from "./company";
 
 /**
  * Contracts link one producer with one buyer — the only commercial pair the
- * lot lifecycle knows (ADR-0012). Either party may initiate; `initiator_id`
+ * lot lifecycle knows (ADR-0019). Either party may initiate; `initiator_id`
  * on the row records who offered, so the posture is derived per contract,
  * never from company types.
  */

@@ -11,19 +11,20 @@ export function PassportSection() {
       <div className={styles.container}>
         <div className={styles.passportLayout}>
           <div className={styles.passportCopy} data-landing-reveal>
-            <p className="eyebrow">Pasaporte digital de lote</p>
+            <p className="eyebrow">El Pasaporte del lote</p>
             <h2 id="passport-heading" className={styles.heading}>
-              La evidencia de cada lote, en un solo lugar.
+              El historial de cada lote, en un solo lugar.
             </h2>
             <p className={styles.description}>
-              Una estructura común para consultar de dónde proviene el litio,
-              qué datos se declararon y qué documentación respalda la evaluación
-              del auditor.
+              El Pasaporte es la vista pública del ciclo de vida del lote: su
+              título, sus transacciones y su certificado de planta, verificables
+              por cualquiera.
             </p>
             <p className={styles.integrityNote}>
-              Verificar la integridad de un documento no demuestra por sí solo
-              que sus datos sean verdaderos ni que una muestra corresponda al
-              cargamento físico.
+              El título digital representa un derecho contractual sobre el lote;
+              no es un título legal automático. Comprobar el certificado prueba
+              que el documento coincide con la versión registrada, no la verdad
+              de su contenido.
             </p>
           </div>
 
@@ -37,48 +38,48 @@ export function PassportSection() {
                 <div className={styles.documentMasthead}>
                   <span className={styles.widgetBrand}>JuLit</span>
                   <span className={styles.documentEdition}>
-                    Registro de evidencia
+                    Registro del lote
                   </span>
                 </div>
                 <div className={styles.documentHeader}>
                   <p className={styles.documentTitle}>
                     Pasaporte
                     <br />
-                    digital de lote
+                    del lote
                   </p>
                   <span className={styles.documentMaterial}>Li₂CO₃</span>
                 </div>
                 <ol className={styles.fields}>
                   {[
                     {
-                      title: "Origen y productor",
+                      title: "Lote, origen y productor",
                       description:
-                        "Procedencia del material e identidad del productor.",
+                        "Identidad del lote, procedencia del material y productor declarante.",
                     },
                     {
-                      title: "Cantidad y pureza química",
+                      title: "Cantidad, pureza y precio",
                       description:
-                        "Volumen declarado y composición del carbonato.",
+                        "Volumen declarado, composición del carbonato y condiciones del lote.",
                     },
                     {
-                      title: "Huella hídrica y de carbono",
+                      title: "Certificado de planta",
                       description:
-                        "Datos ambientales asociados a la producción.",
+                        "Documento de la planta y su referencia de integridad registrada.",
                     },
                     {
-                      title: "Informe del auditor",
+                      title: "Título digital",
                       description:
-                        "Documento que respalda la evaluación del lote.",
+                        "El NFT del lote y la custodia que lo resguarda hasta la liquidación.",
                     },
                     {
-                      title: "Referencia de integridad",
+                      title: "Estado del ciclo",
                       description:
-                        "Huella digital para contrastar la versión del informe.",
+                        "Listado, liquidado o redimido: dónde está el lote en su recorrido.",
                     },
                     {
-                      title: "Estado del lote",
+                      title: "Transacciones",
                       description:
-                        "Situación del lote dentro del proceso comercial.",
+                        "Registro, liquidación y redención, enlazadas a la cadena.",
                     },
                   ].map((field, index) => (
                     <li key={field.title} className={styles.field}>
@@ -106,7 +107,8 @@ export function PassportSection() {
               </div>
             </ProcessWidgetMotion>
             <figcaption className={styles.conceptCaption}>
-              Vista conceptual del pasaporte. No representa un lote real.
+              Vista conceptual del pasaporte. No representa un lote real ni
+              resultados verificados.
             </figcaption>
           </figure>
         </div>
@@ -136,67 +138,75 @@ export function FaqSection() {
         >
           <details className={styles.question}>
             <summary>
-              <span>¿Qué puedo explorar hoy?</span>
+              <span>¿Los tokens y la liquidación tienen valor real?</span>
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              La demo permite recorrer el mapa y el catálogo de orígenes de
-              JuLit. Las identidades de productores y orígenes utilizadas en la
-              demostración son ficticias. La liquidación es simulada y no
-              implica pagos reales.
+              No. La demo corre en Solana Devnet con dUSDC, un token de prueba
+              creado por el proyecto. Las transacciones son reales — se ejecutan
+              y quedan registradas en la cadena — pero los tokens no tienen
+              valor comercial.
             </p>
           </details>
 
           <details className={styles.question}>
             <summary>
-              <span>¿JuLit paga actualmente en USDC?</span>
+              <span>¿Qué es el título digital del lote?</span>
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. La liquidación B2B en USDC sobre Solana forma parte de la
-              propuesta del producto. La demo no transfiere tokens ni acredita
-              fondos recibidos.
+              Un NFT que representa el derecho contractual sobre el lote. Vive
+              en custodia del protocolo desde el registro hasta la liquidación,
+              y se quema cuando el comprador confirma la recepción. Es una
+              representación digital de ese derecho, no un título legal
+              automático.
             </p>
           </details>
 
           <details className={styles.question}>
             <summary>
-              <span>¿Qué demuestra la huella digital del informe?</span>
+              <span>¿Qué verifica el certificado de planta?</span>
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              Permite comprobar que el archivo coincide con la versión
-              registrada. No certifica por sí sola la veracidad de sus
-              afirmaciones, el cumplimiento ambiental ni la correspondencia
-              física entre una muestra y un cargamento.
+              Que el documento coincide con la versión registrada: se compara el
+              resumen SHA-256 del PDF con la referencia declarada en el lote.
+              Prueba la integridad del documento, no la verdad de su contenido.
             </p>
           </details>
 
           <details className={styles.question}>
             <summary>
-              <span>
-                ¿El pasaporte garantiza el cumplimiento de la normativa europea?
-              </span>
+              <span>¿La entrega física pasa por JuLit?</span>
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. El pasaporte digital de lote de JuLit organiza información y
-              evidencia para su revisión. No equivale al pasaporte oficial de
-              una batería ni sustituye los requisitos legales, las evaluaciones
-              o las certificaciones aplicables.
+              No. El transporte y la recepción del cargamento ocurren fuera del
+              protocolo. La redención es la confirmación en la cadena de que la
+              entrega se concretó, no el mecanismo de entrega.
             </p>
           </details>
 
           <details className={styles.question}>
             <summary>
-              <span>¿Necesito una wallet para consultar un pasaporte?</span>
+              <span>¿Puedo comprar cualquier lote listado?</span>
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              La propuesta contempla una consulta pública desde el navegador,
-              sin instalar una wallet. Las operaciones en cadena requieren una
-              wallet. La sección de pasaporte de esta landing es explicativa, no
-              una verificación de un lote real.
+              No. Todo lote nace reservado a un comprador designado: el acuerdo
+              comercial se negocia entre las empresas y solo el comprador
+              designado puede ejecutar la liquidación. No hay compra abierta.
+            </p>
+          </details>
+
+          <details className={styles.question}>
+            <summary>
+              <span>¿Quiénes aparecen en el demo?</span>
+              <span className={styles.disclosureMarker} aria-hidden="true" />
+            </summary>
+            <p className={styles.answer}>
+              Empresas, orígenes y lotes ficticios creados para la demostración.
+              No representan operaciones ni compañías reales.
             </p>
           </details>
         </div>

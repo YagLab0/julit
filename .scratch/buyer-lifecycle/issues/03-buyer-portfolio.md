@@ -5,7 +5,7 @@
 
 ## Description
 
-Implement dual placement of the buyer portfolio in `/account` and `/batches` in accordance with ADR-0008.
+Implement dual placement of the buyer portfolio in `/account` and `/batches` in accordance with ADR-0012.
 
 ## Acceptance Criteria
 

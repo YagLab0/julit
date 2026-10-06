@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { address } from "@solana/kit";
 import { fetchMaybeLot, findLotPda } from "../../generated/julit";
-import { Chip } from "../../batches/components/lot-display";
+import { Chip } from "../../explorer/components/lot-display";
 import { createSolanaClient } from "../../lib/solana-client";
 import {
   contrastLotRecord,

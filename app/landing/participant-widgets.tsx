@@ -1,86 +1,114 @@
-import { ProcessWidgetMotion } from "./process-widget-motion";
 import styles from "./participant-widgets.module.css";
 
-function EvidenceMark() {
+function Skeleton({ w }: { w: number }) {
+  return <span className={styles.skel} style={{ width: w }} />;
+}
+
+function BeamSvg({ className }: { className: string }) {
+  const paths = [
+    "M38 0C38 40 120 36 120 92",
+    "M120 0V92",
+    "M202 0C202 40 120 36 120 92",
+  ];
   return (
-    <svg viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M4 1.5h5.5L13 5v9.5H4z" />
-      <path d="M9.5 1.5V5H13M6.5 8.5h4M6.5 11.5h4" />
+    <svg
+      className={className}
+      viewBox="0 0 240 92"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      {paths.map((d) => (
+        <path key={d} d={d} className={styles.beamGhost} />
+      ))}
+      {paths.map((d, i) => (
+        <path
+          key={`live-${d}`}
+          d={d}
+          className={styles.beamLive}
+          style={{ animationDelay: `${i * 0.6}s` }}
+        />
+      ))}
     </svg>
   );
 }
 
+const producerSources = ["Origen", "Cert. de planta", "Lote 0042"];
+
 export function ProducerStructureWidget() {
   return (
-    <ProcessWidgetMotion className={styles.stage} decorative continuous>
+    <div className={styles.stage} aria-hidden="true">
       <div className={styles.grid} />
-      <svg
-        className={styles.flow}
-        viewBox="0 0 100 36"
-        preserveAspectRatio="none"
-      >
-        <path className={styles.ghost} d="M22 0C22 24 50 24 50 36" />
-        <path className={styles.ghost} d="M78 0C78 24 50 24 50 36" />
-        <path
-          className={styles.live}
-          data-process-draw=""
-          d="M22 0C22 24 50 24 50 36"
-        />
-        <path
-          className={styles.live}
-          data-process-draw=""
-          d="M78 0C78 24 50 24 50 36"
-        />
-      </svg>
-      <div className={`${styles.pole} ${styles.origin}`}>
-        <span className={styles.originMark} />
-        <span>Origen</span>
+      <div className={styles.beamFlow}>
+        <div className={styles.sources}>
+          {producerSources.map((label) => (
+            <div className={styles.sourceCard} key={label}>
+              <span className={styles.sourceLabel}>{label}</span>
+              <Skeleton w={44} />
+              <Skeleton w={30} />
+            </div>
+          ))}
+        </div>
+        <BeamSvg className={styles.beams} />
+        <div className={styles.hub}>
+          <span className={styles.hubDot} />
+          Título digital
+        </div>
+        <span className={styles.flowLine} />
+        <div className={styles.docCard}>
+          <div className={styles.docHead}>
+            <span className={styles.docTitle}>Cobro</span>
+            <span className={styles.docChip}>USDC</span>
+          </div>
+          <Skeleton w={86} />
+          <Skeleton w={64} />
+          <div className={styles.docTotal} />
+        </div>
       </div>
-      <div className={`${styles.pole} ${styles.evidence}`}>
-        <span className={styles.evidenceMark}>
-          <EvidenceMark />
-        </span>
-        <span>Evidencia</span>
-      </div>
-      <div className={styles.structure}>
-        <span className={styles.structureDot} />
-        Estructura
-      </div>
-    </ProcessWidgetMotion>
+    </div>
   );
 }
 
-const backed = ["Datos", "Documentación", "Evaluación"] as const;
-
 export function BuyerReviewWidget() {
   return (
-    <ProcessWidgetMotion className={styles.stage} decorative continuous>
+    <div className={styles.stage} aria-hidden="true">
       <div className={styles.grid} />
-      <div className={styles.review}>
-        <div className={styles.linked}>
-          <span className={styles.spineGhost} />
-          <span className={styles.spineLive} data-process-fill="" />
-          {backed.map((label) => (
-            <div className={styles.station} key={label}>
-              <span className={styles.node} data-process-node="">
-                <span className={styles.nodePaint} data-process-paint="" />
-              </span>
-              <span>{label}</span>
-            </div>
-          ))}
-          <div className={`${styles.station} ${styles.settled}`}>
-            <span className={styles.node} data-process-node="">
-              <span className={styles.nodePaint} data-process-paint="" />
-            </span>
-            <span>Respaldo</span>
+      <div className={styles.stackFlow}>
+        <div className={styles.stackCard}>
+          <div className={styles.stackHead}>
+            <svg viewBox="0 0 24 24" className={styles.stackIcon}>
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <line x1="2" x2="22" y1="10" y2="10" />
+            </svg>
+            <span>Pago</span>
+            <span className={styles.stackMeta}>USDC</span>
+          </div>
+          <Skeleton w={120} />
+        </div>
+        <span className={styles.flowLine} />
+        <div className={`${styles.stackCard} ${styles.confirmed}`}>
+          <svg viewBox="0 0 24 24" className={styles.checkIcon}>
+            <circle cx="12" cy="12" r="10" />
+            <path d="m9 12 2 2 4-4" fill="none" />
+          </svg>
+          <div>
+            <span className={styles.confirmedTitle}>Liquidación</span>
+            <span className={styles.confirmedSub}>confirmada en una tx</span>
           </div>
         </div>
-        <div className={styles.pendingStation}>
-          <span className={styles.approach} data-process-retreat="" />
-          <span className={styles.ring} />
-          <span>Pendiente</span>
+        <span className={styles.flowLine} />
+        <div className={styles.stackCard}>
+          <div className={styles.stackHead}>
+            <svg viewBox="0 0 24 24" className={styles.stackIcon}>
+              <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+            </svg>
+            <span>Título</span>
+            <span className={styles.stackMeta}>NFT · 1</span>
+          </div>
+          <Skeleton w={110} />
+          <Skeleton w={80} />
+          <div className={styles.docTotal} />
         </div>
       </div>
-    </ProcessWidgetMotion>
+    </div>
   );
 }

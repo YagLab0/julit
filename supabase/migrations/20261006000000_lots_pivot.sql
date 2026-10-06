@@ -1,6 +1,6 @@
 begin;
 
--- Pivot rewrite (ADR-0012): the auditor model is dropped in place. The index
+-- Pivot rewrite (ADR-0019): the auditor model is dropped in place. The index
 -- mirrors the on-chain lot lifecycle: listed -> funded -> redeemed, with
 -- disputed and claimed branches from funded, and cancelled before funding.
 -- Demo data is discarded; the seed file provisions the new accounts.

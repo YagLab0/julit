@@ -21,7 +21,7 @@ import {
   findMetadataPda,
 } from "../../lib/solana/metaplex";
 import { useCluster } from "../../components/cluster-context";
-import type { ProducerInfo } from "./new-batch-client";
+import type { ProducerInfo } from "./new-lot-client";
 import {
   validateLotForm,
   type LotFormValues,
@@ -397,7 +397,7 @@ export function RegisterLotForm({
           </span>
         </p>
         <div className="flex gap-2">
-          <Link href="/batches" className="btn-secondary">
+          <Link href="/explorer" className="btn-secondary">
             Volver al catálogo
           </Link>
           <button

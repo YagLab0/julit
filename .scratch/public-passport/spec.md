@@ -1,6 +1,6 @@
 # Spec: Public passport and QR access
 
-> **Superseded** by `.scratch/atomic-lot-settlement/spec.md` (ADR-0012): the batch/auditor model was replaced by escrowed lot settlement. This spec is kept for history only — do not implement from it.
+> **Superseded** by `.scratch/atomic-lot-settlement/spec.md` (ADR-0019): the batch/auditor model was replaced by escrowed lot settlement. This spec is kept for history only — do not implement from it.
 
 **Status:** superseded
 
@@ -58,7 +58,7 @@ download for printing or attaching to batch documentation.
     compare them with the salar's figures.
 11. As a visitor, I want the passport to show the product record only — no
     price, no reservation and no buyer — so commercial terms stay in the
-    catalogue (ADR-0009).
+    catalogue (ADR-0013).
 12. As a visitor of a Batch that is not yet certified, I want a clear
     "Certificación pendiente" state without findings or certificate, so the
     absence of evidence is explicit, not hidden.
@@ -122,7 +122,7 @@ download for printing or attaching to batch documentation.
 
 32. As a visitor, I want audited surfaces to appear only for genuinely
     certified Batches — the index is not seeded with fake audited rows — so
-    the demo never presents unverifiable evidence (ADR-0009).
+    the demo never presents unverifiable evidence (ADR-0013).
 33. As a visitor, I want loading and error states for every asynchronous read
     (index, chain, certificate), so no surface fabricates data.
 34. As a visitor, I want numbers and dates formatted `es-AR`, so the demo
@@ -174,7 +174,7 @@ download for printing or attaching to batch documentation.
   ×100, water/carbon ×100, price ×1 000 000) — never through JavaScript
   `Number`. Contrasted fields: PDA derivation, programme address, batch id,
   producer, origin, volume, purity, water, carbon, status. Price, reservation
-  and buyer are out of the contrast along with the display (ADR-0009).
+  and buyer are out of the contrast along with the display (ADR-0013).
 
 - **Contrast island**: uses the generated Codama client and
   `createSolanaClient("devnet")` — `findBatchPda` for the derivation check and
@@ -230,7 +230,7 @@ download for printing or attaching to batch documentation.
   The production index's two `created` batches exercise entry, QR, record
   contrast and the pending state. The audited/certificate surface is
   exercised locally only: a disposable audited row and a fixture PDF in the
-  **local** stack, never in production (ADR-0009).
+  **local** stack, never in production (ADR-0013).
 
 ## Out of Scope
 
@@ -250,7 +250,7 @@ download for printing or attaching to batch documentation.
   Its `@program` scenario describes the certificate comparison once
   certification exists on-chain; today's staged label implements the `@ui`
   half.
-- Decisions: ADR-0009 (scope and content), ADR-0010 (staged certificate
+- Decisions: ADR-0013 (scope and content), ADR-0010 (staged certificate
   verification), ADR-0011 (record contrast). Glossary terms used: Passport,
   Certificate Verification, Batch, Origin, Producer, Audited Batch.
 - The generated Codama client and the PDA derivation were exercised against

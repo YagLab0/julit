@@ -39,7 +39,7 @@ catalogue through anonymous reads; no simulated batch data ships (ADR-0007).
   `.btn-secondary` = secondary actions (neutral outline, theme-aware),
   `.eyebrow` = section labels. Never rebuild these styles inline.
 - Retheme: change the brand scale in `globals.css` + the matching values
-  in `app/batches/components/brand.ts` (JS realm: MapLibre paint +
+  in `app/explorer/components/brand.ts` (JS realm: MapLibre paint +
   WebGPU shader can't read CSS vars). Map markers reference the same
   vars (`var(--color-brand-600)`); route colors stay in `map-style.ts`
   (map-semantic, not brand). Status colors (amber/emerald) stay fixed.

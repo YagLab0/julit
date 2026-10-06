@@ -9,7 +9,7 @@ export default function PassportNotFound() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-6 py-4">
-        <Link href="/batches" className="text-sm font-bold tracking-tight">
+        <Link href="/explorer" className="text-sm font-bold tracking-tight">
           JuLit
         </Link>
         <ThemeToggle />
@@ -24,7 +24,7 @@ export default function PassportNotFound() {
           <p className="mt-2 text-sm text-muted">
             No hay ningún lote indexado con esta dirección.
           </p>
-          <Link href="/batches" className="btn-secondary mt-5 inline-block">
+          <Link href="/explorer" className="btn-secondary mt-5 inline-block">
             Ver el catálogo
           </Link>
         </div>

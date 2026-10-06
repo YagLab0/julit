@@ -12,7 +12,7 @@ download failure are distinct states and a failure yields no verdict. The
 section renders only when the indexed row carries a digest and certificate
 path. Exercised with a disposable local fixture — an audited row plus a
 fixture PDF whose SHA-256 matches, and a tampered copy for the mismatch — in
-the local stack only; production is never seeded (ADR-0009).
+the local stack only; production is never seeded (ADR-0013).
 
 **Blocked by:** 01 (the page the section renders on)
 

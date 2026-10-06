@@ -9,7 +9,7 @@ signature and never moves funds. The pivot turns JuLit into a B2B industrial
 directory plus a real delivery-vs-payment protocol: each lot mints a Digital
 Title (Metaplex NFT) into escrow, the designated buyer funds an escrowed USDC
 payment, and the buyer's receipt confirmation releases the funds. Adversarial
-review (`.scratch/business-model-validation/`, ADR-0012) established that
+review (`.scratch/business-model-validation/`, ADR-0019) established that
 pay-first settlement exposes the buyer worse than a letter of credit and
 leaves redemption without incentive — so the USDC is custodied in the Lot
 PDA's escrow and `redeem_lot` is the payment trigger. The auditor role is
@@ -155,7 +155,7 @@ transfer-in-transit attacks impossible by construction.
   rather than extending it.
 - **Dispute exit**: none on-chain besides buyer `redeem_lot`. A `disputed`
   lot without resolution stays frozen — accepted risk, documented in
-  ADR-0012. No refund path in v1.
+  ADR-0019. No refund path in v1.
 - **Cancellation**: producer-signed, `listed` only.
 - **Dependencies**: `anchor-spl` (token + ATA CPI) and `mpl-token-metadata`
   pinned against `anchor-lang` 0.32.1 — resolve the pin first, it is the
@@ -173,7 +173,7 @@ transfer-in-transit attacks impossible by construction.
   project discards current demo data — accepted.
 - **Frontend**: `@solana-program/token` added for ATA derivation in the
   browser; purchase modal and passport reworked; `/audit/*` removed.
-- **Vocabulary**: `GLOSSARY.md` and ADR-0012 are canonical — Lot, Digital
+- **Vocabulary**: `GLOSSARY.md` and ADR-0019 are canonical — Lot, Digital
   Title, Escrow, Funding, Redemption, Take Rate, Claimable After, Timeout
   Claim, Dispute, Cancellation, Plant Certification. Do not reintroduce
   Batch/Auditor/settled language.
@@ -210,7 +210,7 @@ transfer-in-transit attacks impossible by construction.
 
 - Business validation artifacts (bull/bear debate + signed consensus) live
   in `.scratch/business-model-validation/`; the escrow redesign rationale is
-  ADR-0012.
+  ADR-0019.
 - Extracted text of the pivot plan: `.scratch/pivot-changes-extracted.txt`.
 - Known risks, in order: `mpl-token-metadata` pin vs anchor 0.32.1 (resolve
   first), `create_lot` transaction size (split/LUT fallback), seed script

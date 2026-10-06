@@ -98,7 +98,7 @@ export async function GET() {
 
 /**
  * Creates a contract offer between a producer and a buyer — the only
- * sanctioned pair (ADR-0012). Either side may initiate.
+ * sanctioned pair (ADR-0019). Either side may initiate.
  * Supports both on-chain SPL Memo / cryptographic signatures and direct offers.
  */
 export async function POST(request: Request) {

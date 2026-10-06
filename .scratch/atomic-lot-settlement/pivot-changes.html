@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>JuLit — Plan de pivote: liquidación atómica</title>
+<style>
+  @font-face {
+    font-family: "Inter";
+    src: url("data:font/woff2;base64,{{INTER_B64}}") format("woff2");
+    font-weight: 100 900;
+  }
+  @font-face {
+    font-family: "Geist Mono";
+    src: url("data:font/woff2;base64;{{GEIST_B64}}") format("woff2");
+    font-weight: 100 900;
+  }
+
+  :root {
+    --brand-50: #f0fdfa;
+    --brand-100: #ccfbf1;
+    --brand-200: #99f6e4;
+    --brand-400: #2dd4bf;
+    --brand-600: #0d9488;
+    --brand-700: #0f766e;
+    --brand-900: #134e4a;
+    --brand-950: #042f2e;
+    --ink: #182c29;
+    --muted: #586b66;
+    --faint: #7d918b;
+    --border: #dce5e1;
+    --border-low: #eaf0ed;
+    --tint: #f4f7f5;
+    --accent: #edf4f0;
+    --inverse: #102e29;
+    --on-inverse: #ffffff;
+    --on-inverse-muted: #c3d4cb;
+    --red: #b91c1c;
+    --red-bg: #fef2f2;
+    --green-bg: #ecfdf5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @page { size: A4; margin: 13mm 15mm 15mm; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.5;
+    color: var(--ink);
+    font-feature-settings: "cv05", "ss01";
+  }
+
+  /* ---------- cover band ---------- */
+  .cover {
+    background: var(--inverse);
+    color: var(--on-inverse);
+    border-radius: 14px;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .cover .logo { flex-shrink: 0; }
+  .cover-text { flex: 1; }
+  .cover .kicker {
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--brand-400);
+    margin-bottom: 5px;
+  }
+  .cover h1 {
+    font-size: 21pt;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .cover .sub {
+    margin-top: 6px;
+    font-size: 9.5pt;
+    color: var(--on-inverse-muted);
+    max-width: 150mm;
+  }
+  .cover .meta {
+    margin-top: 12px;
+    font-family: "Geist Mono", monospace;
+    font-size: 7pt;
+    color: var(--on-inverse-muted);
+    display: flex;
+    gap: 14px;
+  }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 7mm; break-inside: avoid; }
+  .eyebrow {
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brand-700);
+  }
+  h2 {
+    font-size: 13pt;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 1mm 0 2.5mm;
+  }
+  h3 { font-size: 9.5pt; font-weight: 700; margin-bottom: 1.5mm; }
+  p { margin-bottom: 2mm; }
+  p.muted, .muted { color: var(--muted); }
+  strong { font-weight: 700; }
+  code, .mono {
+    font-family: "Geist Mono", ui-monospace, monospace;
+    font-size: 8pt;
+    background: var(--tint);
+    border: 1px solid var(--border-low);
+    border-radius: 4px;
+    padding: 0 3px;
+  }
+
+  /* ---------- flow diagram ---------- */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 3mm 0 1mm;
+  }
+  .flow .step {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 9px;
+    background: #fff;
+  }
+  .flow .step.onchain { background: var(--brand-50); border-color: var(--brand-200); }
+  .flow .step .tag {
+    font-size: 6.5pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .flow .step.onchain .tag { color: var(--brand-700); }
+  .flow .step .name { font-weight: 700; font-size: 9pt; margin-top: 1px; }
+  .flow .step .desc { font-size: 7.5pt; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .flow .arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    color: var(--brand-600);
+    flex-shrink: 0;
+  }
+
+  /* ---------- cards & tables ---------- */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    break-inside: avoid;
+  }
+  .card.tint { background: var(--tint); border-color: var(--border-low); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  th {
+    text-align: left;
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    padding: 4px 8px 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 4px 8px 4px 0;
+    border-bottom: 1px solid var(--border-low);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  ul { padding-left: 4mm; }
+  li { margin-bottom: 1mm; }
+  li::marker { color: var(--brand-600); }
+
+  .pill {
+    display: inline-block;
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 1px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .pill.new { background: var(--green-bg); border-color: #a7f3d0; color: #047857; }
+  .pill.del { background: var(--red-bg); border-color: #fecaca; color: var(--red); }
+  .pill.mod { background: var(--brand-50); border-color: var(--brand-200); color: var(--brand-700); }
+
+  .decisions { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5mm; }
+  .decision {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--brand-600);
+    border-radius: 8px;
+    padding: 7px 10px;
+  }
+  .decision .q { font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+  .decision .a { font-size: 9pt; font-weight: 700; margin-top: 1px; }
+  .decision .d { font-size: 8pt; color: var(--muted); margin-top: 1px; }
+
+  .lane {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1.6mm;
+  }
+  .lane .n {
+    width: 16px; height: 16px;
+    border-radius: 999px;
+    background: var(--brand-700);
+    color: #fff;
+    font-size: 7.5pt;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .lane .t { font-weight: 600; }
+  .lane .d { color: var(--muted); font-size: 8.5pt; }
+
+  .callout {
+    border: 1px solid var(--brand-200);
+    background: var(--brand-50);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 8.5pt;
+  }
+  .callout.warn { border-color: #fde68a; background: #fffbeb; }
+  .callout .ttl { font-weight: 700; color: var(--brand-900); }
+  .callout.warn .ttl { color: #92400e; }
+
+  .footnote {
+    margin-top: 6mm;
+    padding-top: 3mm;
+    border-top: 1px solid var(--border);
+    font-size: 7.5pt;
+    color: var(--faint);
+    display: flex;
+    justify-content: space-between;
+    font-family: "Geist Mono", monospace;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <svg class="logo" width="52" height="52" viewBox="0 0 32 32" fill="none">
+    <rect width="32" height="32" rx="8" fill="#0f766e"/>
+    <path d="M16 4 26 10v12l-10 6-10-6V10Z" stroke="#ffffff" stroke-width="1.4"/>
+    <path d="M20 10v9a4 4 0 0 1-8 0" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <div class="cover-text">
+    <div class="kicker">JuLit · Plan de pivote</div>
+    <h1>De microauditorías a liquidación<br>atómica de lotes (RWA / DvP)</h1>
+    <div class="sub">
+      Directorio industrial B2B + protocolo de entrega-contra-pago sobre Solana Devnet.
+      El lote se tokeniza como NFT en escrow, se liquida en una transacción atómica en USDC
+      y se redime (burn) al confirmarse la entrega física.
+    </div>
+    <div class="meta">
+      <span>SOLANA DEVNET</span>
+      <span>ANCHOR 0.32.1</span>
+      <span>NEXT.JS 16 · SUPABASE</span>
+      <span>OCT 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODELO ============ -->
+<section>
+  <div class="eyebrow">01 · El nuevo ciclo de vida</div>
+  <h2>Cinco pasos, tres de ellos on-chain</h2>
+  <div class="flow">
+    <div class="step">
+      <div class="tag">off-chain</div>
+      <div class="name">Descubrimiento</div>
+      <div class="desc">Directorio B2B: origen, capacidad, pureza de planta. Deal privado entre empresas.</div>
+    </div>
+    <div class="arrow"><svg width="14" height="10" viewBox="0 0 14 10"><path d="M0 5h11M8 1l4 4-4 4" stroke="#0d9488" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></div>
+    <div class="step onchain">
+      <div class="tag">on-chain</div>
+      <div class="name">create_lot</div>
+      <div class="desc">Lot PDA + NFT Metaplex (supply 1) minteado al escrow del PDA. Comprador reservado.</div>
+    </div>
+    <div class="arrow"><svg width="14" height="10" viewBox="0 0 14 10"><path d="M0 5h11M8 1l4 4-4 4" stroke="#0d9488" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></div>
+    <div class="step onchain">
+      <div class="tag">on-chain · DvP</div>
+      <div class="name">settle_lot</div>
+      <div class="desc">USDC comprador → minera (− take rate a treasury) + NFT escrow → comprador. Atómico.</div>
+    </div>
+    <div class="arrow"><svg width="14" height="10" viewBox="0 0 14 10"><path d="M0 5h11M8 1l4 4-4 4" stroke="#0d9488" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></div>
+    <div class="step">
+      <div class="tag">off-chain</div>
+      <div class="name">Entrega física</div>
+      <div class="desc">Logística, aduana y recepción del cargamento. Fuera del protocolo.</div>
+    </div>
+    <div class="arrow"><svg width="14" height="10" viewBox="0 0 14 10"><path d="M0 5h11M8 1l4 4-4 4" stroke="#0d9488" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></div>
+    <div class="step onchain">
+      <div class="tag">on-chain</div>
+      <div class="name">redeem_lot</div>
+      <div class="desc">El comprador firma recepción: burn del NFT + status Redeemed. Rastro permanente.</div>
+    </div>
+  </div>
+  <p class="muted" style="font-size:8.5pt">
+    Estados del Lot PDA: <code>Listed</code> (NFT en escrow) → <code>Settled</code> (DvP ejecutado) →
+    <code>Redeemed</code> (NFT quemado). El burn no borra el historial: mint, pago, transferencia y
+    redención quedan verificables.
+  </p>
+</section>
+
+<!-- ============ DECISIONES ============ -->
+<section>
+  <div class="eyebrow">02 · Decisiones cerradas</div>
+  <div class="decisions">
+    <div class="decision">
+      <div class="q">NFT del lote</div>
+      <div class="a">Metaplex Token Standard (NonFungible)</div>
+      <div class="d">Mint + metadata + master edition creados por el programa vía CPI; update authority = Lot PDA.</div>
+    </div>
+    <div class="decision">
+      <div class="q">Moneda de liquidación</div>
+      <div class="a">Mint propio dUSDC en Devnet</div>
+      <div class="d">6 decimales, airdrop a wallets demo desde el seed. Control total, sin faucets.</div>
+    </div>
+    <div class="decision">
+      <div class="q">Rol auditor</div>
+      <div class="a">Eliminado por completo</div>
+      <div class="d">La certificación pasa a nivel planta: PDF + SHA-256 declarado por el producer, verificación pública por hash.</div>
+    </div>
+    <div class="decision">
+      <div class="q">Compra</div>
+      <div class="a">Solo lotes reservados</div>
+      <div class="d">Todo lote nace con comprador designado; no hay compra spot ni góndola abierta.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CAMBIOS POR CAPA ============ -->
+<section>
+  <div class="eyebrow">03 · Programa Anchor — reescritura mayor</div>
+  <table>
+    <tr><th style="width:22%">Instrucción</th><th style="width:12%"></th><th>Cambio</th></tr>
+    <tr>
+      <td><code>initialize</code></td><td><span class="pill new">nueva</span></td>
+      <td>Config PDA: admin, <code>fee_bps</code>, <code>usdc_mint</code>, treasury.</td>
+    </tr>
+    <tr>
+      <td><code>create_lot</code></td><td><span class="pill mod">reemplaza create_batch</span></td>
+      <td>Lot PDA + mint PDA + metadata/master edition (CPI Metaplex) + escrow ATA + mint_to 1. Buyer obligatorio, plant_cert_hash.</td>
+    </tr>
+    <tr>
+      <td><code>settle_lot</code></td><td><span class="pill new">nueva</span></td>
+      <td>DvP atómico: USDC comprador → minera con fee a treasury; NFT escrow → comprador. Signer = buyer.</td>
+    </tr>
+    <tr>
+      <td><code>redeem_lot</code></td><td><span class="pill new">nueva</span></td>
+      <td>Burn del NFT firmado por el comprador + cierre de escrow + status Redeemed.</td>
+    </tr>
+    <tr>
+      <td><code>certify_batch</code></td><td><span class="pill del">borrada</span></td>
+      <td>Sin auditor por lote: fuera Audit PDA, esg_approved, eu_assessment, estados Audited/Completed.</td>
+    </tr>
+  </table>
+  <p class="muted" style="margin-top:2mm">
+    Dependencias nuevas: <code>anchor-spl</code> (token + ATA CPI) y <code>mpl-token-metadata</code>
+    (pin contra anchor-lang 0.32.1). Regenerar cliente Codama.
+  </p>
+</section>
+
+<section>
+  <div class="grid2">
+    <div>
+      <div class="eyebrow">04 · Supabase</div>
+      <h3>Schema reescrito en el lugar</h3>
+      <ul>
+        <li><code>batches</code> → <code>lots</code>: fuera campos de auditoría; dentro <code>mint_address</code>, <code>settle_tx_signature</code>, <code>redeem_tx_signature</code>, status <code>listed|settled|redeemed</code>.</li>
+        <li><code>company_type</code>: <code>producer | buyer</code>. El producer carga certificado de planta (PDF + hash).</li>
+        <li><code>company_contracts</code>: solo dirección buyer → producer.</li>
+        <li>Bucket <code>audit-certificates</code> → <code>plant-certificates</code> (mismas políticas).</li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow">05 · API</div>
+      <h3>Índice verificado por RPC</h3>
+      <ul>
+        <li><span class="pill del">borrar</span> <code>/certify</code>, <code>/certificate</code>, <code>/complete</code>.</li>
+        <li><span class="pill new">nuevo</span> <code>POST /api/lots</code>, <code>/settle</code>, <code>/redeem</code> — cada ruta fetchea la tx por RPC y valida programa, cuentas, signer y éxito antes de escribir el índice.</li>
+        <li><span class="pill new">nuevo</span> <code>POST /api/companies/plant-certificate</code> — PDF content-addressed, hash recomputado server-side.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="grid2">
+    <div>
+      <div class="eyebrow">06 · Frontend</div>
+      <h3>Transacciones reales en vez de firmas falsas</h3>
+      <ul>
+        <li><span class="pill del">borrar</span> <code>/audit/*</code> completo (dashboard, certify, inbox de contratos).</li>
+        <li><span class="pill mod">modificar</span> alta de lote: sin auditor, comprador reservado obligatorio, firma <code>create_lot</code>.</li>
+        <li><span class="pill mod">modificar</span> compra en modal de origen: visible solo al comprador designado, firma <code>settle_lot</code> (hoy genera una firma base58 aleatoria).</li>
+        <li><span class="pill new">nuevo</span> “Confirmar recepción” del buyer → <code>redeem_lot</code> con burn.</li>
+        <li><span class="pill mod">modificar</span> passport público: timeline del ciclo, mint, links a settle/burn, verificación de cert de planta.</li>
+        <li>Dep nueva: <code>@solana-program/token</code> para derivar ATAs en el browser.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow">07 · Docs y narrativa</div>
+      <h3>Lenguaje del nuevo modelo</h3>
+      <ul>
+        <li>GLOSSARY: out Auditor / Audit Certificate / ESG / EU assessment → in Lot, Digital Title, Escrow, DvP, Take Rate, Redemption, Plant Certification.</li>
+        <li>ADR-0002 (settlement simulado) superseded; ADRs nuevos: DvP atómico, título NFT + PDA de ciclo de vida, certificación de planta, lotes reservados, mint dUSDC.</li>
+        <li>Features <code>*.feature</code> reescritos; specs previos marcados superseded.</li>
+        <li>Landing + pitch: “Discover → Tokenize → Settle → Deliver → Redeem”.</li>
+      </ul>
+      <div class="callout" style="margin-top:3mm">
+        <span class="ttl">Claims seguros para el jurado.</span>
+        “Elimina el riesgo de <em>liquidación</em>” — no “de contraparte”. El NFT es la representación
+        digital de un derecho contractual sobre el lote, no título legal automático.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPLEJIDAD ============ -->
+<section>
+  <div class="eyebrow">08 · Complejidad y orden de trabajo</div>
+  <div class="card tint">
+    <div class="lane"><span class="n">1</span><span class="t">Programa + tests LiteSVM</span><span class="d">— el cuello de botella: CPI a Metaplex, mint PDA, escrow con PDA signer, split de fee</span></div>
+    <div class="lane"><span class="n">2</span><span class="t">DB + API</span><span class="d">— schema reescrito, verificación de tx por RPC, upload de cert de planta</span></div>
+    <div class="lane"><span class="n">3</span><span class="t">Frontend</span><span class="d">— alta / settle / redeem con txs reales, passport nuevo, borrado de /audit</span></div>
+    <div class="lane"><span class="n">4</span><span class="t">Docs + copy</span><span class="d">— glossary, ADRs, features, landing, pitch</span></div>
+  </div>
+  <div class="callout warn" style="margin-top:3mm">
+    <span class="ttl">Riesgos:</span> pinning de <code>mpl-token-metadata</code> contra anchor 0.32 (resolver primero);
+    tamaño de la tx de <code>create_lot</code> (fallback: instrucción split o v0 + LUT); el mint dUSDC y los
+    ATAs de las wallets demo dependen del seed script; el push al proyecto Supabase linkeado descarta la data demo actual.
+  </div>
+  <p class="muted" style="margin-top:2.5mm">
+    Estimación global: <strong>media-alta para contexto hackathon</strong>. Varias jornadas de foco; el riesgo
+    está concentrado en el programa — DB, API y front son trabajo mecánico una vez definido el IDL.
+  </p>
+  <div class="footnote">
+    <span>julit · atomic-lot-settlement</span>
+    <span>spec: .scratch/atomic-lot-settlement/spec.md</span>
+  </div>
+</section>
+
+</body>
+</html>

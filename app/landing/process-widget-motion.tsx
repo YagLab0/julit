@@ -62,43 +62,6 @@ export function ProcessWidgetMotion({
       for (const animation of animations) animation.cancel();
       animations.length = 0;
       root
-        .querySelectorAll<HTMLElement>("[data-process-write]")
-        .forEach((piece, index) => {
-          const start = 0.06 + index * 0.09;
-          const animation = piece.animate(
-            [
-              { clipPath: "inset(0 100% 0 0)", opacity: 0.4, offset: 0 },
-              { clipPath: "inset(0 100% 0 0)", opacity: 1, offset: start },
-              { clipPath: "inset(0 0% 0 0)", opacity: 1, offset: start + 0.15 },
-              { clipPath: "inset(0 0% 0 0)", opacity: 1, offset: 0.86 },
-              { clipPath: "inset(0 0% 0 0)", opacity: 0, offset: 0.96 },
-              { clipPath: "inset(0 100% 0 0)", opacity: 0, offset: 1 },
-            ],
-            { duration: 5600, iterations: Infinity, easing: "linear" }
-          );
-          animation.pause();
-          animations.push(animation);
-        });
-      root
-        .querySelectorAll<HTMLElement>("[data-process-float]")
-        .forEach((piece, index) => {
-          const animation = piece.animate(
-            [
-              { transform: "translateY(3px) rotate(-0.6deg)" },
-              { transform: "translateY(-5px) rotate(0.6deg)" },
-              { transform: "translateY(3px) rotate(-0.6deg)" },
-            ],
-            {
-              duration: 5200,
-              delay: index * -800,
-              iterations: Infinity,
-              easing: "cubic-bezier(0.45, 0, 0.55, 1)",
-            }
-          );
-          animation.pause();
-          animations.push(animation);
-        });
-      root
         .querySelectorAll<HTMLElement>("[data-process-focus]")
         .forEach((piece, index, pieces) => {
           const start = index / pieces.length;

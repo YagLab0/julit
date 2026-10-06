@@ -1,5 +1,7 @@
 # Every indexed batch has a public passport, as a product record
 
+**Status:** the commercial-terms clause is superseded — under the settlement model (ADR-0014, ADR-0017) the lot price travels in the public on-chain settlement transaction, so the passport may display it. The rest of this decision stands.
+
 The public passport at `/batch/<PDA_ADDRESS>` exists for every batch in the public index, not only for certified ones. The page is status-aware: a `created` batch shows its origin, declared production and sustainability metrics, and a certification-pending state with no findings and no certificate; an `audited` or `completed` batch adds the audit certificate and the auditor's findings, displayed explicitly including negative ones ([ADR-0004](./0004-auditor-declarations-and-shared-evidence.md)).
 
 The passport carries the product record the glossary defines — origin, production metrics, sustainability metrics, and certification evidence. Commercial terms stay in the catalogue: Batch Price, reservation and buyer assignment belong to the catalogue and purchase surfaces, never to the passport.

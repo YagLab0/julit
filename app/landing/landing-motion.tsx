@@ -1,5 +1,6 @@
 "use client";
 
+import Lenis from "lenis";
 import { useEffect } from "react";
 
 export function LandingMotion() {
@@ -10,6 +11,23 @@ export function LandingMotion() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const animations = new Set<Animation>();
     let pressed: HTMLElement | null = null;
+    let rafId = 0;
+
+    let lenis: Lenis | null = null;
+    if (reducedMotion.matches) {
+      delete root.dataset.landingMotion;
+    } else {
+      lenis = new Lenis({
+        lerp: 0.11,
+        anchors: true,
+        wheelMultiplier: 0.9,
+      });
+      const raf = (time: number) => {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      };
+      rafId = requestAnimationFrame(raf);
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -23,13 +41,20 @@ export function LandingMotion() {
 
           const animation = element.animate(
             [
-              { opacity: 0, transform: "translateY(8px)" },
-              { opacity: 1, transform: "translateY(0)" },
+              {
+                opacity: 0,
+                transform: "translateY(24px)",
+              },
+              {
+                opacity: 1,
+                transform: "translateY(0)",
+              },
             ],
             {
-              duration: 240,
+              duration: 560,
               delay: Number(element.dataset.landingDelay ?? 0),
-              easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+              easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+              fill: "backwards",
             }
           );
           animations.add(animation);
@@ -39,7 +64,7 @@ export function LandingMotion() {
           );
         }
       },
-      { threshold: 0.12 }
+      { threshold: 0.12, rootMargin: "0px 0px -6%" }
     );
     root.querySelectorAll("[data-landing-reveal]").forEach((element) => {
       observer.observe(element);
@@ -61,14 +86,27 @@ export function LandingMotion() {
       target.setAttribute("data-landing-pressed", "");
     }
 
+    function revealRemaining() {
+      root
+        ?.querySelectorAll<HTMLElement>(
+          "[data-landing-reveal]:not([data-landing-revealed])"
+        )
+        .forEach((element) => {
+          element.dataset.landingRevealed = "true";
+          observer.unobserve(element);
+        });
+    }
+
     function stopMotion() {
       release();
       for (const animation of animations) animation.cancel();
       animations.clear();
+      if (reducedMotion.matches) revealRemaining();
     }
 
     function stopKeyboardMotion() {
       observer.disconnect();
+      revealRemaining();
       stopMotion();
     }
 
@@ -82,6 +120,8 @@ export function LandingMotion() {
     return () => {
       observer.disconnect();
       stopMotion();
+      cancelAnimationFrame(rafId);
+      lenis?.destroy();
       root.removeEventListener("pointerdown", press);
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);

@@ -5,10 +5,10 @@ import {
   LotMetrics,
   StatusBadge,
   dateFmt,
-} from "../../batches/components/lot-display";
+} from "../../explorer/components/lot-display";
 import { PassportQr } from "../../components/passport-qr";
 import { ThemeToggle } from "../../components/theme-toggle";
-import { plantCertificateUrl } from "../../batches/data/lots";
+import { plantCertificateUrl } from "../../explorer/data/lots";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
 import { getPassportRecord, type PassportLot } from "../data/passport";
 import { CertificateVerification } from "./certificate-verification";
@@ -126,7 +126,7 @@ export default async function LotPassportPage({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-6 py-4">
-        <Link href="/batches" className="text-sm font-bold tracking-tight">
+        <Link href="/explorer" className="text-sm font-bold tracking-tight">
           JuLit
         </Link>
         <ThemeToggle />

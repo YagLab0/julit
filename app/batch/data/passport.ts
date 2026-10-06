@@ -4,12 +4,12 @@
 // verification. Unlike the catalogue columns, the passport read also selects
 // the producer wallet and the per-transition transaction signatures, and
 // never selects the price: commercial terms stay in the catalogue
-// (ADR-0009) and a column that is not read cannot leak into the client
+// (ADR-0013) and a column that is not read cannot leak into the client
 // payload.
 
 import { cache } from "react";
-import type { Lot } from "../../batches/data/lots";
-import { ORIGIN_COLUMNS, type Origin } from "../../batches/data/origins";
+import type { Lot } from "../../explorer/data/lots";
+import { ORIGIN_COLUMNS, type Origin } from "../../explorer/data/origins";
 import { createClient } from "../../lib/supabase/server";
 
 export type PassportLot = Omit<Lot, "price_usdc"> & {

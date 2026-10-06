@@ -1,6 +1,6 @@
 # Spec: Rich Batch Showcase and Buyer-Producer Commercial Contracts
 
-> **Superseded** by `.scratch/atomic-lot-settlement/spec.md` (ADR-0012): the batch/auditor model was replaced by escrowed lot settlement. This spec is kept for history only — do not implement from it.
+> **Superseded** by `.scratch/atomic-lot-settlement/spec.md` (ADR-0019): the batch/auditor model was replaced by escrowed lot settlement. This spec is kept for history only — do not implement from it.
 
 **Status:** superseded
 

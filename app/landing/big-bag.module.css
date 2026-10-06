@@ -1,6 +1,6 @@
 .bag {
   position: absolute;
-  inset: 30px 0 80px;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
 }

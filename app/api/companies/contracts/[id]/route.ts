@@ -5,7 +5,7 @@ import { createServiceClient } from "../../../../lib/supabase/service";
 /**
  * The contract responder accepts or declines a pending offer:
  * { action: "accept" } → accepted, { action: "decline" } → revoked.
- * The responder is whichever party did not initiate the offer (ADR-0012).
+ * The responder is whichever party did not initiate the offer (ADR-0019).
  */
 export async function PATCH(
   request: Request,

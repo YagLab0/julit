@@ -2,14 +2,14 @@
 // in, verdict out (ADR-0011). No I/O and no Number math — index decimal
 // strings and on-chain scaled integers are both parsed to scaled BigInt with
 // fixed multipliers. Price stays out of the contrast, like it stays out of
-// the passport (ADR-0009).
+// the passport (ADR-0013).
 
 import type { ReadonlyUint8Array } from "@solana/kit";
 import {
   LotStatus as OnChainLotStatus,
   JULIT_PROGRAM_ADDRESS,
 } from "../generated/julit";
-import type { LotStatus as IndexedLotStatus } from "../batches/data/lots";
+import type { LotStatus as IndexedLotStatus } from "../explorer/data/lots";
 import type { PassportLot } from "./data/passport";
 
 /** The indexed fields the contrast checks; decimals arrive as exact strings

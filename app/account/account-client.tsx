@@ -13,7 +13,7 @@ import { useSendTransaction } from "../lib/hooks/use-send-transaction";
 import { createMemoInstruction } from "../lib/solana/memo";
 import { useCluster } from "../components/cluster-context";
 import { WalletButton } from "../components/wallet-button";
-import { StatusBadge } from "../batches/components/lot-display";
+import { StatusBadge } from "../explorer/components/lot-display";
 import { buildContractAgreementMessage } from "../lib/contracts";
 
 export type AccountCompany = {
@@ -82,13 +82,13 @@ const NEXT_STEPS: Record<
   producer: {
     title: "Registrar lotes",
     body: "Creá un lote con sus métricas de producción y sostenibilidad, designá el comprador y subí el certificado de planta.",
-    href: "/batches/new",
+    href: "/explorer/new",
     linkLabel: "Registrar lote",
   },
   buyer: {
     title: "Comprar lotes",
     body: "Explorá el catálogo público: los lotes publicados que te designen compradora se fondean con escrow en Devnet.",
-    href: "/batches",
+    href: "/explorer",
     linkLabel: "Ver catálogo",
   },
 };
@@ -218,7 +218,7 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
             se fondean con escrow.
           </p>
           <Link
-            href="/batches"
+            href="/explorer"
             className="btn-primary mt-3 inline-block text-xs"
           >
             Ir al catálogo
