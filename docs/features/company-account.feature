@@ -1,8 +1,9 @@
 # language: en
 # Layer tags: @program = Anchor programme, @api = authenticated API, @db = Supabase schema and RLS, @ui = frontend
 Feature: Company account and verified wallet
-  Every participant is a Company of exactly one type with at most one verified wallet,
-  registered through the authenticated API and proven by a domain-bound signed message.
+  Every participant is a Company of type producer or buyer with at most one verified
+  wallet. Buyers self-register through the authenticated API; producers are
+  provisioned. Wallet ownership is proven by a domain-bound signed message.
 
   @api @db
   Scenario: Register a company from the authenticated session
@@ -20,7 +21,7 @@ Feature: Company account and verified wallet
   @ui
   Scenario: Producer type is not offered for self-registration
     When a signed-in user without a company opens the company registration form
-    Then only Auditor and Buyer are offered as company types
+    Then only Buyer is offered as a company type
 
   @api
   Scenario: Reject a producer self-registration

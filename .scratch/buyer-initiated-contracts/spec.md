@@ -1,6 +1,8 @@
 # Spec: Buyer-initiated contracts and producer offer inbox
 
-**Status:** ready-for-agent
+> **Superseded** by `.scratch/atomic-lot-settlement/spec.md` (ADR-0012): the batch/auditor model was replaced by escrowed lot settlement. This spec is kept for history only — do not implement from it.
+
+**Status:** superseded
 
 ## Problem Statement
 

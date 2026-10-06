@@ -16,7 +16,7 @@ renders as verified, and the initial HTML never waits on the RPC.
 
 **Blocked by:** 01 (the page the island mounts on)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] The pure module's unit tests pin: all-match → verified; single-field mismatches (batch id, producer, origin, volume, purity, water, carbon, status, derived PDA, programme address); absent account → missing; unknown on-chain status value → mismatch
 - [ ] Decimal exactness pinned: `"99.5"` ≡ `"99.50"` vs 9950 basis points, `"1.000000"` vs 1 000 000, values at the `u64` boundary, no precision loss and no `Number` math

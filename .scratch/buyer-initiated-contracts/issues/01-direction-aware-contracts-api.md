@@ -14,7 +14,7 @@ and the producer resolves it.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] Pure direction module: pair types → `{ initiator, responder }` (`'producer' | 'counterparty'`) and an allowed-pair guard
 - [ ] Vitest covers: producer+auditor pair, producer+buyer pair, every disallowed pair, responder resolution per pair — external behavior only

@@ -6,10 +6,10 @@
 
 **Status:** ready-for-agent
 
-- [ ] `/audit/*` routes and components deleted; no references remain
-- [ ] `/certify`, `/certificate`, `/complete` endpoints deleted
-- [ ] No auditor/audit types, columns, or vocabulary anywhere in app or schema
-- [ ] Passport shows full timeline incl. `claimed`/`disputed`/`cancelled`, tx links, plant cert check
-- [ ] Every signature in the app is a real transaction — no fake base58 remains
-- [ ] Features rewritten; prior feature specs marked superseded
-- [ ] Full suite green: LiteSVM + vitest + pgTAP
+- [x] `/audit/*` routes and components deleted; no references remain
+- [x] `/certify`, `/certificate`, `/complete` endpoints deleted
+- [x] No auditor/audit types, columns, or vocabulary anywhere in app or schema
+- [x] Passport shows full timeline incl. `claimed`/`disputed`/`cancelled`, tx links, plant cert check
+- [x] Every signature in the app is a real transaction — no fake base58 remains
+- [x] Features rewritten; prior feature specs marked superseded
+- [x] Full suite green: LiteSVM + vitest + pgTAP

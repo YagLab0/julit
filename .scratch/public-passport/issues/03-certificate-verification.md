@@ -16,7 +16,7 @@ the local stack only; production is never seeded (ADR-0009).
 
 **Blocked by:** 01 (the page the section renders on)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] A certified Batch shows the certificate PDF link and the recorded digest (truncated)
 - [ ] Verdict unit tests: equal hex in either case → match; any difference, including malformed computed hex → mismatch

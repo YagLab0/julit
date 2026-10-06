@@ -15,7 +15,7 @@ the batch form's "Mis clientes" dropdown.
 **Blocked by:** 01 (direction-aware GET/PATCH + responder posture),
 02 (same file: account client)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] New card renders for producers only, listing pending contracts where the caller is the responder and the counterparty is a buyer
 - [ ] Each offer shows the buyer's company name with Aceptar/Rechazar buttons calling the respond endpoint; list refreshes after responding

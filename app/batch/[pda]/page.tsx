@@ -43,26 +43,66 @@ function TxLink({ label, signature }: { label: string; signature: string }) {
   );
 }
 
-/** The on-chain transitions the index has observed for this lot. */
-function transitionLinks(lot: PassportLot) {
-  const links: { label: string; signature: string }[] = [
-    { label: "Creación", signature: lot.creation_tx_signature },
+type TimelineEvent = {
+  label: string;
+  signature: string;
+  tone: "neutral" | "dispute" | "settled" | "cancelled";
+};
+
+/**
+ * The lot's lifecycle as the index observed it, in on-chain order:
+ * creation (the Digital Title minted into escrow), funding, an optional
+ * dispute flag, and exactly one terminal event — redemption, timeout
+ * claim, or cancellation. A lot that is disputed and later redeemed
+ * shows both events.
+ */
+function lifecycleTimeline(lot: PassportLot): TimelineEvent[] {
+  const events: TimelineEvent[] = [
+    {
+      label: "Creación — Título Digital emitido al escrow",
+      signature: lot.creation_tx_signature,
+      tone: "neutral",
+    },
   ];
   if (lot.fund_tx_signature)
-    links.push({ label: "Fondeo", signature: lot.fund_tx_signature });
+    events.push({
+      label: "Fondeo — USDC depositado en escrow",
+      signature: lot.fund_tx_signature,
+      tone: "neutral",
+    });
   if (lot.dispute_tx_signature)
-    links.push({ label: "Disputa", signature: lot.dispute_tx_signature });
+    events.push({
+      label: "Disputa — pago congelado por la compradora",
+      signature: lot.dispute_tx_signature,
+      tone: "dispute",
+    });
   if (lot.redeem_tx_signature)
-    links.push({ label: "Liquidación", signature: lot.redeem_tx_signature });
+    events.push({
+      label: "Liquidación — recepción confirmada, escrow liberado",
+      signature: lot.redeem_tx_signature,
+      tone: "settled",
+    });
   if (lot.claim_tx_signature)
-    links.push({
-      label: "Cobro por timeout",
+    events.push({
+      label: "Cobro por timeout — la productora reclamó el escrow",
       signature: lot.claim_tx_signature,
+      tone: "settled",
     });
   if (lot.cancel_tx_signature)
-    links.push({ label: "Cancelación", signature: lot.cancel_tx_signature });
-  return links;
+    events.push({
+      label: "Cancelación — reserva liberada, título quemado",
+      signature: lot.cancel_tx_signature,
+      tone: "cancelled",
+    });
+  return events;
 }
+
+const TONE_DOT: Record<TimelineEvent["tone"], string> = {
+  neutral: "bg-muted",
+  dispute: "bg-amber-500",
+  settled: "bg-emerald-500",
+  cancelled: "bg-foreground/40",
+};
 
 /**
  * Public passport: the lot's product record from the public index. No
@@ -203,7 +243,7 @@ export default async function LotPassportPage({
                 <span>Solana Devnet</span>
               </div>
               <p className="font-mono break-all">{lot.pda_address}</p>
-              <p className="flex flex-wrap gap-x-4 gap-y-1">
+              <p>
                 <a
                   href={addressUrl}
                   target="_blank"
@@ -212,14 +252,24 @@ export default async function LotPassportPage({
                 >
                   Dirección en Explorer
                 </a>
-                {transitionLinks(lot).map((t) => (
-                  <TxLink
-                    key={t.label}
-                    label={t.label}
-                    signature={t.signature}
-                  />
-                ))}
               </p>
+              <ol
+                aria-label="Línea de vida del lote"
+                className="ml-1 space-y-2 border-l border-border pl-3"
+              >
+                {lifecycleTimeline(lot).map((event) => (
+                  <li
+                    key={event.signature}
+                    className="flex items-baseline gap-2"
+                  >
+                    <span
+                      aria-hidden
+                      className={`inline-block h-1.5 w-1.5 shrink-0 -translate-y-0.5 rounded-full ${TONE_DOT[event.tone]}`}
+                    />
+                    <TxLink label={event.label} signature={event.signature} />
+                  </li>
+                ))}
+              </ol>
             </div>
           </section>
 

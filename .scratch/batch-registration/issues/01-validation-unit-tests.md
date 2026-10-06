@@ -7,7 +7,7 @@ parsing into scaled integers.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] `vitest` added as devDependency (pinned) + `pnpm test` script
 - [ ] Rejections from the spec pinned: purity 99.49 and 99.505 rejected; 99.50/100.00 accepted; 1.5 tonnes rejected; negative/zero values rejected; >6-decimal price rejected; >32-byte batch_id rejected

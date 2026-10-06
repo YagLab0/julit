@@ -12,7 +12,7 @@ the derived URL — never stored server-side, and list-view cards do not change.
 
 **Blocked by:** 01 (the passport URL the QR points at)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] One shared QR component renders the derived passport URL, labelled for screen readers, in light and dark
 - [ ] The catalogue batch fiche shows the compact block: "Ver pasaporte" link + QR + both actions

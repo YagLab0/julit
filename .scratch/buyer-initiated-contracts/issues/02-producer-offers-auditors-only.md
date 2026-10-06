@@ -9,7 +9,7 @@ through the inbox (ticket 03) and accepted contracts.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** superseded
 
 - [ ] The type picker is removed from the producer offer row
 - [ ] The company select loads only `type=auditor` from the directory; the loaded-directory bookkeeping no longer tracks a selectable type
