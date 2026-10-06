@@ -186,6 +186,31 @@ pub mod julit {
 
         Ok(())
     }
+
+    /// The designated buyer deposits exactly the lot's `price_usdc` into the
+    /// lot-owned escrow. The funds stay locked until `redeem_lot` releases
+    /// them to the producer or `claim_timeout` returns control of the claim
+    /// to the producer. Only the buyer recorded at creation may sign, and
+    /// only a `Listed` lot accepts funding — double funding is impossible.
+    pub fn fund_lot(ctx: Context<FundLot>) -> Result<()> {
+        let lot = &mut ctx.accounts.lot;
+        require!(lot.status == LotStatus::Listed, LotError::LotNotListed);
+
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: ctx.accounts.buyer_usdc.to_account_info(),
+                    to: ctx.accounts.escrow_usdc.to_account_info(),
+                    authority: ctx.accounts.buyer.to_account_info(),
+                },
+            ),
+            lot.price_usdc,
+        )?;
+
+        lot.status = LotStatus::Funded;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -284,6 +309,51 @@ pub struct CreateLot<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
+#[derive(Accounts)]
+pub struct FundLot<'info> {
+    /// The lot being funded; the PDA seeds prove the account is the real one.
+    #[account(
+        mut,
+        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
+        bump = lot.bump,
+    )]
+    pub lot: Account<'info, Lot>,
+
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, Config>,
+
+    /// Only the buyer designated at creation may fund the escrow.
+    #[account(
+        mut,
+        constraint = buyer.key() == lot.buyer @ LotError::WrongBuyer
+    )]
+    pub buyer: Signer<'info>,
+
+    /// The buyer's USDC ATA — the source of the deposit.
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = buyer,
+    )]
+    pub buyer_usdc: Account<'info, TokenAccount>,
+
+    /// The lot-owned escrow ATA created at `create_lot`; the destination.
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_usdc: Account<'info, TokenAccount>,
+
+    /// Settlement mint; constrained to the Config's `usdc_mint`.
+    #[account(
+        constraint = usdc_mint.key() == config.usdc_mint @ LotError::WrongUsdcMint
+    )]
+    pub usdc_mint: Account<'info, Mint>,
+
+    pub token_program: Program<'info, Token>,
+}
+
 #[account]
 pub struct Config {
     pub admin: Pubkey,
@@ -369,4 +439,8 @@ pub enum LotError {
     WrongUsdcMint,
     #[msg("Not the Metaplex Token Metadata program")]
     WrongMetadataProgram,
+    #[msg("Only the designated buyer may fund this lot")]
+    WrongBuyer,
+    #[msg("Lot is not open for funding")]
+    LotNotListed,
 }

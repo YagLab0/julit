@@ -167,6 +167,179 @@ fn create_lot_ix(
     (ix, lot, mint)
 }
 
+fn fund_lot_ix(buyer: &Pubkey, lot: &Pubkey, usdc_mint: &Pubkey) -> Instruction {
+    let (config, _) = config_pda();
+    let buyer_usdc =
+        spl_associated_token_account::get_associated_token_address(buyer, usdc_mint);
+    let escrow_usdc =
+        spl_associated_token_account::get_associated_token_address(lot, usdc_mint);
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::FundLot {
+            lot: *lot,
+            config,
+            buyer: *buyer,
+            buyer_usdc,
+            escrow_usdc,
+            usdc_mint: *usdc_mint,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::FundLot {}.data(),
+    }
+}
+
+/// Creates the buyer's USDC ATA and mints `amount` base units into it.
+/// `payer` is the demo mint authority and fee payer.
+fn provision_buyer(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    usdc_mint: &Pubkey,
+    buyer: &Pubkey,
+    amount: u64,
+) {
+    let buyer_ata =
+        spl_associated_token_account::get_associated_token_address(buyer, usdc_mint);
+    send(
+        svm,
+        vec![
+            spl_associated_token_account::instruction::create_associated_token_account(
+                &payer.pubkey(),
+                buyer,
+                usdc_mint,
+                &spl_token::ID,
+            ),
+            spl_token::instruction::mint_to(
+                &spl_token::ID,
+                usdc_mint,
+                &buyer_ata,
+                &payer.pubkey(),
+                &[],
+                amount,
+            )
+            .unwrap(),
+        ],
+        &[payer],
+    );
+}
+
+fn token_balance(svm: &LiteSVM, ata: &Pubkey) -> u64 {
+    spl_token::state::Account::unpack(&svm.get_account(ata).unwrap().data)
+        .unwrap()
+        .amount
+}
+
+/// Shared setup: config + a listed lot priced at `price`, funded buyer ATA.
+/// Returns (buyer keypair, lot pda).
+fn listed_lot(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    usdc_mint: &Pubkey,
+    price: u64,
+    buyer_balance: u64,
+) -> (Keypair, Pubkey) {
+    let buyer = Keypair::new();
+    provision_buyer(svm, payer, usdc_mint, &buyer.pubkey(), buyer_balance);
+    let now = svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp;
+    let (ix, lot, _) = create_lot_ix(
+        &payer.pubkey(),
+        usdc_mint,
+        "LOT-FUND",
+        price,
+        buyer.pubkey(),
+        now + 86_400,
+        9_960,
+    );
+    send(
+        svm,
+        vec![
+            ComputeBudgetInstruction::set_compute_unit_limit(1_400_000),
+            ix,
+        ],
+        &[payer],
+    );
+    (buyer, lot)
+}
+
+#[test]
+fn fund_lot_moves_exact_price_into_escrow() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    let buyer_ata =
+        spl_associated_token_account::get_associated_token_address(&buyer.pubkey(), &usdc_mint);
+    let escrow_usdc =
+        spl_associated_token_account::get_associated_token_address(&lot, &usdc_mint);
+
+    send(
+        &mut svm,
+        vec![fund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+
+    assert_eq!(token_balance(&svm, &escrow_usdc), 400_000_000);
+    assert_eq!(token_balance(&svm, &buyer_ata), 100_000_000);
+    let lot_data = svm.get_account(&lot).unwrap().data;
+    let decoded = Lot::deserialize(&mut &lot_data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Funded);
+}
+
+#[test]
+fn fund_lot_rejects_wrong_buyer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (_buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    let impostor = Keypair::new();
+    provision_buyer(&mut svm, &payer, &usdc_mint, &impostor.pubkey(), 500_000_000);
+    let err = send_err(
+        &mut svm,
+        vec![fund_lot_ix(&impostor.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &impostor],
+    );
+    assert!(err.contains("WrongBuyer") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn fund_lot_rejects_double_funding() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 900_000_000);
+
+    send(
+        &mut svm,
+        vec![fund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+    // Fresh blockhash so the retry is a distinct transaction, not a dedup hit.
+    svm.expire_blockhash();
+    let err = send_err(
+        &mut svm,
+        vec![fund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("LotNotListed") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn fund_lot_rejects_insufficient_balance() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 399_999_999);
+
+    let err = send_err(
+        &mut svm,
+        vec![fund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("InsufficientFunds") || err.contains("custom program error"), "{err}");
+}
+
 #[test]
 fn initialize_and_create_lot_mints_title_into_escrow() {
     let (mut svm, payer) = svm();

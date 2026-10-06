@@ -40,6 +40,10 @@ export const JULIT_ERROR__METADATA_URI_TOO_LONG = 0x177a; // 6010
 export const JULIT_ERROR__WRONG_USDC_MINT = 0x177b; // 6011
 /** WrongMetadataProgram: Not the Metaplex Token Metadata program */
 export const JULIT_ERROR__WRONG_METADATA_PROGRAM = 0x177c; // 6012
+/** WrongBuyer: Only the designated buyer may fund this lot */
+export const JULIT_ERROR__WRONG_BUYER = 0x177d; // 6013
+/** LotNotListed: Lot is not open for funding */
+export const JULIT_ERROR__LOT_NOT_LISTED = 0x177e; // 6014
 
 export type JulitError =
   | typeof JULIT_ERROR__BUYER_IS_PRODUCER
@@ -51,8 +55,10 @@ export type JulitError =
   | typeof JULIT_ERROR__INVALID_PRICE
   | typeof JULIT_ERROR__INVALID_TREASURY
   | typeof JULIT_ERROR__INVALID_VOLUME
+  | typeof JULIT_ERROR__LOT_NOT_LISTED
   | typeof JULIT_ERROR__METADATA_URI_TOO_LONG
   | typeof JULIT_ERROR__NOT_BATTERY_GRADE
+  | typeof JULIT_ERROR__WRONG_BUYER
   | typeof JULIT_ERROR__WRONG_METADATA_PROGRAM
   | typeof JULIT_ERROR__WRONG_USDC_MINT;
 
@@ -68,8 +74,10 @@ if (process.env.NODE_ENV !== "production") {
     [JULIT_ERROR__INVALID_PRICE]: `Price must be greater than zero`,
     [JULIT_ERROR__INVALID_TREASURY]: `Invalid treasury address`,
     [JULIT_ERROR__INVALID_VOLUME]: `Volume must be at least one tonne`,
+    [JULIT_ERROR__LOT_NOT_LISTED]: `Lot is not open for funding`,
     [JULIT_ERROR__METADATA_URI_TOO_LONG]: `Metadata URI exceeds 200 bytes`,
     [JULIT_ERROR__NOT_BATTERY_GRADE]: `Only battery grade (99.50-100.00%) is accepted`,
+    [JULIT_ERROR__WRONG_BUYER]: `Only the designated buyer may fund this lot`,
     [JULIT_ERROR__WRONG_METADATA_PROGRAM]: `Not the Metaplex Token Metadata program`,
     [JULIT_ERROR__WRONG_USDC_MINT]: `Mint is not the configured settlement mint`,
   };

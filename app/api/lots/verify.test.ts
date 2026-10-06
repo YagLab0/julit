@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { verifyLotCreation, type VerifyLotCreationInput } from "./verify";
+import {
+  verifyLotCreation,
+  verifyLotFunding,
+  type VerifyLotCreationInput,
+  type VerifyLotFundingInput,
+} from "./verify";
 
 const WALLET = "ProducerWallet111111111111111111111111111";
 const LOT_PDA = "LotPda111111111111111111111111111111111111";
@@ -125,5 +130,137 @@ describe("verifyLotCreation", () => {
       })
     );
     expect(r.ok).toBe(false);
+  });
+});
+
+const BUYER = "BuyerWallet11111111111111111111111111111";
+
+function fundBase(
+  overrides: Partial<VerifyLotFundingInput> = {}
+): VerifyLotFundingInput {
+  return {
+    buyerWallet: BUYER,
+    lotPda: LOT_PDA,
+    indexedStatus: "listed",
+    transaction: {
+      signature: "sig",
+      slot: 100,
+      failed: false,
+      fundLotInstruction: { lot: LOT_PDA, buyer: BUYER },
+    },
+    lotAccount: {
+      programOwned: true,
+      producer: WALLET,
+      buyer: BUYER,
+      status: "funded",
+    },
+    ...overrides,
+  };
+}
+
+describe("verifyLotFunding", () => {
+  it("accepts a confirmed fund_lot by the designated buyer", () => {
+    expect(verifyLotFunding(fundBase())).toEqual({ ok: true });
+  });
+
+  it("rejects a missing or failed transaction", () => {
+    expect(verifyLotFunding(fundBase({ transaction: null })).ok).toBe(false);
+    const r = verifyLotFunding(
+      fundBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: true,
+          fundLotInstruction: { lot: LOT_PDA, buyer: BUYER },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(400);
+  });
+
+  it("rejects a transaction without a fund_lot instruction", () => {
+    const r = verifyLotFunding(
+      fundBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          fundLotInstruction: null,
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects an instruction funding a different lot", () => {
+    const r = verifyLotFunding(
+      fundBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          fundLotInstruction: {
+            lot: "OtherLot1111111111111111111111111",
+            buyer: BUYER,
+          },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects a funding signed by a different wallet", () => {
+    const r = verifyLotFunding(
+      fundBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          fundLotInstruction: {
+            lot: LOT_PDA,
+            buyer: "Impostor1111111111111111111111111",
+          },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects when the caller is not the on-chain designated buyer", () => {
+    const r = verifyLotFunding(
+      fundBase({
+        lotAccount: {
+          programOwned: true,
+          producer: WALLET,
+          buyer: "DesignatedOther11111111111111111111111",
+          status: "funded",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects when the on-chain status is not funded", () => {
+    const r = verifyLotFunding(
+      fundBase({
+        lotAccount: {
+          programOwned: true,
+          producer: WALLET,
+          buyer: BUYER,
+          status: "listed",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects a lot that is not indexed or already moved on", () => {
+    expect(verifyLotFunding(fundBase({ indexedStatus: null })).ok).toBe(false);
+    const r = verifyLotFunding(fundBase({ indexedStatus: "funded" }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(409);
   });
 });

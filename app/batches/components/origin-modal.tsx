@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getBase58Decoder } from "@solana/kit";
+import { address, getBase58Decoder } from "@solana/kit";
 import { passportPath } from "../../batch/verification";
 import { useCluster } from "../../components/cluster-context";
 import { PassportQr } from "../../components/passport-qr";
@@ -33,6 +33,16 @@ import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
 import { createMemoInstruction } from "../../lib/solana/memo";
 import { getExplorerUrl } from "../../lib/explorer";
 import { buildContractAgreementMessage } from "../../lib/contracts";
+import { createSolanaClient } from "../../lib/solana-client";
+import {
+  createAtaInstruction,
+  findAssociatedTokenAddress,
+} from "../../lib/solana/ata";
+import {
+  fetchConfig,
+  findConfigPda,
+  getFundLotInstructionAsync,
+} from "../../generated/julit";
 
 // R3F touches WebGL: client-only, never prerendered.
 const LotModel = dynamic(() => import("./lot-model").then((m) => m.LotModel), {
@@ -198,7 +208,7 @@ export function OriginModal({
   filter?: "sale" | "purchased";
   onClose: () => void;
 }) {
-  const { wallet, signMessage } = useWallet();
+  const { wallet, signMessage, signer } = useWallet();
   const { send: sendTransaction } = useSendTransaction();
   const { cluster } = useCluster();
 
@@ -215,6 +225,7 @@ export function OriginModal({
     "none" | "pending" | "accepted" | "revoked"
   >("none");
   const [requestingContract, setRequestingContract] = useState(false);
+  const [funding, setFunding] = useState(false);
 
   // Load producer company and contract status
   useEffect(() => {
@@ -363,11 +374,98 @@ export function OriginModal({
     }
   }
 
-  function handleBuy() {
-    if (!selected) return;
-    toast.info("El fondeo en escrow llega en la próxima versión.", {
-      description: `El lote ${selected.lot_id} está reservado para tu wallet: cuando se habilite, el pago queda custodiado hasta que confirmes la recepción.`,
-    });
+  async function handleBuy() {
+    if (!selected || !isDesignatedBuyer) return;
+    if (!signer) {
+      toast.warning("Billetera sin firma", {
+        description:
+          "Tu billetera no puede firmar transacciones; reconectala para fondear el lote.",
+      });
+      return;
+    }
+    if (cluster !== "devnet") {
+      toast.warning("Cambiá a Solana Devnet", {
+        description: "El fondeo del lote corre sobre la red Devnet.",
+      });
+      return;
+    }
+
+    setFunding(true);
+    try {
+      const { rpc } = createSolanaClient("devnet");
+      const configPda = await findConfigPda();
+      const config = await fetchConfig(rpc, configPda[0], {
+        commitment: "confirmed",
+      });
+      const usdcMint = config.data.usdcMint;
+      const [buyerAta] = await findAssociatedTokenAddress(
+        signer.address,
+        usdcMint
+      );
+
+      const fundIx = await getFundLotInstructionAsync({
+        lot: address(selected.pda_address),
+        buyer: signer,
+        usdcMint,
+      });
+      const txSignature = await sendTransaction({
+        instructions: [
+          createAtaInstruction(
+            signer.address,
+            buyerAta,
+            signer.address,
+            usdcMint
+          ),
+          fundIx,
+        ],
+      });
+
+      const res = await fetch("/api/lots/fund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lot_pda: selected.pda_address,
+          tx_signature: txSignature,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error("El fondeo quedó on-chain pero falló el índice.", {
+          description:
+            err?.error ??
+            "El pago ya está en el escrow; el pasaporte puede tardar en reflejarlo.",
+        });
+        return;
+      }
+
+      retry();
+      toast.success(`Lote ${selected.lot_id} fondeado en escrow`, {
+        description:
+          "El pago queda custodiado hasta que confirmes la recepción.",
+        action: {
+          label: "Ver en Explorer",
+          onClick: () =>
+            window.open(
+              getExplorerUrl(`/tx/${txSignature}`, cluster),
+              "_blank"
+            ),
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(msg)) {
+        toast.info("Transacción cancelada", {
+          description: "Cancelaste la firma en tu billetera.",
+        });
+      } else {
+        toast.error("No se pudo fondear el lote.", {
+          description: "Verificá el saldo de dUSDC y reintentá.",
+        });
+      }
+    } finally {
+      setFunding(false);
+    }
   }
 
   return (
@@ -589,10 +687,10 @@ export function OriginModal({
             {selected.status === "listed" && (
               <button
                 type="button"
-                disabled={!isDesignatedBuyer}
-                onClick={handleBuy}
+                disabled={!isDesignatedBuyer || funding}
+                onClick={() => void handleBuy()}
                 className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
-                  isDesignatedBuyer
+                  isDesignatedBuyer && !funding
                     ? "btn-primary cursor-pointer"
                     : "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
                 }`}
@@ -602,9 +700,11 @@ export function OriginModal({
                     : "Este lote está designado a otra empresa"
                 }
               >
-                {isDesignatedBuyer
-                  ? "Comprar lote (designado)"
-                  : "Designado a otra empresa"}
+                {funding
+                  ? "Fondeando…"
+                  : isDesignatedBuyer
+                    ? "Comprar lote (designado)"
+                    : "Designado a otra empresa"}
               </button>
             )}
             {selected.status === "funded" && (

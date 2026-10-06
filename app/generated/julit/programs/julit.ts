@@ -18,8 +18,10 @@ import {
 } from "@solana/kit";
 import {
   parseCreateLotInstruction,
+  parseFundLotInstruction,
   parseInitializeInstruction,
   type ParsedCreateLotInstruction,
+  type ParsedFundLotInstruction,
   type ParsedInitializeInstruction,
 } from "../instructions";
 
@@ -64,6 +66,7 @@ export function identifyJulitAccount(
 
 export enum JulitInstruction {
   CreateLot,
+  FundLot,
   Initialize,
 }
 
@@ -81,6 +84,17 @@ export function identifyJulitInstruction(
     )
   ) {
     return JulitInstruction.CreateLot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([120, 168, 108, 255, 107, 63, 28, 146]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.FundLot;
   }
   if (
     containsBytes(
@@ -105,6 +119,9 @@ export type ParsedJulitInstruction<
       instructionType: JulitInstruction.CreateLot;
     } & ParsedCreateLotInstruction<TProgram>)
   | ({
+      instructionType: JulitInstruction.FundLot;
+    } & ParsedFundLotInstruction<TProgram>)
+  | ({
       instructionType: JulitInstruction.Initialize;
     } & ParsedInitializeInstruction<TProgram>);
 
@@ -118,6 +135,13 @@ export function parseJulitInstruction<TProgram extends string>(
       return {
         instructionType: JulitInstruction.CreateLot,
         ...parseCreateLotInstruction(instruction),
+      };
+    }
+    case JulitInstruction.FundLot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.FundLot,
+        ...parseFundLotInstruction(instruction),
       };
     }
     case JulitInstruction.Initialize: {

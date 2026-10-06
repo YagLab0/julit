@@ -49,3 +49,4 @@ test-ledger/
 
 # Copiado por scripts/copy-maplibre-worker.mjs (postinstall)
 /public/maplibre/
+.devnet-seed.json

@@ -6,9 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] `fund_lot` transfers exactly `lot.price` buyer→escrow, requires designated buyer + `listed` status
-- [ ] Double funding impossible; non-designated buyer rejected
-- [ ] Seed script mints dUSDC and airdrops to demo wallet ATAs
-- [ ] `POST /api/lots/fund` writes `funded` + tx signature only after RPC verification
-- [ ] Purchase modal signs `fund_lot`, hidden from non-designated users
-- [ ] LiteSVM tests cover success + wrong-signer + wrong-state + wrong-amount paths
+- [x] `fund_lot` transfers exactly `lot.price` buyer→escrow, requires designated buyer + `listed` status
+- [x] Double funding impossible; non-designated buyer rejected
+- [x] Seed script mints dUSDC and airdrops to demo wallet ATAs
+- [x] `POST /api/lots/fund` writes `funded` + tx signature only after RPC verification
+- [x] Purchase modal signs `fund_lot`, hidden from non-designated users
+- [x] LiteSVM tests cover success + wrong-signer + wrong-state + wrong-amount paths
