@@ -8,7 +8,7 @@ import {
   BatchStatus as OnChainBatchStatus,
   JULIT_PROGRAM_ADDRESS,
 } from "../generated/julit";
-import type { BatchStatus as IndexedBatchStatus } from "../batches/data/batches";
+import type { BatchStatus as IndexedBatchStatus } from "../explorer/data/batches";
 import type { PassportBatch } from "./data/passport";
 
 /** The indexed fields the contrast checks; decimals arrive as exact strings

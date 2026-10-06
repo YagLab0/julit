@@ -1,6 +1,6 @@
 # Public landing
 
-The public `/` experience presents JuLit's B2B lithium-carbonate proposition in Spanish. It links to the existing `/batches` demo and `/sign-in` without introducing a new registration, payment, or verification flow.
+The public `/` experience presents JuLit's B2B lithium-carbonate proposition in Spanish. It links to the existing `/explorer` demo and `/sign-in` without introducing a new registration, payment, or verification flow.
 
 ## Presentation contract
 

@@ -249,7 +249,7 @@ function ExplorerMenu({
         <CatalogFilterToggle stretch filter={filter} onChange={onFilter} />
       </div>
       <Link
-        href="/batches/new"
+        href="/explorer/new"
         className="btn-secondary mt-3 inline-flex w-full items-center justify-center"
       >
         Registrar lote
@@ -431,7 +431,7 @@ export default function JuLitAppPage() {
         </button>
         <div className="pointer-events-auto hidden items-center gap-2 lg:flex">
           <Link
-            href="/batches/new"
+            href="/explorer/new"
             className="btn-secondary inline-flex shrink-0 items-center whitespace-nowrap"
           >
             Registrar lote

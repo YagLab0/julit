@@ -7,8 +7,8 @@
 // column that is not read cannot leak into the client payload.
 
 import { cache } from "react";
-import type { Batch } from "../../batches/data/batches";
-import { ORIGIN_COLUMNS, type Origin } from "../../batches/data/origins";
+import type { Batch } from "../../explorer/data/batches";
+import { ORIGIN_COLUMNS, type Origin } from "../../explorer/data/origins";
 import { createClient } from "../../lib/supabase/server";
 
 export type PassportBatch = Omit<Batch, "price_usdc"> & {

@@ -26,7 +26,7 @@ export default async function NewBatchPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-4">
-        <Link href="/batches" className="text-sm font-bold tracking-tight">
+        <Link href="/explorer" className="text-sm font-bold tracking-tight">
           JuLit
         </Link>
         <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 # julit
 
-JuLit presents a B2B lithium-carbonate proposition and an existing Solana Devnet demonstration. The public `/` landing explains the proposed process and evidence boundaries; `/batches` opens the Origin catalogue and map. Demo settlement is simulated and does not transfer USDC. See [the public landing contract and asset provenance](docs/landing.md).
+JuLit presents a B2B lithium-carbonate proposition and an existing Solana Devnet demonstration. The public `/` landing explains the proposed process and evidence boundaries; `/explorer` opens the Origin catalogue and map. Demo settlement is simulated and does not transfer USDC. See [the public landing contract and asset provenance](docs/landing.md).
 
 ## Pitch presentation
 

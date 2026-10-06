@@ -302,7 +302,7 @@ export function RegisterBatchForm({
           </span>
         </p>
         <div className="flex gap-2">
-          <Link href="/batches" className="btn-secondary">
+          <Link href="/explorer" className="btn-secondary">
             Volver al catálogo
           </Link>
           <button

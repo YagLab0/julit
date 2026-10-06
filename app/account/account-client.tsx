@@ -79,7 +79,7 @@ const NEXT_STEPS: Record<
   producer: {
     title: "Registrar lotes",
     body: "Creá un lote con sus métricas de producción y sostenibilidad, elegí el auditor designado y, opcionalmente, reservalo para un cliente.",
-    href: "/batches/new",
+    href: "/explorer/new",
     linkLabel: "Registrar lote",
   },
   auditor: {
@@ -91,7 +91,7 @@ const NEXT_STEPS: Record<
   buyer: {
     title: "Comprar lotes",
     body: "Mientras llega la compra simulada, podés explorar el catálogo público de lotes auditados.",
-    href: "/batches",
+    href: "/explorer",
     linkLabel: "Ver catálogo",
   },
 };
@@ -225,7 +225,7 @@ function BuyerPortfolioCard({ batches }: { batches: AcquiredBatch[] }) {
             simulada.
           </p>
           <Link
-            href="/batches"
+            href="/explorer"
             className="btn-primary mt-3 inline-block text-xs"
           >
             Ir al catálogo
@@ -530,7 +530,10 @@ function BuyerContractsCard() {
                         <>
                           <span>{ellipsify(c.initiator_signature, 8)}</span>
                           <a
-                            href={getExplorerUrl(`/tx/${c.initiator_signature}`, cluster)}
+                            href={getExplorerUrl(
+                              `/tx/${c.initiator_signature}`,
+                              cluster
+                            )}
                             target="_blank"
                             rel="noreferrer"
                             className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
@@ -547,7 +550,10 @@ function BuyerContractsCard() {
                         Aceptación:{" "}
                         <span>{ellipsify(c.counterparty_signature, 8)}</span>
                         <a
-                          href={getExplorerUrl(`/tx/${c.counterparty_signature}`, cluster)}
+                          href={getExplorerUrl(
+                            `/tx/${c.counterparty_signature}`,
+                            cluster
+                          )}
                           target="_blank"
                           rel="noreferrer"
                           className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
@@ -669,9 +675,7 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
   return (
     <section className="rounded-2xl border border-border-low bg-card p-5">
       <h2 className="text-sm font-semibold">
-        {isProducer
-          ? "Contratos de auditoría"
-          : "Contratos con productoras"}
+        {isProducer ? "Contratos de auditoría" : "Contratos con productoras"}
       </h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
         {isProducer

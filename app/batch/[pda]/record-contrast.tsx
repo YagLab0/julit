@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { address } from "@solana/kit";
 import { fetchMaybeBatch, findBatchPda } from "../../generated/julit";
-import { Chip } from "../../batches/components/batch-display";
+import { Chip } from "../../explorer/components/batch-display";
 import { createSolanaClient } from "../../lib/solana-client";
 import {
   contrastBatchRecord,
