@@ -2,7 +2,7 @@
 // in, verdict out (ADR-0011). No I/O and no Number math — index decimal
 // strings and on-chain scaled integers are both parsed to scaled BigInt with
 // fixed multipliers. Price, reservation and buyer stay out of the contrast,
-// like they stay out of the passport (ADR-0009).
+// like they stay out of the passport (ADR-0013).
 
 import {
   BatchStatus as OnChainBatchStatus,

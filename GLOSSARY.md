@@ -1,67 +1,87 @@
 # Lithium Passport
 
-Lithium Passport describes lithium carbonate production batches, their audited sustainability evidence, and their commercial settlement.
+JuLit is a B2B directory and delivery-vs-payment settlement protocol for lithium carbonate lots on Solana.
 
 ## Language
 
-**Batch**:
-An identified quantity of lithium carbonate produced by a producer at a specific origin, with declared production and sustainability metrics.
-_Avoid_: Product, order, shipment
+**Lot**:
+An identified quantity of lithium carbonate offered by a producer at a specific origin, tokenized as a digital title and settled atomically. Replaces "batch".
+_Avoid_: Batch, product, order, shipment
 
-**Producer**:
-The mining entity responsible for producing and declaring a batch.
-_Avoid_: Seller, user
+**Digital Title**:
+The transferable NFT (supply 1) representing the contractual right over a lot, minted into escrow at listing and burned at redemption. It is a digital representation of that right, not automatic legal title.
+_Avoid_: Legal title, certificate
 
-**Origin**:
-The salar or deposit from which a batch's lithium originates.
-_Avoid_: Delivery destination
+**Escrow**:
+The program-owned token account that holds a lot's digital title between listing and settlement.
+_Avoid_: Custodian, third-party escrow
 
-**Auditor**:
-The laboratory or auditing entity that certifies a batch using chemical analysis or environmental evidence.
-_Avoid_: Inspector, producer
+**Atomic Settlement**:
+The single transaction in which the buyer's USDC payment and the lot's digital title change hands — both legs execute or neither does. Also called delivery-vs-payment (DvP).
+_Avoid_: Payment then delivery, simulated settlement
 
-**Audit Certificate**:
-A PDF report containing chemical analysis or environmental evidence used to certify a batch.
-_Avoid_: Passport
+**Take Rate**:
+The protocol fee deducted from each settlement and routed to treasury, expressed in basis points.
+_Avoid_: Commission, platform fee
+
+**Redemption**:
+The buyer's on-chain confirmation of physical delivery, which burns the digital title and closes the lot lifecycle.
+_Avoid_: Delivery completion
+
+**Physical Delivery**:
+The off-chain transport and reception of a lot's cargo, confirmed on-chain by redemption. Outside the protocol.
+_Avoid_: On-chain delivery
+
+**Designated Buyer**:
+The buyer company a lot is created for; the only one entitled to settle it. Every lot has one.
+_Avoid_: Spot buyer, winning bidder
+
+**Plant Certificate**:
+The producer-declared certification document (PDF) for a production plant, whose SHA-256 is recorded on each lot from that plant.
+_Avoid_: Audit certificate, per-lot certificate
+
+**Plant Certificate Verification**:
+The public check that a plant certificate PDF's bytes hash to the digest recorded on the lot. It proves the document matches the recorded digest, not the truth of its contents.
+_Avoid_: Certification validation, compliance check
 
 **Passport**:
-The public record of a batch's origin, production metrics, sustainability metrics, and certification evidence. It is not an official EU battery passport or a guarantee of regulatory compliance.
+The public record of a lot's lifecycle: its digital title, settlement and redemption transactions, declared metrics, and plant certificate reference. It is not an official EU battery passport or a guarantee of regulatory compliance.
 _Avoid_: Audit certificate, QR code, official EU certification
 
-**Certificate Verification**:
-The public check that a certificate PDF's bytes hash to the digest recorded for its batch. It proves the document matches the recorded digest, not the truth of the auditor's findings.
-_Avoid_: EU compliance check, audit validation
+**Lot Price**:
+The total quoted price for acquiring an entire lot, expressed in USDC.
+_Avoid_: Price per tonne, payment received
+
+**Producer**:
+The mining entity responsible for producing and declaring a lot.
+_Avoid_: Seller, user
 
 **Buyer**:
-The entity purchasing a batch from its producer.
-_Avoid_: Inspector, auditor
+The entity acquiring a lot from its producer.
+_Avoid_: Customer, inspector
+
+**Origin**:
+The salar or deposit from which a lot's lithium originates.
+_Avoid_: Delivery destination
 
 **Chemical Purity**:
-The lithium carbonate purity of a batch, expressed as a percentage with two decimal places.
+The lithium carbonate purity of a lot, expressed as a percentage with two decimal places.
 _Avoid_: Grade
 
+**Battery Grade**:
+Lithium carbonate with chemical purity of at least 99.50%; only battery-grade lots are admitted to JuLit.
+_Avoid_: Self-declared grade
+
 **Water Footprint**:
-The audited volume of water consumed per metric tonne of lithium carbonate produced, expressed in cubic metres per tonne with two decimal places.
+The volume of water consumed per metric tonne of lithium carbonate produced, expressed in cubic metres per tonne with two decimal places.
 _Avoid_: Total water consumption
 
-**Spot Batch**:
-A batch offered for purchase without an exclusive buyer assignment.
-_Avoid_: Reserved batch
-
-**Reserved Batch**:
-A batch assigned exclusively to a designated buyer for purchase.
-_Avoid_: Spot batch, supply agreement
-
-**Designated Auditor**:
-The auditor selected by the producer to certify a specific batch.
-_Avoid_: Any auditor, inspector
-
-**Simulated Settlement**:
-The recorded completion of a batch purchase without an actual transfer of funds.
-_Avoid_: Payment received, USDC transfer
+**Carbon Footprint**:
+The greenhouse gas emissions intensity of a lot's production, expressed in kilograms of CO₂-equivalent per metric tonne with two decimal places.
+_Avoid_: Total lot emissions
 
 **Company**:
-A registered business entity participating in batch production, auditing, or purchasing.
+A registered business entity participating in lot production or purchasing.
 _Avoid_: Wallet, employee
 
 **Company Account**:
@@ -76,66 +96,38 @@ _Avoid_: Connected wallet, login wallet
 A single-use, domain-bound nonce issued to an authenticated company so its wallet can prove ownership; it expires five minutes after issuance.
 _Avoid_: Session, login token
 
-**Batch Price**:
-The total quoted price for purchasing an entire batch, expressed in USDC.
-_Avoid_: Price per tonne, payment received
-
-**Battery Grade**:
-Lithium carbonate with chemical purity of at least 99.50%; only battery-grade batches are admitted to JuLit.
-_Avoid_: Self-declared grade
-
-**Carbon Footprint**:
-The greenhouse gas emissions intensity of a batch's production, expressed in kilograms of CO₂-equivalent per metric tonne with two decimal places.
-_Avoid_: Total batch emissions
-
-**ESG Certification**:
-The designated auditor's approval of a batch's environmental, social, and governance evidence, supported by its audit certificate.
-_Avoid_: File integrity verification
-
-**EU Battery Regulation Evaluation**:
-The designated auditor's declared assessment of a batch's evidence against identified requirements of Regulation (EU) 2023/1542.
-_Avoid_: Automatic legal compliance, official EU certification
-
-**Audited Batch**:
-A batch whose designated auditor has completed its evaluation, with positive or negative findings.
-_Avoid_: Automatically approved batch, legally compliant batch
-
 **Company Contract**:
-A mutual-consent relationship between a producer and an auditor or buyer company, initiated by a fixed party per pair — the producer offers to auditors, the buyer offers to the producer (ADR-0008) — and accepted by the responder, scoping which counterparties a producer may designate on its batches.
+A mutual-consent relationship between a buyer and a producer company, initiated by the buyer (ADR-0008) and accepted by the producer, scoping which buyers a producer may designate on its lots.
 _Avoid_: Partnership, membership, supply agreement
 
 **Contract Initiator**:
-The company that creates a contract offer: the producer for auditor contracts, the buyer for producer contracts. Never a submitted field — derived from the pair's company types.
+The company that creates a contract offer: always the buyer.
 _Avoid_: Offer sender, contract owner
 
 **Contract Responder**:
-The company that accepts or declines a pending offer: the counterparty for producer→auditor offers, the producer for buyer→producer offers.
+The company that accepts or declines a pending offer: always the producer.
 _Avoid_: Recipient, invitee
-
-**Contracted Auditor**:
-An auditor company holding an accepted company contract with the producer.
-_Avoid_: Any registered auditor, inspector
 
 **Client**:
 A buyer company holding an accepted company contract with the producer.
 _Avoid_: Customer, any registered buyer
 
-**Buyer Portfolio**:
-The view of all completed batches acquired by a specific buyer company, used for tracking lithium inventory and regulatory reporting.
-_Avoid_: Shopping cart, wallet balance, transaction ledger
-
-**Completed Batch**:
-A batch whose simulated purchase has been recorded on Solana and indexed with its purchasing buyer wallet and completion transaction signature.
-_Avoid_: Paid batch, delivered batch
-
 **Commercial Contract Request**:
-An offer or request initiated by a buyer or producer to establish a mutual-consent company contract, enabling the allocation and purchase of reserved batches.
+An offer initiated by a buyer to establish a mutual-consent company contract, enabling designation on reserved lots.
 _Avoid_: Informal inquiry, purchase order
 
 **Cryptographic Contract Signature**:
 An Ed25519 message signature produced by a company's verified wallet proving consent to a commercial contract's terms without on-chain transaction overhead.
 _Avoid_: On-chain escrow, paper signature
 
-**Batch Showcase**:
-The interactive technical preview within an origin modal displaying procedural 3D representations, chemical purity, ESG indicators, and commercial pricing for a selected lithium batch.
-_Avoid_: Static thumbnail, photo gallery
+**Buyer Portfolio**:
+The view of all lots acquired by a specific buyer company, used for tracking lithium inventory and regulatory reporting.
+_Avoid_: Shopping cart, wallet balance, transaction ledger
+
+**dUSDC**:
+The project-owned demo USDC mint on Devnet (6 decimals) used for settlement in the demo; it carries no real value.
+_Avoid_: Real USDC, testnet money
+
+**Explorer**:
+The public demo surface where visitors browse origins and lots.
+_Avoid_: Catalogue, marketplace
