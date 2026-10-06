@@ -31,20 +31,28 @@ function CheckIcon() {
 function SettlementMock() {
   return (
     <div className={styles.mockCard}>
-      <div className={styles.exchange}>
-        <span className={styles.party}>Comprador</span>
-        <span className={styles.exchangeLegs}>
-          <span className={styles.exchangeLeg}>
-            USDC <i className={styles.arrowRight} />
-          </span>
-          <span className={styles.exchangeLeg}>
-            <i className={styles.arrowLeft} /> Título
-          </span>
-        </span>
-        <span className={styles.party}>Productor</span>
-      </div>
+      <p className={styles.mockHead}>
+        settle_lot <em className={styles.headPill}>atómica</em>
+      </p>
+      <ul className={styles.txList}>
+        <li>
+          <span className={styles.txAsset}>USDC</span>
+          <i className={styles.txArrow} />
+          <b>Productor</b>
+        </li>
+        <li>
+          <span className={styles.txAsset}>Fee del protocolo</span>
+          <i className={styles.txArrow} />
+          <b>Tesorería</b>
+        </li>
+        <li>
+          <span className={styles.txAsset}>Título digital</span>
+          <i className={styles.txArrow} />
+          <b>Comprador</b>
+        </li>
+      </ul>
       <p className={styles.mockFoot}>
-        <CheckIcon /> Una transacción · ambas patas o ninguna
+        <CheckIcon /> Las tres patas se ejecutan, o ninguna
       </p>
     </div>
   );
@@ -62,12 +70,20 @@ function PassportMock() {
           <b>0042 · Salinas Grandes</b>
         </li>
         <li>
+          <span>Métricas</span>
+          <b>Cantidad y pureza declaradas</b>
+        </li>
+        <li>
+          <span>Título digital</span>
+          <b>NFT · suministro 1</b>
+        </li>
+        <li>
           <span>Estado</span>
           <b className={styles.tagTeal}>Liquidado</b>
         </li>
         <li>
           <span>Transacciones</span>
-          <b>3</b>
+          <b>create · settle</b>
         </li>
       </ul>
     </div>
@@ -95,6 +111,10 @@ function CertificateMock() {
           <CheckIcon /> coincide
         </span>
       </div>
+      <div className={styles.hashRow}>
+        <span>Referenciado por</span>
+        <b className={styles.fileName}>3 lotes</b>
+      </div>
     </div>
   );
 }
@@ -121,6 +141,10 @@ function ReservedMock() {
         </span>
       </div>
       <p className={styles.fileCaption}>Carbonato de litio · Jujuy</p>
+      <div className={styles.hashRow}>
+        <span>Acuerdo comercial</span>
+        <span className={styles.hashCheck}>negociado en privado</span>
+      </div>
       <div className={styles.hashRow}>
         <span>Liquidación</span>
         <span className={styles.hashCheck}>
