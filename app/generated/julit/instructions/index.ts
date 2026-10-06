@@ -6,5 +6,5 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./certifyBatch";
-export * from "./createBatch";
+export * from "./createLot";
+export * from "./initialize";

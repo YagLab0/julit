@@ -21,8 +21,8 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getOptionDecoder,
-  getOptionEncoder,
+  getI64Decoder,
+  getI64Encoder,
   getStructDecoder,
   getStructEncoder,
   getU32Decoder,
@@ -44,159 +44,161 @@ import {
   type FetchAccountsConfig,
   type MaybeAccount,
   type MaybeEncodedAccount,
-  type Option,
-  type OptionOrNullable,
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
-  getBatchStatusDecoder,
-  getBatchStatusEncoder,
-  type BatchStatus,
-  type BatchStatusArgs,
+  getLotStatusDecoder,
+  getLotStatusEncoder,
+  type LotStatus,
+  type LotStatusArgs,
 } from "../types";
 
-export const BATCH_DISCRIMINATOR = new Uint8Array([
-  156, 194, 70, 44, 22, 88, 137, 44,
+export const LOT_DISCRIMINATOR = new Uint8Array([
+  2, 198, 93, 153, 205, 31, 101, 252,
 ]);
 
-export function getBatchDiscriminatorBytes() {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(BATCH_DISCRIMINATOR);
+export function getLotDiscriminatorBytes() {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(LOT_DISCRIMINATOR);
 }
 
-export type Batch = {
+export type Lot = {
   discriminator: ReadonlyUint8Array;
-  batchId: string;
+  lotId: string;
   originId: string;
   producer: Address;
-  auditor: Address;
-  reservedBuyer: Option<Address>;
-  buyer: Option<Address>;
+  buyer: Address;
+  mint: Address;
+  priceUsdc: bigint;
   volumeTonnes: bigint;
   purityBasisPoints: bigint;
   waterM3PerTonneScaled: bigint;
   carbonKgCo2ePerTonneScaled: bigint;
-  priceUsdcScaled: bigint;
-  status: BatchStatus;
-  createdSlot: bigint;
+  claimableAfter: bigint;
+  plantCertHash: ReadonlyUint8Array;
+  status: LotStatus;
+  createdAt: bigint;
   bump: number;
 };
 
-export type BatchArgs = {
-  batchId: string;
+export type LotArgs = {
+  lotId: string;
   originId: string;
   producer: Address;
-  auditor: Address;
-  reservedBuyer: OptionOrNullable<Address>;
-  buyer: OptionOrNullable<Address>;
+  buyer: Address;
+  mint: Address;
+  priceUsdc: number | bigint;
   volumeTonnes: number | bigint;
   purityBasisPoints: number | bigint;
   waterM3PerTonneScaled: number | bigint;
   carbonKgCo2ePerTonneScaled: number | bigint;
-  priceUsdcScaled: number | bigint;
-  status: BatchStatusArgs;
-  createdSlot: number | bigint;
+  claimableAfter: number | bigint;
+  plantCertHash: ReadonlyUint8Array;
+  status: LotStatusArgs;
+  createdAt: number | bigint;
   bump: number;
 };
 
-/** Gets the encoder for {@link BatchArgs} account data. */
-export function getBatchEncoder(): Encoder<BatchArgs> {
+/** Gets the encoder for {@link LotArgs} account data. */
+export function getLotEncoder(): Encoder<LotArgs> {
   return transformEncoder(
     getStructEncoder([
       ["discriminator", fixEncoderSize(getBytesEncoder(), 8)],
-      ["batchId", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
+      ["lotId", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["originId", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
       ["producer", getAddressEncoder()],
-      ["auditor", getAddressEncoder()],
-      ["reservedBuyer", getOptionEncoder(getAddressEncoder())],
-      ["buyer", getOptionEncoder(getAddressEncoder())],
+      ["buyer", getAddressEncoder()],
+      ["mint", getAddressEncoder()],
+      ["priceUsdc", getU64Encoder()],
       ["volumeTonnes", getU64Encoder()],
       ["purityBasisPoints", getU64Encoder()],
       ["waterM3PerTonneScaled", getU64Encoder()],
       ["carbonKgCo2ePerTonneScaled", getU64Encoder()],
-      ["priceUsdcScaled", getU64Encoder()],
-      ["status", getBatchStatusEncoder()],
-      ["createdSlot", getU64Encoder()],
+      ["claimableAfter", getI64Encoder()],
+      ["plantCertHash", fixEncoderSize(getBytesEncoder(), 32)],
+      ["status", getLotStatusEncoder()],
+      ["createdAt", getI64Encoder()],
       ["bump", getU8Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: BATCH_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: LOT_DISCRIMINATOR }),
   );
 }
 
-/** Gets the decoder for {@link Batch} account data. */
-export function getBatchDecoder(): Decoder<Batch> {
+/** Gets the decoder for {@link Lot} account data. */
+export function getLotDecoder(): Decoder<Lot> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
-    ["batchId", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
+    ["lotId", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["originId", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
     ["producer", getAddressDecoder()],
-    ["auditor", getAddressDecoder()],
-    ["reservedBuyer", getOptionDecoder(getAddressDecoder())],
-    ["buyer", getOptionDecoder(getAddressDecoder())],
+    ["buyer", getAddressDecoder()],
+    ["mint", getAddressDecoder()],
+    ["priceUsdc", getU64Decoder()],
     ["volumeTonnes", getU64Decoder()],
     ["purityBasisPoints", getU64Decoder()],
     ["waterM3PerTonneScaled", getU64Decoder()],
     ["carbonKgCo2ePerTonneScaled", getU64Decoder()],
-    ["priceUsdcScaled", getU64Decoder()],
-    ["status", getBatchStatusDecoder()],
-    ["createdSlot", getU64Decoder()],
+    ["claimableAfter", getI64Decoder()],
+    ["plantCertHash", fixDecoderSize(getBytesDecoder(), 32)],
+    ["status", getLotStatusDecoder()],
+    ["createdAt", getI64Decoder()],
     ["bump", getU8Decoder()],
   ]);
 }
 
-/** Gets the codec for {@link Batch} account data. */
-export function getBatchCodec(): Codec<BatchArgs, Batch> {
-  return combineCodec(getBatchEncoder(), getBatchDecoder());
+/** Gets the codec for {@link Lot} account data. */
+export function getLotCodec(): Codec<LotArgs, Lot> {
+  return combineCodec(getLotEncoder(), getLotDecoder());
 }
 
-export function decodeBatch<TAddress extends string = string>(
+export function decodeLot<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress>,
-): Account<Batch, TAddress>;
-export function decodeBatch<TAddress extends string = string>(
+): Account<Lot, TAddress>;
+export function decodeLot<TAddress extends string = string>(
   encodedAccount: MaybeEncodedAccount<TAddress>,
-): MaybeAccount<Batch, TAddress>;
-export function decodeBatch<TAddress extends string = string>(
+): MaybeAccount<Lot, TAddress>;
+export function decodeLot<TAddress extends string = string>(
   encodedAccount: EncodedAccount<TAddress> | MaybeEncodedAccount<TAddress>,
-): Account<Batch, TAddress> | MaybeAccount<Batch, TAddress> {
+): Account<Lot, TAddress> | MaybeAccount<Lot, TAddress> {
   return decodeAccount(
     encodedAccount as MaybeEncodedAccount<TAddress>,
-    getBatchDecoder(),
+    getLotDecoder(),
   );
 }
 
-export async function fetchBatch<TAddress extends string = string>(
+export async function fetchLot<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<Account<Batch, TAddress>> {
-  const maybeAccount = await fetchMaybeBatch(rpc, address, config);
+): Promise<Account<Lot, TAddress>> {
+  const maybeAccount = await fetchMaybeLot(rpc, address, config);
   assertAccountExists(maybeAccount);
   return maybeAccount;
 }
 
-export async function fetchMaybeBatch<TAddress extends string = string>(
+export async function fetchMaybeLot<TAddress extends string = string>(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,
   config?: FetchAccountConfig,
-): Promise<MaybeAccount<Batch, TAddress>> {
+): Promise<MaybeAccount<Lot, TAddress>> {
   const maybeAccount = await fetchEncodedAccount(rpc, address, config);
-  return decodeBatch(maybeAccount);
+  return decodeLot(maybeAccount);
 }
 
-export async function fetchAllBatch(
+export async function fetchAllLot(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<Account<Batch>[]> {
-  const maybeAccounts = await fetchAllMaybeBatch(rpc, addresses, config);
+): Promise<Account<Lot>[]> {
+  const maybeAccounts = await fetchAllMaybeLot(rpc, addresses, config);
   assertAccountsExist(maybeAccounts);
   return maybeAccounts;
 }
 
-export async function fetchAllMaybeBatch(
+export async function fetchAllMaybeLot(
   rpc: Parameters<typeof fetchEncodedAccounts>[0],
   addresses: Array<Address>,
   config?: FetchAccountsConfig,
-): Promise<MaybeAccount<Batch>[]> {
+): Promise<MaybeAccount<Lot>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
-  return maybeAccounts.map((maybeAccount) => decodeBatch(maybeAccount));
+  return maybeAccounts.map((maybeAccount) => decodeLot(maybeAccount));
 }

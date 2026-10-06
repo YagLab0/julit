@@ -4,6 +4,9 @@
 resolution = true
 skip-lint = false
 
+[programs.devnet]
+julit = "BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky"
+
 [provider]
 cluster = "devnet"
 wallet = "~/.config/solana/id.json"

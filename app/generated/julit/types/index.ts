@@ -6,5 +6,4 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./batchStatus";
-export * from "./euAssessment";
+export * from "./lotStatus";

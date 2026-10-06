@@ -6,5 +6,6 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./audit";
-export * from "./batch";
+export * from "./config";
+export * from "./lot";
+export * from "./mint";

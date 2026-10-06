@@ -7,32 +7,22 @@
  */
 
 import {
-  getAddressEncoder,
   getBytesEncoder,
   getProgramDerivedAddress,
-  getUtf8Encoder,
   type Address,
   type ProgramDerivedAddress,
 } from "@solana/kit";
 
-export type BatchSeeds = {
-  producer: Address;
-  batchId: string;
-};
-
-export async function findBatchPda(
-  seeds: BatchSeeds,
+export async function findConfigPda(
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = "D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg" as Address<"D3aKAxF8NEU7iADrc9E7GrM2NZnn3qFfkev4mKE1nhxg">,
+    programAddress = "BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky" as Address<"BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky">,
   } = config;
   return await getProgramDerivedAddress({
     programAddress,
     seeds: [
-      getBytesEncoder().encode(new Uint8Array([98, 97, 116, 99, 104])),
-      getAddressEncoder().encode(seeds.producer),
-      getUtf8Encoder().encode(seeds.batchId),
+      getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
     ],
   });
 }
