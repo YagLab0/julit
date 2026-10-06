@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CommerceSection, ParticipantsSection } from "./landing/commerce";
 import { FaqSection, PassportSection } from "./landing/passport-faq";
+import { LifecycleCards } from "./landing/lifecycle-cards";
 import { TeamSection } from "./landing/team";
 import { LandingMotion } from "./landing/landing-motion";
 import styles from "./landing/landing.module.css";
@@ -12,44 +13,6 @@ export const metadata: Metadata = {
   description:
     "Conocé JuLit: directorio B2B y liquidación atómica de lotes de carbonato de litio sobre Solana. Desde Jujuy hacia la cadena global del litio.",
 };
-
-const lifecycleSteps = [
-  {
-    number: "01",
-    title: "Descubrimiento",
-    onchain: false,
-    description:
-      "Directorio B2B: origen, capacidad y certificación de planta. El acuerdo comercial se negocia en privado entre las empresas.",
-  },
-  {
-    number: "02",
-    title: "Tokenización",
-    onchain: true,
-    description:
-      "El productor registra el lote ya reservado a su comprador: nace el título digital (un NFT), que queda en custodia del protocolo.",
-  },
-  {
-    number: "03",
-    title: "Liquidación",
-    onchain: true,
-    description:
-      "El comprador designado ejecuta la liquidación: su pago en USDC llega al productor y el título digital llega al comprador, en la misma transacción.",
-  },
-  {
-    number: "04",
-    title: "Entrega",
-    onchain: false,
-    description:
-      "La logística, la aduana y la recepción del cargamento ocurren fuera del protocolo.",
-  },
-  {
-    number: "05",
-    title: "Redención",
-    onchain: true,
-    description:
-      "El comprador confirma la recepción: el título se quema y el lote queda marcado como redimido, con un rastro permanente y verificable.",
-  },
-];
 
 function BrandMark() {
   return (
@@ -229,27 +192,7 @@ export default function Home() {
               </span>
             </p>
           </div>
-          <ol className={styles.steps}>
-            {lifecycleSteps.map((step, index) => (
-              <li
-                key={step.number}
-                className={`${styles.step} ${step.onchain ? styles.stepOnchain : ""}`}
-                data-landing-reveal
-                data-landing-delay={index * 50}
-              >
-                <div className={styles.stepHead}>
-                  <span className={styles.stepNumber} aria-hidden="true">
-                    {step.number}
-                  </span>
-                  <span className={styles.stepTag}>
-                    {step.onchain ? "En la cadena" : "Fuera de la cadena"}
-                  </span>
-                </div>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-              </li>
-            ))}
-          </ol>
+          <LifecycleCards />
         </section>
         <PassportSection />
         <ParticipantsSection />
