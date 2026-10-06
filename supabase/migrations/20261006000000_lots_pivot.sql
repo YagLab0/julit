@@ -13,12 +13,21 @@ drop type public.eu_regulation_assessment;
 
 -- company_type loses 'auditor'. The enum is swapped via a new type; the demo
 -- seed no longer inserts auditor companies, so the cast always succeeds.
+-- The identity trigger and the origin check bind the column — detach both.
+drop trigger companies_enforce_identity on public.companies;
+alter table public.companies drop constraint companies_origin_producer_only;
 create type public.company_type_new as enum ('producer', 'buyer');
 alter table public.companies
   alter column company_type type public.company_type_new
   using company_type::text::public.company_type_new;
 drop type public.company_type;
 alter type public.company_type_new rename to company_type;
+alter table public.companies
+  add constraint companies_origin_producer_only
+  check (origin_id is null or company_type = 'producer');
+create trigger companies_enforce_identity
+before update of id, wallet_address, company_type on public.companies
+for each row execute function private.enforce_company_identity();
 
 comment on column public.companies.origin_id is
   'Producer-bound origin, fixed once set; null for buyers.';
