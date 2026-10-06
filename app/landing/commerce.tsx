@@ -32,11 +32,11 @@ function SettlementMock() {
   return (
     <div className={styles.mockCard}>
       <p className={styles.mockHead}>
-        settle_lot <em className={styles.headPill}>atómica</em>
+        redeem_lot <em className={styles.headPill}>atómica</em>
       </p>
       <ul className={styles.txList}>
         <li>
-          <span className={styles.txAsset}>USDC</span>
+          <span className={styles.txAsset}>USDC (neto)</span>
           <i className={styles.txArrow} />
           <b>Productor</b>
         </li>
@@ -48,7 +48,7 @@ function SettlementMock() {
         <li>
           <span className={styles.txAsset}>Título digital</span>
           <i className={styles.txArrow} />
-          <b>Comprador</b>
+          <b>Quemado</b>
         </li>
       </ul>
       <p className={styles.mockFoot}>
@@ -79,11 +79,11 @@ function PassportMock() {
         </li>
         <li>
           <span>Estado</span>
-          <b className={styles.tagTeal}>Liquidado</b>
+          <b className={styles.tagTeal}>Redimido</b>
         </li>
         <li>
           <span>Transacciones</span>
-          <b>create · settle</b>
+          <b>create · fund · redeem</b>
         </li>
       </ul>
     </div>
@@ -146,7 +146,7 @@ function ReservedMock() {
         <span className={styles.hashCheck}>negociado en privado</span>
       </div>
       <div className={styles.hashRow}>
-        <span>Liquidación</span>
+        <span>Fondeo</span>
         <span className={styles.hashCheck}>
           solo el comprador designado <CheckIcon />
         </span>
@@ -183,12 +183,12 @@ const slides: {
   mock: ReactNode;
 }[] = [
   {
-    tab: "Liquidación atómica",
-    title: "Liquidación sin ventana de riesgo",
+    tab: "Escrow y liquidación",
+    title: "El pago espera en garantía",
     problem:
       "El pago y la entrega del bien no ocurren al mismo tiempo; alguien asume el riesgo de que la otra parte no cumpla.",
     solution:
-      "El pago del comprador y el título digital del lote cambian de manos juntos, o no cambia nada.",
+      "El título y el pago quedan custodiados por el protocolo — no por la contraparte — y la confirmación de la entrega libera los fondos al productor en una sola transacción.",
     icon: <TabIcon path="M4 8h13m-4-4 4 4-4 4M20 16H7m4 4-4-4 4-4" />,
     mock: <SettlementMock />,
   },
@@ -242,13 +242,14 @@ export function CommerceSection() {
           <div>
             <p className="eyebrow">La propuesta JuLit</p>
             <h2 id="commerce-heading" className={styles.heading}>
-              El pago y el lote, en la misma transacción.
+              El pago en garantía hasta que el lote llega.
             </h2>
           </div>
           <p className={`${styles.description} text-muted`}>
             En el comercio B2B de litio, pagar antes de recibir o entregar antes
             de cobrar deja a una de las partes expuesta. JuLit propone cerrar
-            esa brecha alrededor de un título digital por lote.
+            esa brecha con custodia programática sobre un título digital por
+            lote.
           </p>
         </div>
 
@@ -277,17 +278,20 @@ export function ParticipantsSection() {
           <article className={styles.participantCard} data-landing-reveal>
             <ProducerStructureWidget />
             <p className={`eyebrow ${styles.participantLabel}`}>Productor</p>
-            <h3>Cobrás cuando entregás el título.</h3>
+            <h3>Despachás con el pago ya depositado.</h3>
             <ul className={styles.participantList}>
               <li>
-                El pago del comprador llega en la misma transacción que
-                transfiere el título digital.
+                El pago del comprador queda en garantía antes del envío; la
+                confirmación de la entrega lo libera a tu cuenta.
+              </li>
+              <li>
+                Si el comprador no confirma ni disputa, reclamás los fondos
+                pasado el plazo pactado.
               </li>
               <li>
                 Declarás el certificado de planta una sola vez y cada lote lo
                 referencia.
               </li>
-              <li>El historial del lote queda verificable por cualquiera.</li>
             </ul>
           </article>
 
@@ -298,19 +302,19 @@ export function ParticipantsSection() {
           >
             <BuyerReviewWidget />
             <p className={`eyebrow ${styles.participantLabel}`}>Comprador</p>
-            <h3>Pagás solo si recibís el título.</h3>
+            <h3>El pago solo se libera si confirmás la recepción.</h3>
             <ul className={styles.participantList}>
               <li>
-                El pago y el título digital cambian de manos en la misma
-                transacción: no hay ventana de riesgo.
+                Depositás en custodia del protocolo, no en la cuenta del
+                productor: los fondos se mueven solo con tu confirmación.
+              </li>
+              <li>
+                Una disputa bloquea el reclamo por vencimiento mientras se
+                resuelve fuera de la cadena.
               </li>
               <li>
                 Verificás el certificado de planta y el historial del lote antes
-                y después de liquidar.
-              </li>
-              <li>
-                Confirmás la recepción con la redención, que cierra el ciclo con
-                evidencia permanente.
+                y después de fondear.
               </li>
             </ul>
           </article>

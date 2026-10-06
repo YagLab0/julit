@@ -19,10 +19,10 @@ const lifecycleSteps = [
   },
   {
     number: "03",
-    title: "Liquidación",
+    title: "Fondeo",
     onchain: true,
     description:
-      "El comprador designado ejecuta la liquidación: su pago en USDC llega al productor y el título digital llega al comprador, en la misma transacción.",
+      "El comprador designado deposita el precio total: el USDC queda en garantía, custodiado por el mismo protocolo que guarda el título.",
   },
   {
     number: "04",
@@ -37,17 +37,17 @@ const lifecycleSteps = [
     title: "Redención",
     onchain: true,
     description:
-      "El comprador confirma la recepción: el título se quema y el lote queda marcado como redimido, con un rastro permanente y verificable.",
+      "El comprador confirma la recepción: el título se quema y el pago custodiado se libera al productor, en la misma transacción.",
   },
 ] as const;
 
 const origins = ["Salar de Olaroz", "Salinas Grandes", "Cauchari"] as const;
 
 const lifecycleRecord = [
-  "Título acuñado",
-  "Liquidación atómica",
+  "Título acuñado en custodia",
+  "Fondeo en garantía",
   "Entrega física",
-  "Título quemado · redimido",
+  "Título quemado · pago liberado",
 ] as const;
 
 function ArrowRight() {
@@ -110,27 +110,29 @@ function TitleScene() {
   );
 }
 
-function SettlementScene() {
+function FundingScene() {
   return (
     <div className={styles.mock}>
-      <p className={styles.mockTitle}>Una sola transacción</p>
+      <p className={styles.mockTitle}>fund_lot</p>
       <div className={styles.txFrame}>
         <div className={styles.leg}>
           <span className={styles.legFrom}>USDC</span>
           <span className={styles.legArrow}>
             <ArrowRight />
           </span>
-          <span className={styles.legTo}>Productor</span>
+          <span className={styles.legTo}>Escrow del lote</span>
         </div>
         <div className={styles.leg}>
           <span className={styles.legFrom}>Título digital</span>
           <span className={styles.legArrow}>
             <ArrowRight />
           </span>
-          <span className={styles.legTo}>Comprador</span>
+          <span className={styles.legTo}>ya en custodia</span>
         </div>
       </div>
-      <p className={styles.legNote}>Las dos patas se ejecutan, o ninguna.</p>
+      <p className={styles.legNote}>
+        El pago queda en garantía, no en manos del productor.
+      </p>
     </div>
   );
 }
@@ -143,7 +145,7 @@ function RecordScene() {
           <li
             key={event}
             className={
-              event === "Título quemado · redimido"
+              event === "Título quemado · pago liberado"
                 ? styles.timelineDone
                 : undefined
             }
@@ -159,7 +161,7 @@ function RecordScene() {
 const sceneByNumber: Record<string, ReactNode> = {
   "01": <DirectoryScene />,
   "02": <TitleScene />,
-  "03": <SettlementScene />,
+  "03": <FundingScene />,
   "05": <RecordScene />,
 };
 

@@ -117,8 +117,9 @@ export default function Home() {
             </h1>
             <p className={styles.heroDescription}>
               JuLit conecta productores y compradores de carbonato de litio.
-              Cada lote nace con un título digital, y el pago se liquida en la
-              misma transacción en que el título cambia de manos, sobre Solana.
+              Cada lote nace con un título digital custodiado por el protocolo;
+              el comprador deposita el pago en garantía y solo la confirmación
+              de la entrega lo libera al productor, en una sola transacción.
             </p>
             <div className={styles.heroActions}>
               <DemoLink />
@@ -183,7 +184,7 @@ export default function Home() {
             <p className={styles.sectionDescription}>
               Así se mueve un lote por JuLit.
               <span className={styles.processCaption}>
-                Los pasos de tokenización, liquidación y redención ocurren en la
+                Los pasos de tokenización, fondeo y redención ocurren en la
                 cadena; el descubrimiento y la entrega física quedan fuera del
                 protocolo.
               </span>

@@ -52,7 +52,7 @@ const inputs = [
 
 const outputs = [
   { asset: "USDC", to: "Productor" },
-  { asset: "Título", to: "Comprador" },
+  { asset: "Título", to: "quemado" },
 ];
 
 function SideCell({ flip }: { flip?: boolean }) {
@@ -97,7 +97,7 @@ export function HeroFlow() {
           <div className={styles.node}>
             <HexMark />
           </div>
-          <span className={styles.nodeLabel}>settle_lot</span>
+          <span className={styles.nodeLabel}>escrow</span>
         </div>
         <Beams paths={outPaths} flip />
         <div className={styles.outputs}>

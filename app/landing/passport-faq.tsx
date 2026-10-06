@@ -69,17 +69,17 @@ export function PassportSection() {
                     {
                       title: "Título digital",
                       description:
-                        "El NFT del lote y la custodia que lo resguarda hasta la liquidación.",
+                        "El NFT del lote y la custodia que lo resguarda hasta la redención.",
                     },
                     {
                       title: "Estado del ciclo",
                       description:
-                        "Listado, liquidado o redimido: dónde está el lote en su recorrido.",
+                        "Listado, fondeado o redimido: dónde está el lote en su recorrido.",
                     },
                     {
                       title: "Transacciones",
                       description:
-                        "Registro, liquidación y redención, enlazadas a la cadena.",
+                        "Registro, fondeo y redención, enlazadas a la cadena.",
                     },
                   ].map((field, index) => (
                     <li key={field.title} className={styles.field}>
@@ -156,8 +156,8 @@ export function FaqSection() {
             </summary>
             <p className={styles.answer}>
               Un NFT que representa el derecho contractual sobre el lote. Vive
-              en custodia del protocolo desde el registro hasta la liquidación,
-              y se quema cuando el comprador confirma la recepción. Es una
+              en custodia del protocolo desde el registro hasta la redención, y
+              se quema cuando el comprador confirma la recepción. Es una
               representación digital de ese derecho, no un título legal
               automático.
             </p>
@@ -195,7 +195,7 @@ export function FaqSection() {
             <p className={styles.answer}>
               No. Todo lote nace reservado a un comprador designado: el acuerdo
               comercial se negocia entre las empresas y solo el comprador
-              designado puede ejecutar la liquidación. No hay compra abierta.
+              designado puede fondearlo. No hay compra abierta.
             </p>
           </details>
 
