@@ -77,7 +77,7 @@ function SectionLinks() {
 
 export default function Home() {
   return (
-    <div id="landing" className={styles.landing}>
+    <div id="landing" className={styles.landing} data-landing-motion>
       <LandingMotion />
       <a href="#contenido" className={styles.skipLink}>
         Saltar al contenido

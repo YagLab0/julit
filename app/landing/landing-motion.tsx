@@ -14,7 +14,9 @@ export function LandingMotion() {
     let rafId = 0;
 
     let lenis: Lenis | null = null;
-    if (!reducedMotion.matches) {
+    if (reducedMotion.matches) {
+      delete root.dataset.landingMotion;
+    } else {
       lenis = new Lenis({
         lerp: 0.11,
         anchors: true,
@@ -41,19 +43,18 @@ export function LandingMotion() {
             [
               {
                 opacity: 0,
-                transform: "translateY(28px)",
-                filter: "blur(6px)",
+                transform: "translateY(24px)",
               },
               {
                 opacity: 1,
                 transform: "translateY(0)",
-                filter: "blur(0px)",
               },
             ],
             {
-              duration: 620,
+              duration: 560,
               delay: Number(element.dataset.landingDelay ?? 0),
               easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+              fill: "backwards",
             }
           );
           animations.add(animation);
@@ -85,14 +86,27 @@ export function LandingMotion() {
       target.setAttribute("data-landing-pressed", "");
     }
 
+    function revealRemaining() {
+      root
+        ?.querySelectorAll<HTMLElement>(
+          "[data-landing-reveal]:not([data-landing-revealed])"
+        )
+        .forEach((element) => {
+          element.dataset.landingRevealed = "true";
+          observer.unobserve(element);
+        });
+    }
+
     function stopMotion() {
       release();
       for (const animation of animations) animation.cancel();
       animations.clear();
+      if (reducedMotion.matches) revealRemaining();
     }
 
     function stopKeyboardMotion() {
       observer.disconnect();
+      revealRemaining();
       stopMotion();
     }
 

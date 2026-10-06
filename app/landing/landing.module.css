@@ -77,6 +77,11 @@
   transform: scale(0.97);
 }
 
+.landing[data-landing-motion]
+  [data-landing-reveal]:not([data-landing-revealed]) {
+  opacity: 0;
+}
+
 .landing :global(section[id]) {
   scroll-margin-top: 24px;
 }
