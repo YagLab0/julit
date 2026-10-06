@@ -52,11 +52,14 @@ export const JULIT_ERROR__WRONG_TITLE_MINT = 0x1780; // 6016
 export const JULIT_ERROR__WRONG_PRODUCER = 0x1781; // 6017
 /** WrongTreasury: Account is not the configured treasury */
 export const JULIT_ERROR__WRONG_TREASURY = 0x1782; // 6018
+/** ClaimTooEarly: claimable_after has not been reached */
+export const JULIT_ERROR__CLAIM_TOO_EARLY = 0x1783; // 6019
 /** MathOverflow: Arithmetic overflow */
-export const JULIT_ERROR__MATH_OVERFLOW = 0x1783; // 6019
+export const JULIT_ERROR__MATH_OVERFLOW = 0x1784; // 6020
 
 export type JulitError =
   | typeof JULIT_ERROR__BUYER_IS_PRODUCER
+  | typeof JULIT_ERROR__CLAIM_TOO_EARLY
   | typeof JULIT_ERROR__CLAIM_WINDOW_OUT_OF_BOUNDS
   | typeof JULIT_ERROR__INVALID_CLAIM_WINDOW
   | typeof JULIT_ERROR__INVALID_FEE_BPS
@@ -81,6 +84,7 @@ let julitErrorMessages: Record<JulitError, string> | undefined;
 if (process.env.NODE_ENV !== "production") {
   julitErrorMessages = {
     [JULIT_ERROR__BUYER_IS_PRODUCER]: `Buyer cannot be the producer`,
+    [JULIT_ERROR__CLAIM_TOO_EARLY]: `claimable_after has not been reached`,
     [JULIT_ERROR__CLAIM_WINDOW_OUT_OF_BOUNDS]: `claimable_after is outside the configured claim window`,
     [JULIT_ERROR__INVALID_CLAIM_WINDOW]: `claim_min_secs must be > 0 and < claim_max_secs`,
     [JULIT_ERROR__INVALID_FEE_BPS]: `Fee must be at most 10000 bps`,

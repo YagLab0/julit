@@ -6,11 +6,11 @@
 
 **Status:** ready-for-agent
 
-- [ ] `claim_timeout` releases funds + burns title + applies fee, producer-signed, only `funded` + past `claimable_after`
-- [ ] `claim_timeout` rejected before deadline and on `disputed` lots
-- [ ] `raise_dispute` marks `disputed`, buyer-signed, `funded` only
-- [ ] `redeem_lot` still works from `disputed` (escrow release = resolution in producer's favor)
-- [ ] No refund or arbiter path exists on-chain
-- [ ] `POST /api/lots/claim` and `/dispute` verify by RPC before writing
-- [ ] Producer claim action + buyer dispute action in UI
-- [ ] LiteSVM tests cover deadline boundary, disputed block, wrong signers
+- [x] `claim_timeout` releases funds + burns title + applies fee, producer-signed, only `funded` + past `claimable_after`
+- [x] `claim_timeout` rejected before deadline and on `disputed` lots
+- [x] `raise_dispute` marks `disputed`, buyer-signed, `funded` only
+- [x] `redeem_lot` still works from `disputed` (escrow release = resolution in producer's favor)
+- [x] No refund or arbiter path exists on-chain
+- [x] `POST /api/lots/claim` and `/dispute` verify by RPC before writing
+- [x] Producer claim action + buyer dispute action in UI
+- [x] LiteSVM tests cover deadline boundary, disputed block, wrong signers

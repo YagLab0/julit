@@ -1,4 +1,4 @@
-use anchor_lang::{AnchorDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
+use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
 use julit::{accounts, instruction, Config, Lot, LotStatus};
 use litesvm::LiteSVM;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
@@ -270,18 +270,55 @@ fn redeem_lot_ix(
     }
 }
 
-/// Rewrites a lot account's status in place (e.g. to simulate `Disputed`,
-/// which has no instruction yet).
-fn set_lot_status(svm: &mut LiteSVM, lot: &Pubkey, status: LotStatus) {
-    let mut acc = svm.get_account(lot).unwrap();
-    let mut decoded = Lot::deserialize(&mut &acc.data[8..]).unwrap();
-    decoded.status = status;
-    let encoded = decoded.try_to_vec().unwrap();
-    acc.data[8..8 + encoded.len()].copy_from_slice(&encoded);
-    for byte in &mut acc.data[8 + encoded.len()..] {
-        *byte = 0;
+fn claim_timeout_ix(
+    producer: &Pubkey,
+    lot: &Pubkey,
+    treasury: &Pubkey,
+    usdc_mint: &Pubkey,
+) -> Instruction {
+    let (config, _) = config_pda();
+    let mint = title_mint(lot);
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::ClaimTimeout {
+            lot: *lot,
+            config,
+            producer: *producer,
+            escrow_usdc: ata(lot, usdc_mint),
+            escrow_title: ata(lot, &mint),
+            mint,
+            treasury: *treasury,
+            producer_usdc: ata(producer, usdc_mint),
+            treasury_usdc: ata(treasury, usdc_mint),
+            usdc_mint: *usdc_mint,
+            token_program: spl_token::ID,
+            associated_token_program: spl_associated_token_account::ID,
+            system_program: solana_sdk::system_program::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::ClaimTimeout {}.data(),
     }
-    svm.set_account(*lot, acc).unwrap();
+}
+
+fn raise_dispute_ix(buyer: &Pubkey, lot: &Pubkey) -> Instruction {
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::RaiseDispute {
+            lot: *lot,
+            buyer: *buyer,
+        }
+        .to_account_metas(None),
+        data: instruction::RaiseDispute {}.data(),
+    }
+}
+
+/// Moves the Clock sysvar past `lot.claimable_after`.
+fn warp_past_claim_deadline(svm: &mut LiteSVM, lot: &Pubkey) {
+    let data = svm.get_account(lot).unwrap().data;
+    let decoded = Lot::deserialize(&mut &data[8..]).unwrap();
+    let mut clock = svm.get_sysvar::<solana_sdk::clock::Clock>();
+    clock.unix_timestamp = decoded.claimable_after + 1;
+    svm.set_sysvar(&clock);
 }
 
 /// Shared setup: config + a listed lot priced at `price`, funded buyer ATA.
@@ -455,7 +492,12 @@ fn redeem_lot_works_from_disputed() {
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
     let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
 
-    set_lot_status(&mut svm, &lot, LotStatus::Disputed);
+    send(
+        &mut svm,
+        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
+        &[&payer, &buyer],
+    );
+    svm.expire_blockhash();
     send(
         &mut svm,
         vec![redeem_lot_ix(
@@ -544,6 +586,151 @@ fn redeem_lot_rejects_double_redeem() {
             &treasury.pubkey(),
             &usdc_mint,
         )],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("LotNotFunded") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn claim_timeout_releases_to_producer_after_deadline() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    warp_past_claim_deadline(&mut svm, &lot);
+    send(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &payer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer],
+    );
+
+    assert_eq!(token_balance(&svm, &ata(&payer.pubkey(), &usdc_mint)), 398_000_000);
+    assert_eq!(token_balance(&svm, &ata(&treasury.pubkey(), &usdc_mint)), 2_000_000);
+    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 0);
+
+    let mint = title_mint(&lot);
+    let mint_state =
+        spl_token::state::Mint::unpack(&svm.get_account(&mint).unwrap().data).unwrap();
+    assert_eq!(mint_state.supply, 0);
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Claimed);
+}
+
+#[test]
+fn claim_timeout_rejects_before_deadline() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &payer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer],
+    );
+    assert!(err.contains("ClaimTooEarly") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn claim_timeout_rejects_disputed_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    send(
+        &mut svm,
+        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
+        &[&payer, &buyer],
+    );
+    svm.expire_blockhash();
+    warp_past_claim_deadline(&mut svm, &lot);
+
+    let err = send_err(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &payer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer],
+    );
+    assert!(err.contains("LotNotFunded") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn claim_timeout_rejects_wrong_signer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    warp_past_claim_deadline(&mut svm, &lot);
+    // The buyer cannot trigger the producer's claim path.
+    let err = send_err(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &buyer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("WrongProducer") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn raise_dispute_marks_lot_disputed() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    send(
+        &mut svm,
+        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
+        &[&payer, &buyer],
+    );
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Disputed);
+    // The escrow stays untouched — the dispute only freezes the clock.
+    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 400_000_000);
+}
+
+#[test]
+fn raise_dispute_rejects_wrong_signer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![raise_dispute_ix(&payer.pubkey(), &lot)],
+        &[&payer],
+    );
+    assert!(err.contains("WrongBuyer") || err.contains("601"), "{err}");
+}
+
+#[test]
+fn raise_dispute_rejects_unfunded_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
         &[&payer, &buyer],
     );
     assert!(err.contains("LotNotFunded") || err.contains("601"), "{err}");

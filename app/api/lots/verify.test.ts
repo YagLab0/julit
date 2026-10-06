@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  verifyLotClaim,
   verifyLotCreation,
+  verifyLotDispute,
   verifyLotFunding,
   verifyLotRedemption,
   type VerifyLotCreationInput,
-  type VerifyLotFundingInput,
+  type VerifyLotTransitionInput,
 } from "./verify";
 
 const WALLET = "ProducerWallet111111111111111111111111111";
@@ -137,17 +139,17 @@ describe("verifyLotCreation", () => {
 const BUYER = "BuyerWallet11111111111111111111111111111";
 
 function fundBase(
-  overrides: Partial<VerifyLotFundingInput> = {}
-): VerifyLotFundingInput {
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
   return {
-    buyerWallet: BUYER,
+    signerWallet: BUYER,
     lotPda: LOT_PDA,
     indexedStatus: "listed",
     transaction: {
       signature: "sig",
       slot: 100,
       failed: false,
-      fundLotInstruction: { lot: LOT_PDA, buyer: BUYER },
+      lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
     },
     lotAccount: {
       programOwned: true,
@@ -172,7 +174,7 @@ describe("verifyLotFunding", () => {
           signature: "sig",
           slot: 100,
           failed: true,
-          fundLotInstruction: { lot: LOT_PDA, buyer: BUYER },
+          lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
         },
       })
     );
@@ -187,7 +189,7 @@ describe("verifyLotFunding", () => {
           signature: "sig",
           slot: 100,
           failed: false,
-          fundLotInstruction: null,
+          lifecycleInstruction: null,
         },
       })
     );
@@ -201,9 +203,9 @@ describe("verifyLotFunding", () => {
           signature: "sig",
           slot: 100,
           failed: false,
-          fundLotInstruction: {
+          lifecycleInstruction: {
             lot: "OtherLot1111111111111111111111111",
-            buyer: BUYER,
+            signer: BUYER,
           },
         },
       })
@@ -218,9 +220,9 @@ describe("verifyLotFunding", () => {
           signature: "sig",
           slot: 100,
           failed: false,
-          fundLotInstruction: {
+          lifecycleInstruction: {
             lot: LOT_PDA,
-            buyer: "Impostor1111111111111111111111111",
+            signer: "Impostor1111111111111111111111111",
           },
         },
       })
@@ -267,8 +269,8 @@ describe("verifyLotFunding", () => {
 });
 
 function redeemBase(
-  overrides: Partial<VerifyLotFundingInput> = {}
-): VerifyLotFundingInput {
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
   return fundBase({
     indexedStatus: "funded",
     lotAccount: {
@@ -299,7 +301,7 @@ describe("verifyLotRedemption", () => {
           signature: "sig",
           slot: 100,
           failed: true,
-          fundLotInstruction: { lot: LOT_PDA, buyer: BUYER },
+          lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
         },
       })
     );
@@ -313,7 +315,7 @@ describe("verifyLotRedemption", () => {
           signature: "sig",
           slot: 100,
           failed: false,
-          fundLotInstruction: null,
+          lifecycleInstruction: null,
         },
       })
     );
@@ -327,9 +329,9 @@ describe("verifyLotRedemption", () => {
           signature: "sig",
           slot: 100,
           failed: false,
-          fundLotInstruction: {
+          lifecycleInstruction: {
             lot: "OtherLot1111111111111111111111111",
-            buyer: BUYER,
+            signer: BUYER,
           },
         },
       })
@@ -344,9 +346,9 @@ describe("verifyLotRedemption", () => {
           signature: "sig",
           slot: 100,
           failed: false,
-          fundLotInstruction: {
+          lifecycleInstruction: {
             lot: LOT_PDA,
-            buyer: "Impostor1111111111111111111111111",
+            signer: "Impostor1111111111111111111111111",
           },
         },
       })
@@ -391,5 +393,147 @@ describe("verifyLotRedemption", () => {
     const r = verifyLotRedemption(redeemBase({ indexedStatus: "listed" }));
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.rejection.status).toBe(409);
+  });
+});
+
+const PRODUCER = WALLET;
+
+function claimBase(
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
+  return fundBase({
+    signerWallet: PRODUCER,
+    indexedStatus: "funded",
+    transaction: {
+      signature: "sig",
+      slot: 100,
+      failed: false,
+      lifecycleInstruction: { lot: LOT_PDA, signer: PRODUCER },
+    },
+    lotAccount: {
+      programOwned: true,
+      producer: PRODUCER,
+      buyer: BUYER,
+      status: "claimed",
+    },
+    ...overrides,
+  });
+}
+
+describe("verifyLotClaim", () => {
+  it("accepts a confirmed claim_timeout by the lot producer", () => {
+    expect(verifyLotClaim(claimBase())).toEqual({ ok: true });
+  });
+
+  it("rejects a claim signed by the buyer", () => {
+    const r = verifyLotClaim(
+      claimBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects when the caller is not the on-chain producer", () => {
+    const r = verifyLotClaim(
+      claimBase({
+        lotAccount: {
+          programOwned: true,
+          producer: "OtherProducer11111111111111111111111",
+          buyer: BUYER,
+          status: "claimed",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects a disputed or unindexed lot", () => {
+    const r = verifyLotClaim(claimBase({ indexedStatus: "disputed" }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(409);
+    expect(verifyLotClaim(claimBase({ indexedStatus: null })).ok).toBe(false);
+  });
+
+  it("rejects when the on-chain status is not claimed", () => {
+    const r = verifyLotClaim(
+      claimBase({
+        lotAccount: {
+          programOwned: true,
+          producer: PRODUCER,
+          buyer: BUYER,
+          status: "funded",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+});
+
+function disputeBase(
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
+  return fundBase({
+    indexedStatus: "funded",
+    lotAccount: {
+      programOwned: true,
+      producer: WALLET,
+      buyer: BUYER,
+      status: "disputed",
+    },
+    ...overrides,
+  });
+}
+
+describe("verifyLotDispute", () => {
+  it("accepts a confirmed raise_dispute by the designated buyer", () => {
+    expect(verifyLotDispute(disputeBase())).toEqual({ ok: true });
+  });
+
+  it("rejects a dispute signed by a different wallet", () => {
+    const r = verifyLotDispute(
+      disputeBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          lifecycleInstruction: {
+            lot: LOT_PDA,
+            signer: "Impostor1111111111111111111111111",
+          },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects a listed or already-disputed index row", () => {
+    for (const indexedStatus of ["listed", "disputed"] as const) {
+      const r = verifyLotDispute(disputeBase({ indexedStatus }));
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.rejection.status).toBe(409);
+    }
+  });
+
+  it("rejects when the on-chain status is not disputed", () => {
+    const r = verifyLotDispute(
+      disputeBase({
+        lotAccount: {
+          programOwned: true,
+          producer: WALLET,
+          buyer: BUYER,
+          status: "funded",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
   });
 });

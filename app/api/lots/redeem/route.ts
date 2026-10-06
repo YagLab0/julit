@@ -11,6 +11,8 @@ import { verifyLotRedemption } from "../verify";
 export async function POST(request: Request) {
   return transitionLot(request, {
     instruction: JulitInstruction.RedeemLot,
+    signerAccountIndex: 2,
+    companyType: "buyer",
     allowedIndex: ["funded", "disputed"],
     txColumn: "redeem_tx_signature",
     nextStatus: "redeemed",

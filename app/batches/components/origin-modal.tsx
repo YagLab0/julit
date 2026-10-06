@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { address, getBase58Decoder } from "@solana/kit";
 import { passportPath } from "../../batch/verification";
@@ -41,9 +41,30 @@ import {
 import {
   fetchConfig,
   findConfigPda,
+  getClaimTimeoutInstructionAsync,
   getFundLotInstructionAsync,
+  getRaiseDisputeInstruction,
   getRedeemLotInstructionAsync,
 } from "../../generated/julit";
+
+const CLAIM_POLL_MS = 30_000;
+
+/**
+ * Render-pure clock for the claim deadline: re-checks every `intervalMs`
+ * via useSyncExternalStore. Quantizing the snapshot keeps it stable
+ * between calls within the window, so the claim button appears up to one
+ * interval late — never early; the program enforces the exact instant.
+ */
+function useQuantizedNow(intervalMs: number): number | null {
+  return useSyncExternalStore<number | null>(
+    (onChange) => {
+      const id = setInterval(onChange, intervalMs);
+      return () => clearInterval(id);
+    },
+    () => Math.floor(Date.now() / intervalMs),
+    () => null
+  );
+}
 
 // R3F touches WebGL: client-only, never prerendered.
 const LotModel = dynamic(() => import("./lot-model").then((m) => m.LotModel), {
@@ -228,6 +249,9 @@ export function OriginModal({
   const [requestingContract, setRequestingContract] = useState(false);
   const [funding, setFunding] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [disputing, setDisputing] = useState(false);
+  const nowUnits = useQuantizedNow(CLAIM_POLL_MS);
 
   // Load producer company and contract status
   useEffect(() => {
@@ -280,6 +304,14 @@ export function OriginModal({
 
   const isDesignatedBuyer = Boolean(
     selected && wallet?.account?.address === selected.buyer_wallet
+  );
+  const isProducer = Boolean(
+    selected && wallet?.account?.address === selected.producer_wallet
+  );
+  const claimDeadlinePassed = Boolean(
+    selected &&
+    nowUnits !== null &&
+    new Date(selected.claimable_after).getTime() <= nowUnits * CLAIM_POLL_MS
   );
 
   async function handleRequestContract() {
@@ -554,6 +586,163 @@ export function OriginModal({
     }
   }
 
+  async function handleClaim() {
+    if (!selected || !isProducer || !claimDeadlinePassed) return;
+    if (!signer) {
+      toast.warning("Billetera sin firma", {
+        description:
+          "Tu billetera no puede firmar transacciones; reconectala para reclamar el pago.",
+      });
+      return;
+    }
+    if (cluster !== "devnet") {
+      toast.warning("Cambiá a Solana Devnet", {
+        description: "El reclamo por timeout corre sobre Devnet.",
+      });
+      return;
+    }
+
+    setClaiming(true);
+    try {
+      const { rpc } = createSolanaClient("devnet");
+      const configPda = await findConfigPda();
+      const config = await fetchConfig(rpc, configPda[0], {
+        commitment: "confirmed",
+      });
+
+      const claimIx = await getClaimTimeoutInstructionAsync({
+        lot: address(selected.pda_address),
+        producer: signer,
+        mint: address(selected.mint_address),
+        treasury: config.data.treasury,
+        usdcMint: config.data.usdcMint,
+      });
+      const txSignature = await sendTransaction({
+        instructions: [claimIx],
+      });
+
+      const res = await fetch("/api/lots/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lot_pda: selected.pda_address,
+          tx_signature: txSignature,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error("El reclamo quedó on-chain pero falló el índice.", {
+          description:
+            err?.error ??
+            "El pago ya fue liberado; el pasaporte puede tardar en reflejarlo.",
+        });
+        return;
+      }
+
+      retry();
+      toast.success(`Reclamo ejecutado: lote ${selected.lot_id} cobrado`, {
+        description:
+          "El comprador no confirmó a tiempo; el escrow liberó el pago menos el fee.",
+        action: {
+          label: "Ver en Explorer",
+          onClick: () =>
+            window.open(
+              getExplorerUrl(`/tx/${txSignature}`, cluster),
+              "_blank"
+            ),
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(msg)) {
+        toast.info("Transacción cancelada", {
+          description: "Cancelaste la firma en tu billetera.",
+        });
+      } else {
+        toast.error("No se pudo reclamar el pago.", {
+          description: "Verificá que el plazo haya vencido y reintentá.",
+        });
+      }
+    } finally {
+      setClaiming(false);
+    }
+  }
+
+  async function handleDispute() {
+    if (!selected || !isDesignatedBuyer) return;
+    if (!signer) {
+      toast.warning("Billetera sin firma", {
+        description:
+          "Tu billetera no puede firmar transacciones; reconectala para disputar el lote.",
+      });
+      return;
+    }
+    if (cluster !== "devnet") {
+      toast.warning("Cambiá a Solana Devnet", {
+        description: "La disputa corre sobre Devnet.",
+      });
+      return;
+    }
+
+    setDisputing(true);
+    try {
+      const disputeIx = getRaiseDisputeInstruction({
+        lot: address(selected.pda_address),
+        buyer: signer,
+      });
+      const txSignature = await sendTransaction({
+        instructions: [disputeIx],
+      });
+
+      const res = await fetch("/api/lots/dispute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lot_pda: selected.pda_address,
+          tx_signature: txSignature,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        toast.error("La disputa quedó on-chain pero falló el índice.", {
+          description:
+            err?.error ??
+            "El lote ya está congelado; el pasaporte puede tardar en reflejarlo.",
+        });
+        return;
+      }
+
+      retry();
+      toast.success(`Disputa marcada: lote ${selected.lot_id} congelado`, {
+        description:
+          "El pago queda bloqueado hasta que confirmes la recepción o resuelvan por contrato.",
+        action: {
+          label: "Ver en Explorer",
+          onClick: () =>
+            window.open(
+              getExplorerUrl(`/tx/${txSignature}`, cluster),
+              "_blank"
+            ),
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/reject|cancel|denied/i.test(msg)) {
+        toast.info("Transacción cancelada", {
+          description: "Cancelaste la firma en tu billetera.",
+        });
+      } else {
+        toast.error("No se pudo marcar la disputa.", {
+          description: "Reintentá en unos segundos.",
+        });
+      }
+    } finally {
+      setDisputing(false);
+    }
+  }
+
   return (
     <Modal onClose={onClose} labelledBy="origin-modal-title" maxWidth={1040}>
       <header className="shrink-0 border-b border-border px-5 pt-4 pb-3">
@@ -795,28 +984,69 @@ export function OriginModal({
             )}
             {(selected.status === "funded" ||
               selected.status === "disputed") && (
-              <>
-                {isDesignatedBuyer ? (
-                  <button
-                    type="button"
-                    disabled={redeeming}
-                    onClick={() => void handleConfirmReceipt()}
-                    className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
-                      redeeming
-                        ? "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
-                        : "btn-primary cursor-pointer"
-                    }`}
-                  >
-                    {redeeming ? "Confirmando…" : "Confirmar recepción"}
-                  </button>
-                ) : (
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+                {isDesignatedBuyer && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={redeeming}
+                      onClick={() => void handleConfirmReceipt()}
+                      className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
+                        redeeming
+                          ? "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
+                          : "btn-primary cursor-pointer"
+                      }`}
+                    >
+                      {redeeming ? "Confirmando…" : "Confirmar recepción"}
+                    </button>
+                    {selected.status === "funded" && (
+                      <button
+                        type="button"
+                        disabled={disputing}
+                        onClick={() => void handleDispute()}
+                        className="btn-secondary w-full px-4 py-1.5 text-xs transition sm:w-auto"
+                      >
+                        {disputing
+                          ? "Marcando…"
+                          : "Reportar problema (disputa)"}
+                      </button>
+                    )}
+                  </>
+                )}
+                {isProducer &&
+                  (selected.status === "disputed" ? (
+                    <p className="text-[11px] text-muted sm:max-w-52 sm:text-right">
+                      En disputa: el pago queda congelado hasta que la
+                      compradora confirme.
+                    </p>
+                  ) : claimDeadlinePassed ? (
+                    <button
+                      type="button"
+                      disabled={claiming}
+                      onClick={() => void handleClaim()}
+                      className={`w-full px-5 py-2.5 text-sm transition sm:w-auto sm:min-w-32 ${
+                        claiming
+                          ? "cursor-not-allowed border border-border-low bg-secondary text-muted opacity-60"
+                          : "btn-primary cursor-pointer"
+                      }`}
+                    >
+                      {claiming ? "Reclamando…" : "Reclamar pago (vencido)"}
+                    </button>
+                  ) : (
+                    <p className="text-[11px] text-muted sm:max-w-52 sm:text-right">
+                      {`Fondeado: podés reclamar el pago si el comprador no confirma antes del ${dateFmt.format(
+                        new Date(selected.claimable_after)
+                      )}.`}
+                    </p>
+                  ))}
+                {!isDesignatedBuyer && !isProducer && (
                   <p className="text-[11px] text-muted sm:max-w-52 sm:text-right">
                     {selected.status === "disputed"
                       ? "En disputa: congelado hasta que la compradora confirme."
                       : "Fondeado en escrow: pendiente de confirmación de recepción."}
                   </p>
                 )}
-              </>
+              </div>
             )}
           </div>
         </footer>

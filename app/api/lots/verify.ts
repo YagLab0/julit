@@ -78,24 +78,24 @@ export function verifyLotCreation(
   return { ok: true };
 }
 
-export type FundLotInstructionFacts = {
+export type LifecycleInstructionFacts = {
   /** Instruction account[0]: the lot PDA. */
   lot: string;
-  /** Instruction account[2]: the buyer signer. */
-  buyer: string;
+  /** The transition's required signer (buyer or producer). */
+  signer: string;
 };
 
-export type FundTransactionFacts = {
+export type TransitionFacts = {
   signature: string;
   slot: number;
   failed: boolean;
-  fundLotInstruction: FundLotInstructionFacts | null;
+  lifecycleInstruction: LifecycleInstructionFacts | null;
 };
 
-export type VerifyLotFundingInput = {
-  /** Verified wallet of the authenticated buyer. */
-  buyerWallet: string;
-  /** Lot PDA the caller wants to mark as funded. */
+export type VerifyLotTransitionInput = {
+  /** Verified wallet of the authenticated caller. */
+  signerWallet: string;
+  /** Lot PDA the caller wants to transition. */
   lotPda: string;
   /** Current index row status — null when the lot is not indexed. */
   indexedStatus:
@@ -107,7 +107,7 @@ export type VerifyLotFundingInput = {
     | "cancelled"
     | null;
   /** Null when the transaction is missing or unconfirmed. */
-  transaction: FundTransactionFacts | null;
+  transaction: TransitionFacts | null;
   /** Null when the lot account does not exist. */
   lotAccount: LotAccountFacts | null;
 };
@@ -117,16 +117,18 @@ type TransitionSpec = {
   expectedStatus: LotAccountFacts["status"];
   /** Index statuses that may take this transition. */
   allowedIndex: readonly LotAccountFacts["status"][];
+  /** Which on-chain field the caller's wallet must match. */
+  onChainParty: "buyer" | "producer";
   missingIx: string;
   wrongLot: string;
   wrongSigner: string;
-  wrongOnChainBuyer: string;
+  wrongOnChainParty: string;
   wrongOnChainStatus: string;
   staleIndex: string;
 };
 
 function verifyLifecycleTransition(
-  input: VerifyLotFundingInput,
+  input: VerifyLotTransitionInput,
   spec: TransitionSpec
 ): { ok: true } | { ok: false; rejection: LotRejection } {
   const reject = (status: number, message: string) => ({
@@ -142,14 +144,14 @@ function verifyLifecycleTransition(
     return reject(400, "La transacción falló en la cadena.");
   }
 
-  const ix = tx.fundLotInstruction;
+  const ix = tx.lifecycleInstruction;
   if (!ix) {
     return reject(400, spec.missingIx);
   }
   if (ix.lot !== input.lotPda) {
     return reject(400, spec.wrongLot);
   }
-  if (ix.buyer !== input.buyerWallet) {
+  if (ix.signer !== input.signerWallet) {
     return reject(403, spec.wrongSigner);
   }
 
@@ -157,8 +159,9 @@ function verifyLifecycleTransition(
   if (!lot || !lot.programOwned) {
     return reject(400, "La cuenta del lote no existe en el programa.");
   }
-  if (lot.buyer !== input.buyerWallet) {
-    return reject(403, spec.wrongOnChainBuyer);
+  const onChainParty = spec.onChainParty === "buyer" ? lot.buyer : lot.producer;
+  if (onChainParty !== input.signerWallet) {
+    return reject(403, spec.wrongOnChainParty);
   }
   if (lot.status !== spec.expectedStatus) {
     return reject(400, spec.wrongOnChainStatus);
@@ -175,33 +178,67 @@ function verifyLifecycleTransition(
 }
 
 export function verifyLotFunding(
-  input: VerifyLotFundingInput
+  input: VerifyLotTransitionInput
 ): { ok: true } | { ok: false; rejection: LotRejection } {
   return verifyLifecycleTransition(input, {
     expectedStatus: "funded",
     allowedIndex: ["listed"],
+    onChainParty: "buyer",
     missingIx: "La transacción no contiene una instrucción de fondeo JuLit.",
     wrongLot: "La transacción no fondea este lote.",
     wrongSigner: "El fondeo no lo firmó tu wallet verificada.",
-    wrongOnChainBuyer: "Solo la compradora designada puede fondear el lote.",
+    wrongOnChainParty: "Solo la compradora designada puede fondear el lote.",
     wrongOnChainStatus: "El lote no quedó fondeado en la cadena.",
     staleIndex: "El lote ya no está publicado.",
   });
 }
 
 export function verifyLotRedemption(
-  input: VerifyLotFundingInput
+  input: VerifyLotTransitionInput
 ): { ok: true } | { ok: false; rejection: LotRejection } {
   return verifyLifecycleTransition(input, {
     expectedStatus: "redeemed",
     allowedIndex: ["funded", "disputed"],
+    onChainParty: "buyer",
     missingIx:
       "La transacción no contiene una instrucción de confirmación JuLit.",
     wrongLot: "La transacción no confirma este lote.",
     wrongSigner: "La recepción no la firmó tu wallet verificada.",
-    wrongOnChainBuyer:
+    wrongOnChainParty:
       "Solo la compradora designada puede confirmar la recepción.",
     wrongOnChainStatus: "El lote no quedó liquidado en la cadena.",
     staleIndex: "El lote ya no está pendiente de recepción.",
+  });
+}
+
+export function verifyLotClaim(
+  input: VerifyLotTransitionInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "claimed",
+    allowedIndex: ["funded"],
+    onChainParty: "producer",
+    missingIx: "La transacción no contiene un reclamo por timeout JuLit.",
+    wrongLot: "La transacción no reclama este lote.",
+    wrongSigner: "El reclamo no lo firmó tu wallet verificada.",
+    wrongOnChainParty: "Solo la productora del lote puede reclamar el pago.",
+    wrongOnChainStatus: "El lote no quedó reclamado en la cadena.",
+    staleIndex: "El lote ya no está fondeado.",
+  });
+}
+
+export function verifyLotDispute(
+  input: VerifyLotTransitionInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "disputed",
+    allowedIndex: ["funded"],
+    onChainParty: "buyer",
+    missingIx: "La transacción no contiene una disputa JuLit.",
+    wrongLot: "La transacción no disputa este lote.",
+    wrongSigner: "La disputa no la firmó tu wallet verificada.",
+    wrongOnChainParty: "Solo la compradora designada puede disputar el lote.",
+    wrongOnChainStatus: "El lote no quedó en disputa en la cadena.",
+    staleIndex: "El lote ya no está fondeado.",
   });
 }

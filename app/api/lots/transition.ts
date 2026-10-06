@@ -10,7 +10,7 @@ import { jsonError, readJsonBody } from "../../lib/server/api";
 import { createSolanaClient } from "../../lib/solana-client";
 import { createClient } from "../../lib/supabase/server";
 import { createServiceClient } from "../../lib/supabase/service";
-import type { VerifyLotFundingInput } from "./verify";
+import type { VerifyLotTransitionInput } from "./verify";
 
 const LOT_STATUS: Readonly<Record<number, string>> = {
   [LotStatus.Listed]: "listed",
@@ -26,6 +26,10 @@ const BASE58_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 type TransitionOptions = {
   /** Discriminator the transaction must carry. */
   instruction: JulitInstruction;
+  /** Position of the required signer in the instruction's account list. */
+  signerAccountIndex: number;
+  /** Which company type may call this transition. */
+  companyType: "buyer" | "producer";
   /** Index statuses the CAS update accepts. */
   allowedIndex: readonly string[];
   /** Column receiving the transaction signature. */
@@ -38,16 +42,17 @@ type TransitionOptions = {
   /** Status written on success. */
   nextStatus: string;
   verify: (
-    input: VerifyLotFundingInput
+    input: VerifyLotTransitionInput
   ) =>
     | { ok: true }
     | { ok: false; rejection: { status: number; message: string } };
 };
 
 /**
- * Shared POST handler for buyer-signed lifecycle transitions (fund, redeem).
- * Authenticates the buyer company, decodes the submitted transaction, runs
- * the pure verification seam, then CAS-updates the index row.
+ * Shared POST handler for lifecycle transitions (fund, redeem, claim,
+ * dispute). Authenticates the calling company, decodes the submitted
+ * transaction, runs the pure verification seam, then CAS-updates the
+ * index row.
  */
 export async function transitionLot(request: Request, opts: TransitionOptions) {
   const supabase = await createClient();
@@ -64,8 +69,8 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!company || company.company_type !== "buyer") {
-    return jsonError("Solo las compradoras ejecutan esta operación.", 403);
+  if (!company || company.company_type !== opts.companyType) {
+    return jsonError("Tu empresa no puede ejecutar esta operación.", 403);
   }
   if (!company.wallet_address || !company.wallet_verified_at) {
     return jsonError("Vinculá la wallet verificada de tu empresa.", 400);
@@ -111,16 +116,19 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
       ).find((ix) => accountKeys[ix.programIdIndex] === JULIT_PROGRAM_ADDRESS)
     : null;
 
-  let decoded: { lot: string; buyer: string } | null = null;
+  let decoded: { lot: string; signer: string } | null = null;
   if (instruction) {
     const data = new Uint8Array([
       ...Buffer.from(instruction.data, "base64").values(),
     ]);
     const kind = identifyJulitInstruction(data);
-    if (kind === opts.instruction && instruction.accounts.length >= 3) {
+    if (
+      kind === opts.instruction &&
+      instruction.accounts.length > opts.signerAccountIndex
+    ) {
       decoded = {
         lot: accountKeys[instruction.accounts[0]],
-        buyer: accountKeys[instruction.accounts[2]],
+        signer: accountKeys[instruction.accounts[opts.signerAccountIndex]],
       };
     }
   }
@@ -131,7 +139,7 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
   const lotData = account.exists ? account.data : null;
 
   const verdict = opts.verify({
-    buyerWallet: company.wallet_address,
+    signerWallet: company.wallet_address,
     lotPda,
     indexedStatus: (row?.status as never) ?? null,
     transaction: tx
@@ -139,7 +147,7 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
           signature: txSignature,
           slot: Number(tx.slot),
           failed: Boolean(tx.meta?.err),
-          fundLotInstruction: decoded,
+          lifecycleInstruction: decoded,
         }
       : null,
     lotAccount:

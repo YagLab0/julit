@@ -17,13 +17,17 @@ import {
   type ReadonlyUint8Array,
 } from "@solana/kit";
 import {
+  parseClaimTimeoutInstruction,
   parseCreateLotInstruction,
   parseFundLotInstruction,
   parseInitializeInstruction,
+  parseRaiseDisputeInstruction,
   parseRedeemLotInstruction,
+  type ParsedClaimTimeoutInstruction,
   type ParsedCreateLotInstruction,
   type ParsedFundLotInstruction,
   type ParsedInitializeInstruction,
+  type ParsedRaiseDisputeInstruction,
   type ParsedRedeemLotInstruction,
 } from "../instructions";
 
@@ -67,9 +71,11 @@ export function identifyJulitAccount(
 }
 
 export enum JulitInstruction {
+  ClaimTimeout,
   CreateLot,
   FundLot,
   Initialize,
+  RaiseDispute,
   RedeemLot,
 }
 
@@ -77,6 +83,17 @@ export function identifyJulitInstruction(
   instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): JulitInstruction {
   const data = "data" in instruction ? instruction.data : instruction;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([130, 234, 45, 53, 120, 90, 86, 178]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.ClaimTimeout;
+  }
   if (
     containsBytes(
       data,
@@ -114,6 +131,17 @@ export function identifyJulitInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([41, 243, 1, 51, 150, 95, 246, 73]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.RaiseDispute;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([123, 49, 49, 64, 118, 149, 146, 79]),
       ),
       0,
@@ -130,6 +158,9 @@ export type ParsedJulitInstruction<
   TProgram extends string = "BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky",
 > =
   | ({
+      instructionType: JulitInstruction.ClaimTimeout;
+    } & ParsedClaimTimeoutInstruction<TProgram>)
+  | ({
       instructionType: JulitInstruction.CreateLot;
     } & ParsedCreateLotInstruction<TProgram>)
   | ({
@@ -139,6 +170,9 @@ export type ParsedJulitInstruction<
       instructionType: JulitInstruction.Initialize;
     } & ParsedInitializeInstruction<TProgram>)
   | ({
+      instructionType: JulitInstruction.RaiseDispute;
+    } & ParsedRaiseDisputeInstruction<TProgram>)
+  | ({
       instructionType: JulitInstruction.RedeemLot;
     } & ParsedRedeemLotInstruction<TProgram>);
 
@@ -147,6 +181,13 @@ export function parseJulitInstruction<TProgram extends string>(
 ): ParsedJulitInstruction<TProgram> {
   const instructionType = identifyJulitInstruction(instruction);
   switch (instructionType) {
+    case JulitInstruction.ClaimTimeout: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.ClaimTimeout,
+        ...parseClaimTimeoutInstruction(instruction),
+      };
+    }
     case JulitInstruction.CreateLot: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -166,6 +207,13 @@ export function parseJulitInstruction<TProgram extends string>(
       return {
         instructionType: JulitInstruction.Initialize,
         ...parseInitializeInstruction(instruction),
+      };
+    }
+    case JulitInstruction.RaiseDispute: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.RaiseDispute,
+        ...parseRaiseDisputeInstruction(instruction),
       };
     }
     case JulitInstruction.RedeemLot: {

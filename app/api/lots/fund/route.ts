@@ -10,6 +10,8 @@ import { verifyLotFunding } from "../verify";
 export async function POST(request: Request) {
   return transitionLot(request, {
     instruction: JulitInstruction.FundLot,
+    signerAccountIndex: 2,
+    companyType: "buyer",
     allowedIndex: ["listed"],
     txColumn: "fund_tx_signature",
     nextStatus: "funded",
