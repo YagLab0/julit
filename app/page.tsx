@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { HeroFlow } from "./landing/hero-flow";
 import { CommerceSection, ParticipantsSection } from "./landing/commerce";
 import { FaqSection, PassportSection } from "./landing/passport-faq";
 import { LifecycleCards } from "./landing/lifecycle-cards";
@@ -104,14 +104,7 @@ export default function Home() {
           className={styles.hero}
           aria-labelledby="hero-title"
         >
-          <Image
-            src="/landing/salinas-grandes.jpg"
-            alt="Paisaje de las Salinas Grandes, entre Jujuy y Salta, Argentina."
-            fill
-            preload
-            sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1399px) calc(100vw - 64px), 1360px"
-            className={styles.heroImage}
-          />
+          <div className={styles.heroBackdrop} aria-hidden="true" />
           <div className={styles.heroContent} data-landing-reveal>
             <p className={styles.heroEyebrow}>
               Litio de Jujuy. Proyección global
@@ -134,24 +127,25 @@ export default function Home() {
                 Cómo funciona <ArrowIcon />
               </a>
             </div>
+            <p className={styles.heroLocation}>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+                <circle
+                  cx="12"
+                  cy="10"
+                  r="2"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+              </svg>
+              Salinas Grandes · Jujuy y Salta, Argentina
+            </p>
           </div>
-          <p className={styles.heroCaption}>
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <circle
-                cx="12"
-                cy="10"
-                r="2"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-            </svg>
-            Salinas Grandes · Jujuy y Salta, Argentina
-          </p>
+          <HeroFlow />
         </section>
         <aside className={styles.demoNotice} aria-label="Alcance de la demo">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">

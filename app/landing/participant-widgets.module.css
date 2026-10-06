@@ -25,231 +25,259 @@
   pointer-events: none;
 }
 
-.flow {
-  position: absolute;
-  top: 78px;
-  left: 0;
-  width: 100%;
-  height: 78px;
+.skel {
+  display: block;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 11%, transparent);
 }
 
-.flow path {
+/* Producer: sources -> hub -> receipt */
+
+.beamFlow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sources {
+  display: flex;
+  gap: 8px;
+}
+
+.sourceCard,
+.docCard,
+.stackCard {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.sourceCard {
+  display: flex;
+  width: 70px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+}
+
+.sourceLabel {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.beams {
+  width: 240px;
+  height: 34px;
+  margin-top: -2px;
+  overflow: visible;
+}
+
+.beams path {
   fill: none;
   stroke-linecap: round;
   stroke-width: 1.25px;
   vector-effect: non-scaling-stroke;
 }
 
-.ghost {
-  stroke: color-mix(in srgb, var(--foreground) 28%, var(--border));
+.beamGhost {
+  stroke: color-mix(in srgb, var(--foreground) 16%, transparent);
 }
 
-.live {
+.beamLive {
   stroke: var(--primary);
+  stroke-dasharray: 26 190;
 }
 
-.pole,
-.structure {
-  position: absolute;
-  z-index: 1;
+@media (prefers-reduced-motion: no-preference) {
+  .beamLive {
+    animation: beam-travel 2.8s linear infinite;
+  }
 }
 
-.pole {
-  top: 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 88px;
-  margin-left: -44px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
+@keyframes beam-travel {
+  to {
+    stroke-dashoffset: -216;
+  }
 }
 
-.origin {
-  left: 22%;
-}
-
-.evidence {
-  left: 78%;
-}
-
-.originMark,
-.evidenceMark {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--foreground) 6%, transparent);
-}
-
-.originMark {
-  border-radius: 50%;
-}
-
-.originMark::after {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--primary);
-}
-
-.evidenceMark {
-  border-radius: 9px;
-  color: var(--color-brand-700);
-}
-
-.evidenceMark svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.structure {
-  bottom: 18px;
-  left: 50%;
+.hub {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  margin-top: -34px;
+  padding: 7px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--card);
   box-shadow: 0 8px 20px color-mix(in srgb, var(--foreground) 6%, transparent);
   font-size: 12px;
-  font-weight: 500;
-  transform: translateX(-50%);
+  font-weight: 600;
 }
 
-.structureDot {
+.hubDot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-}
-
-.review {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  width: max-content;
-  height: 100%;
-  flex-direction: column;
-  justify-content: center;
-  gap: 18px;
-  margin-inline: auto;
-}
-
-.linked {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
-}
-
-.spineGhost,
-.spineLive {
-  position: absolute;
-  top: 6px;
-  bottom: 6px;
-  left: 4px;
-  width: 1.5px;
-  border-radius: 1px;
-}
-
-.spineGhost {
-  background: var(--border);
-}
-
-.spineLive {
-  transform-origin: top center;
-  transform: scaleY(1);
-  background: var(--primary);
-}
-
-.station {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.node,
-.ring {
-  width: 11px;
-  height: 11px;
-  flex-shrink: 0;
-  border-radius: 50%;
-}
-
-.node {
-  display: grid;
-  place-items: center;
-  border: 1.5px solid var(--border);
-  background: var(--card);
-}
-
-.nodePaint {
-  width: 7px;
-  height: 7px;
   border-radius: 50%;
   background: var(--primary);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
-.settled {
-  color: var(--color-brand-700);
+.flowLine {
+  display: block;
+  width: 1.5px;
+  height: 16px;
+  border-radius: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--primary) 0 4px,
+    transparent 4px 8px
+  );
 }
 
-.pendingStation {
-  position: relative;
+@media (prefers-reduced-motion: no-preference) {
+  .flowLine {
+    animation: drip 1.2s linear infinite;
+  }
+}
+
+@keyframes drip {
+  to {
+    background-position-y: 8px;
+  }
+}
+
+.docCard {
+  display: flex;
+  width: 132px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+
+.docHead {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+}
+
+.docTitle {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.docChip {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--color-brand-700);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.docTotal {
+  height: 6px;
+  width: 46%;
+  margin-top: 3px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+/* Buyer: payment -> confirmation -> receipt */
+
+.stackFlow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.stackCard {
+  display: flex;
+  width: 170px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+}
+
+.stackHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stackMeta {
+  margin-left: auto;
   color: var(--muted);
-  font-size: 13px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
   font-weight: 500;
 }
 
-.approach {
-  position: absolute;
-  top: -16px;
-  left: 4px;
-  width: 1.5px;
-  height: 0;
-  border-radius: 1px;
-  background: var(--muted);
+.stackIcon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--color-brand-700);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.ring {
-  border: 1.5px solid var(--muted);
+.confirmed {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+.confirmed > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: color-mix(in srgb, var(--primary) 14%, transparent);
+  stroke: var(--color-brand-700);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.confirmedTitle {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.confirmedSub {
+  color: var(--muted);
+  font-size: 10px;
 }
 
 @media (max-width: 640px) {
   .stage {
     margin-bottom: 24px;
   }
-
-  .review {
-    padding-right: 24px;
-    padding-left: 24px;
-  }
 }
 
 @media (max-width: 359px) {
-  .station,
-  .pendingStation,
-  .pole {
-    font-size: 12px;
+  .sourceCard {
+    width: 62px;
   }
 }
