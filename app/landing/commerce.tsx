@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import styles from "./commerce.module.css";
-import { SolutionCarousel } from "./commerce-carousel";
+import { SolutionShowcase } from "./solution-showcase";
 import {
   BuyerReviewWidget,
   ProducerStructureWidget,
@@ -131,42 +131,77 @@ function ReservedMock() {
   );
 }
 
+function TabIcon({ path }: { path: string }) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={styles.tabIcon}
+    >
+      <path d={path} />
+    </svg>
+  );
+}
+
 const slides: {
+  tab: string;
   title: string;
   problem: string;
   solution: string;
+  icon: ReactNode;
   mock: ReactNode;
 }[] = [
   {
+    tab: "Liquidación atómica",
     title: "Liquidación sin ventana de riesgo",
     problem:
       "El pago y la entrega del bien no ocurren al mismo tiempo; alguien asume el riesgo de que la otra parte no cumpla.",
     solution:
       "El pago del comprador y el título digital del lote cambian de manos juntos, o no cambia nada.",
+    icon: <TabIcon path="M4 8h13m-4-4 4 4-4 4M20 16H7m4 4-4-4 4-4" />,
     mock: <SettlementMock />,
   },
   {
+    tab: "Registro público",
     title: "Un solo registro para todos",
     problem:
       "Cada parte guarda sus propios datos del lote y reconciliarlos cuesta tiempo y genera disputas.",
     solution:
       "El título digital concentra la referencia del lote y su historial es consultable públicamente en el Pasaporte.",
+    icon: (
+      <TabIcon path="M6 4h9l3 3v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm4 6h4m-4 4h4" />
+    ),
     mock: <PassportMock />,
   },
   {
+    tab: "Certificado de planta",
     title: "Evidencia a nivel planta",
     problem:
       "Auditar cada lote por separado no refleja cómo certifica la industria real y multiplica la fricción documental.",
     solution:
       "El productor declara el certificado de su planta una sola vez; cada lote registra su referencia y cualquiera puede comprobar que el documento coincide.",
+    icon: (
+      <TabIcon path="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8l-4-5zm0 0v5h4M9 15l2 2 4-4" />
+    ),
     mock: <CertificateMock />,
   },
   {
+    tab: "Comprador designado",
     title: "Operaciones reservadas, no góndola abierta",
     problem:
       "Los acuerdos entre mineras y compradores se negocian en privado, pero los datos comerciales terminan dispersos o públicos.",
     solution:
       "Todo lote nace reservado a un comprador designado; el acuerdo se cierra entre las empresas y solo ese comprador puede liquidarlo.",
+    icon: (
+      <TabIcon path="M8 11V7a4 4 0 0 1 8 0v4M5 11h14v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9z" />
+    ),
     mock: <ReservedMock />,
   },
 ];
@@ -193,29 +228,7 @@ export function CommerceSection() {
           </p>
         </div>
 
-        <SolutionCarousel>
-          {slides.map((slide, index) => (
-            <figure
-              key={slide.title}
-              className={styles.slide}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${index + 1} de ${slides.length}`}
-              data-landing-reveal
-              data-landing-delay={index * 50}
-            >
-              <div className={styles.slideCard} aria-hidden="true">
-                <div className={styles.slideMock}>{slide.mock}</div>
-              </div>
-              <figcaption className={styles.slideCaption}>
-                <span className={styles.slideProblem}>
-                  El problema — {slide.problem}
-                </span>
-                <strong>{slide.title}.</strong> {slide.solution}
-              </figcaption>
-            </figure>
-          ))}
-        </SolutionCarousel>
+        <SolutionShowcase slides={slides} />
       </div>
     </section>
   );
