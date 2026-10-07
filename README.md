@@ -17,13 +17,13 @@ JuLit eliminates trade finance friction in the global critical minerals market. 
 The global transition to electric mobility relies heavily on **battery-grade lithium carbonate ($Li_2CO_3 \ge 99.50\%$)**. However, cross-border physical transactions between mining producers (e.g., in the South American Lithium Triangle) and international industrial buyers (battery and cathode manufacturers) suffer from two major bottlenecks:
 
 1. **Trade Finance Inefficiency (Letters of Credit):**
-   - Traditional bank Letters of Credit (LCs) charge **1.5% to 3.5% in bank commissions** and fees.
-   - Bureaucratic verification processes delay capital release by **15 to 45 days**, immobilizing millions of dollars in working capital.
+   - Traditional bank Letters of Credit (LCs) charge **1.5% to 3.5% in bank commissions** and fees (_Sources: ICC Global Trade Finance Survey, World Bank / IFC Trade Finance Reports_).
+   - Bureaucratic verification processes delay capital release by **15 to 45 days**, immobilizing millions of dollars in working capital (_Sources: ICC UCP 600, 60%–70% first-presentation discrepancy rejection rates documented by Trade Finance Global & ICC Trade Register_).
    - Counterparty standoff: Buyers hesitate to pay upfront before delivery, while producers cannot afford to ship multimillion-dollar cargo without guaranteed payment.
 
 2. **Opaque and Fragmented Environmental Evidence:**
    - Critical metrics (chemical purity, water consumption per tonne, carbon emissions) circulate via unlinked PDF files sent over email.
-   - Unverifiable paper certificates increase the risk of greenwashing and complicate compliance with strict global standards, such as the upcoming **EU Battery Regulation (2023/1542)**.
+   - Unverifiable paper certificates increase the risk of greenwashing and complicate compliance with strict global standards, such as the upcoming **EU Battery Regulation (Regulation (EU) 2023/1542, Articles 65 & 77)**, which mandates digital battery passports from February 2027.
 
 ---
 
@@ -88,7 +88,7 @@ JuLit charges an on-chain **Take Rate** (in basis points) exclusively upon succe
 - **Fee Structure:** Deduces a small protocol fee from the escrow release when `redeem_lot` or `claim_timeout` executes, routing it directly to the protocol treasury ATA.
 - **Zero Pre-Execution Cost:** Listing a lot (`create_lot`) and depositing funds (`fund_lot`) incur no protocol fees.
 - **Cost Comparison vs. Letters of Credit:**
-  - **Traditional LC:** A typical 50-tonne spot shipment (~$1,000,000 USD) costs **$15,000 to $35,000 USD** in banking commissions plus 30+ days of illiquidity.
+  - **Traditional LC:** A typical 50-tonne spot shipment (~$1,000,000 USD) costs **$15,000 to $35,000 USD** in banking commissions plus 30+ days of illiquidity (_Benchmark: Fastmarkets / S&P Global Platts lithium spot pricing & ICC banking fees_).
   - **JuLit Escrow:** Programmatic fee of **0.50% to 1.00%** ($5,000 to $10,000 USD) with instantaneous fund release upon delivery confirmation, yielding significant savings and unlocking cash flow.
 
 ---
@@ -193,3 +193,15 @@ Our regional presence provides direct access to regional mining facilities, loca
 └── supabase/
     └── migrations/                  # PostgreSQL schemas, RLS policies, and lot indexing
 ```
+
+---
+
+## 11. Public Reports & Authoritative Sources
+
+| Area                                  | Institution / Report                                                                                                       | Key Citation & Metric                                                                                                                                                                                                     |
+| :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Lithium Market Growth**             | **McKinsey & Company** (_Lithium mining: How new supply is answering battery demand_) & **Benchmark Mineral Intelligence** | Projections forecast the battery value chain exceeding **$150B–$400B by 2030**, requiring over $50B in capital investments for mines and refining capacity.                                                               |
+| **Letters of Credit Costs**           | **International Chamber of Commerce (ICC)** (_Global Survey on Trade Finance_) & **World Bank / IFC**                      | All-in banking costs for commercial documentary letters of credit in emerging market corridors (including Latin America) average **1.5% to 3.5%** across issuance (0.5%–1.5%) and international confirmation (1.0%–2.5%). |
+| **Settlement Delays & Discrepancies** | **ICC UCP 600 Rules** & **Trade Finance Global (TFG)**                                                                     | **60% to 70%** of initial document presentations face discrepancy rejections under documentary credits, prolonging the settlement and payment turnaround cycle to **15 to 45 days**.                                      |
+| **Mandatory Battery Passport**        | **European Union (EUR-Lex / OJEU)** (_Regulation (EU) 2023/1542, Articles 65 & 77_)                                        | Enforces a mandatory Digital Battery Passport with certified raw material provenance and carbon footprint accounting effective **February 18, 2027**.                                                                     |
+| **Lithium Reserves Concentration**    | **U.S. Geological Survey (USGS)** (_Mineral Commodity Summaries_)                                                          | The South American **Lithium Triangle** (Argentina, Bolivia, and Chile) accounts for over **53% of global identified lithium resources**.                                                                                 |

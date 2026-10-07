@@ -67,20 +67,37 @@
       .hint {
         color: var(--muted);
       }
-      .lang-switch {
+      .lang-toggle {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #ffffff;
+        padding: 2px;
+        gap: 2px;
+      }
+      .lang-option {
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
         text-transform: uppercase;
-        color: var(--green);
-        text-decoration: none;
-        padding: 4px 10px;
-        border: 1px solid var(--line);
+        padding: 4px 9px;
         border-radius: 4px;
+        text-decoration: none;
+        color: var(--muted);
         transition: all 0.15s ease;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
       }
-      .lang-switch:hover {
+      .lang-option:hover:not(.is-active) {
+        color: var(--green);
         background: #e7edde;
+      }
+      .lang-option.is-active {
+        background: var(--green);
+        color: #ffffff;
+        cursor: default;
       }
       main {
         flex: 1;
@@ -91,6 +108,8 @@
         max-width: 1560px;
         margin: auto;
         padding: clamp(32px, 5vh, 68px) clamp(24px, 7vw, 112px);
+        overflow-y: auto;
+        max-height: 100%;
       }
       .slide-meta {
         display: flex;
@@ -299,6 +318,41 @@
         color: var(--muted);
         max-width: 960px;
       }
+      .metric-source,
+      .panel-source {
+        display: block;
+        margin-top: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: #436324;
+      }
+      .citation-list {
+        margin-top: 20px;
+        padding-top: 14px;
+        border-top: 1px dashed var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .citation-item {
+        font-size: 12px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .citation-tag {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 1px 6px;
+        background: #e7edde;
+        border-radius: 3px;
+        color: var(--green);
+        margin-right: 6px;
+        display: inline-block;
+      }
       .controls {
         border-top: 1px solid var(--line);
       }
@@ -481,6 +535,14 @@
         .note {
           margin-top: 14px;
         }
+        .citation-list {
+          margin-top: 14px;
+          padding-top: 10px;
+          gap: 4px;
+        }
+        .citation-item {
+          font-size: 11px;
+        }
       }
       @media (prefers-reduced-motion: reduce) {
         button:active:not(:disabled) {
@@ -531,12 +593,20 @@
       <header class="masthead">
         <div class="brand" aria-label="JuLit">Ju<span>Lit</span></div>
         <div style="display: flex; align-items: center; gap: 16px">
-          <a
-            href="/pitch.html"
-            class="lang-switch"
-            title="Ver presentación en español"
-            >Español</a
-          >
+          <div class="lang-toggle" role="group" aria-label="Pitch language">
+            <a
+              href="/pitch.html"
+              class="lang-option"
+              title="Ver presentación en español"
+              >ES</a
+            >
+            <span
+              class="lang-option is-active"
+              aria-current="page"
+              title="English (active)"
+              >EN</span
+            >
+          </div>
           <span class="masthead-label">Jujuy · Lithium · Solana</span>
         </div>
       </header>
@@ -600,10 +670,16 @@
             <div class="metric">
               <strong class="metric-value">1.5%–3.5%</strong>
               <p>in banking fees that burden every shipment</p>
+              <span class="metric-source"
+                >Source: ICC Trade Register &amp; World Bank</span
+              >
             </div>
             <div class="metric">
               <strong class="metric-value">15–45 <small>days</small></strong>
               <p>of bureaucratic delays &amp; frozen capital</p>
+              <span class="metric-source"
+                >Source: ICC UCP 600 &amp; Trade Finance Global</span
+              >
             </div>
             <div class="metric">
               <strong class="metric-value metric-title"
@@ -612,6 +688,9 @@
               <p>
                 Someone always bears the risk that the counterparty defaults.
               </p>
+              <span class="metric-source"
+                >Context: Transoceanic Maritime Transit</span
+              >
             </div>
           </div>
           <p class="takeaway">
@@ -619,6 +698,29 @@
             the same time. The problem isn't selling lithium—it's the risk
             window to get paid.
           </p>
+          <div class="citation-list">
+            <div class="citation-item">
+              <span class="citation-tag">Market</span>
+              <strong>McKinsey &amp; Company</strong> (<em
+                >Lithium mining: How new supply is answering battery demand</em
+              >) and <strong>Benchmark Mineral Intelligence</strong>: battery
+              chain projected at &gt;$150B–$400B by 2030, requiring over $50B in
+              capital deployment.
+            </div>
+            <div class="citation-item">
+              <span class="citation-tag">Trade Finance</span>
+              <strong>ICC Global Trade Finance Survey</strong> and
+              <strong>World Bank / IFC</strong>: letters of credit in emerging
+              markets add 1.5%–3.5% in issuance (0.5%–1.5%) and international
+              confirmation fees (1.0%–2.5%).
+            </div>
+            <div class="citation-item">
+              <span class="citation-tag">Discrepancies</span>
+              <strong>ICC &amp; TFG</strong>: 60%–70% of documentary credit
+              presentations face discrepancy rejections on first check,
+              extending payment cycles to 15–45 days.
+            </div>
+          </div>
         </section>
 
         <section class="slide" hidden aria-labelledby="risk-title">
@@ -666,10 +768,21 @@
               version.</span
             >
           </div>
-          <p class="note">
-            Proves mathematical document integrity against the registered
-            version, not physical assay veracity or sampling reality.
-          </p>
+          <div class="citation-list">
+            <div class="citation-item">
+              <span class="citation-tag">EU Regulation</span>
+              <strong>Regulation (EU) 2023/1542</strong> of the European
+              Parliament and Council (OJEU), Arts. 65 &amp; 77: mandates a
+              Digital Battery Passport with supply chain due diligence and
+              carbon footprint by February 2027.
+            </div>
+            <div class="citation-item">
+              <span class="citation-tag">Cryptography</span>
+              <strong>NIST FIPS 180-4</strong> (Secure Hash Standard SHA-256):
+              validates mathematical document integrity against the registered
+              version, not physical assay veracity or sampling reality.
+            </div>
+          </div>
         </section>
 
         <section class="slide" hidden aria-labelledby="solution-title">
@@ -719,11 +832,20 @@
               (raise_dispute).</span
             >
           </div>
-          <p class="note">
-            Physical transport and customs clearance happen outside the
-            protocol. The digital title never enters an external wallet: it
-            lives and dies inside the escrow.
-          </p>
+          <div class="citation-list">
+            <div class="citation-item">
+              <span class="citation-tag">DvP Settlement</span>
+              <strong>Delivery-versus-Payment (DvP)</strong> settled within a
+              Solana block (~400 ms), eliminating bank settlement risk and
+              international SWIFT clearing delays.
+            </div>
+            <div class="citation-item">
+              <span class="citation-tag">Title Custody</span>
+              Physical transport and customs clearance happen outside the
+              protocol. The digital title never enters an external wallet: it
+              lives and dies inside the contract escrow.
+            </div>
+          </div>
         </section>
 
         <section class="slide" hidden aria-labelledby="closing-title">
@@ -738,18 +860,26 @@
             <div class="closing-panel">
               <h3>Business Model: Take Rate</h3>
               <strong class="big">&lt; 1% vs 3.5%</strong>
+              <span class="panel-source"
+                >Benchmark: ICC Banking Commission vs. JuLit Escrow</span
+              >
               <p>
-                Protocol fee on escrow release. On a $1,000,000 USD lot, it
-                reduces financing costs to under $10,000 USD with instantaneous
-                payment against delivery.
+                Protocol fee on escrow release. On a $1,000,000 USD lot (approx.
+                50–70 t LCE), traditional banks extract $15,000 to $35,000 USD;
+                JuLit cuts cost below $10,000 USD with instant
+                delivery-versus-payment.
               </p>
             </div>
             <div class="closing-panel">
               <h3>Technical Traction on Devnet</h3>
               <strong class="big">100% on-chain</strong>
+              <span class="panel-source"
+                >Solana Devnet: Program
+                BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky</span
+              >
               <p>
-                Anchor program deployed (BntbtLZd...Xtky) with 100% unit tests
-                (LiteSVM &amp; Vitest). B2B catalogue and origin map live at
+                Anchor program deployed with 100% unit tests (LiteSVM &amp;
+                Vitest). B2B catalogue, plant registry, and origin map live at
                 /explorer.
               </p>
             </div>
@@ -758,11 +888,20 @@
             JuLit connects mining producers and industrial buyers: neither
             payment without delivery, nor delivery without payment.
           </p>
-          <p class="note">
-            The demo runs on Solana Devnet with test money (dUSDC): transactions
-            are real, commercial value is not. Team based in San Salvador de
-            Jujuy, in the heart of the Lithium Triangle.
-          </p>
+          <div class="citation-list">
+            <div class="citation-item">
+              <span class="citation-tag">Lithium Triangle</span>
+              <strong>USGS Mineral Commodity Summaries</strong>: Argentina,
+              Bolivia, and Chile hold over 53% of global identified lithium
+              resources. Team based in San Salvador de Jujuy.
+            </div>
+            <div class="citation-item">
+              <span class="citation-tag">Technical Validation</span>
+              Live demo running on Solana Devnet using test funds (dUSDC): real
+              transactions executed on a public network with zero commercial
+              risk.
+            </div>
+          </div>
           <p class="takeaway">Thank you very much.</p>
         </section>
       </main>

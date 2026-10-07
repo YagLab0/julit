@@ -1,4 +1,4 @@
-import { address, signature } from "@solana/kit";
+import { address, getBase58Encoder, signature } from "@solana/kit";
 import {
   fetchMaybeLot,
   identifyJulitInstruction,
@@ -96,13 +96,29 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
     .maybeSingle();
 
   const { rpc } = createSolanaClient("devnet");
-  const tx = await rpc
+  const txPromise = rpc
     .getTransaction(signature(txSignature), {
       commitment: "confirmed",
       maxSupportedTransactionVersion: 0,
       encoding: "json",
     })
     .send();
+
+  let tx: Awaited<typeof txPromise>;
+  let account: Awaited<ReturnType<typeof fetchMaybeLot>>;
+  try {
+    tx = await txPromise;
+    account = await fetchMaybeLot(rpc, address(lotPda), {
+      commitment: "confirmed",
+    });
+  } catch {
+    // Public RPCs flake under rate limits: surface a retryable error
+    // instead of a bare 500 so the client can offer re-indexing.
+    return jsonError(
+      "No se pudieron verificar los datos on-chain. Reintentá la indexación.",
+      502
+    );
+  }
 
   const message = tx?.transaction.message;
   const accountKeys = (message?.accountKeys ?? []) as readonly string[];
@@ -118,10 +134,16 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
 
   let decoded: { lot: string; signer: string } | null = null;
   if (instruction) {
-    const data = new Uint8Array([
-      ...Buffer.from(instruction.data, "base64").values(),
-    ]);
-    const kind = identifyJulitInstruction(data);
+    // getTransaction("json") encodes compiled instruction data as base58;
+    // an unidentifiable payload is simply not the transition we expect.
+    let kind: JulitInstruction | null = null;
+    try {
+      kind = identifyJulitInstruction(
+        getBase58Encoder().encode(instruction.data)
+      );
+    } catch {
+      kind = null;
+    }
     if (
       kind === opts.instruction &&
       instruction.accounts.length > opts.signerAccountIndex
@@ -133,9 +155,6 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
     }
   }
 
-  const account = await fetchMaybeLot(rpc, address(lotPda), {
-    commitment: "confirmed",
-  });
   const lotData = account.exists ? account.data : null;
 
   const verdict = opts.verify({

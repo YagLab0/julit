@@ -341,19 +341,20 @@ function DesignatedLotRow({
     }
 
     // From here the transaction is on-chain: a failure means it did not
-    // index, not that it did not land.
-    setIndexing(true);
-    const response = await fetch(args.endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        lot_pda: lot.pda_address,
-        tx_signature: txSignature,
-      }),
-    }).catch(() => null);
-    setIndexing(false);
+    // index, not that it did not land. The endpoint re-verifies the same
+    // signature, so a failed POST is safe to retry from the toast.
+    const indexAndReport = async (): Promise<boolean> => {
+      const response = await fetch(args.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lot_pda: lot.pda_address,
+          tx_signature: txSignature,
+        }),
+      }).catch(() => null);
 
-    if (!response?.ok) {
+      if (response?.ok) return true;
+
       const body = response
         ? ((await response.json().catch(() => null)) as {
             error?: string;
@@ -361,18 +362,36 @@ function DesignatedLotRow({
         : null;
       toast.error("La transacción quedó on-chain pero no se indexó", {
         description: body?.error ?? "Reintentá la indexación más tarde.",
+        action: {
+          label: "Reintentar",
+          onClick: () => void retryIndex(),
+        },
+        cancel: explorerAction(txSignature),
+      });
+      return false;
+    };
+
+    const onIndexed = () => {
+      toast.success(args.successTitle, {
+        description: args.successDescription,
         action: explorerAction(txSignature),
       });
-      return;
-    }
+      args.onSuccess?.();
+      setConfirming(null);
+      router.refresh();
+    };
 
-    toast.success(args.successTitle, {
-      description: args.successDescription,
-      action: explorerAction(txSignature),
-    });
-    args.onSuccess?.();
-    setConfirming(null);
-    router.refresh();
+    const retryIndex = async () => {
+      setIndexing(true);
+      const ok = await indexAndReport();
+      setIndexing(false);
+      if (ok) onIndexed();
+    };
+
+    setIndexing(true);
+    const ok = await indexAndReport();
+    setIndexing(false);
+    if (ok) onIndexed();
   }
 
   function requireSettlement(): Settlement | null {
