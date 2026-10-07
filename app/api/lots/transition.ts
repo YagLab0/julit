@@ -1,4 +1,4 @@
-import { address, signature } from "@solana/kit";
+import { address, getBase58Encoder, signature } from "@solana/kit";
 import {
   fetchMaybeLot,
   identifyJulitInstruction,
@@ -134,10 +134,16 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
 
   let decoded: { lot: string; signer: string } | null = null;
   if (instruction) {
-    const data = new Uint8Array([
-      ...Buffer.from(instruction.data, "base64").values(),
-    ]);
-    const kind = identifyJulitInstruction(data);
+    // getTransaction("json") encodes compiled instruction data as base58;
+    // an unidentifiable payload is simply not the transition we expect.
+    let kind: JulitInstruction | null = null;
+    try {
+      kind = identifyJulitInstruction(
+        getBase58Encoder().encode(instruction.data)
+      );
+    } catch {
+      kind = null;
+    }
     if (
       kind === opts.instruction &&
       instruction.accounts.length > opts.signerAccountIndex
