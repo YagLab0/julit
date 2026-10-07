@@ -8,7 +8,11 @@ import {
 } from "../lib/company-contracts";
 import { createClient } from "../lib/supabase/server";
 import { createServiceClient } from "../lib/supabase/service";
-import type { AccountCompany, AcquiredLot } from "./account-client";
+import type {
+  AccountCompany,
+  AcquiredLot,
+  DesignatedLot,
+} from "./account-client";
 
 export type ProducerLot = {
   lot_id: string;
@@ -22,9 +26,20 @@ export type ProducerLot = {
   indexed_at: string;
 };
 
+const DESIGNATED_STATUSES = ["listed", "funded", "disputed"] as const;
+const HISTORY_STATUSES = ["redeemed", "claimed"] as const;
+
+const LOT_COLUMNS =
+  "lot_id, pda_address, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, mint_address, claimable_after, origin_id, fund_tx_signature, redeem_tx_signature, dispute_tx_signature, claim_tx_signature, indexed_at";
+
+type LotRow = Omit<DesignatedLot, "producer_name" | "status"> & {
+  status: string;
+};
+
 export type AccountContext = {
   user: User | null;
   company: AccountCompany | null;
+  designatedLots: DesignatedLot[];
   lots: AcquiredLot[];
   producerLots: ProducerLot[];
 };
@@ -36,7 +51,13 @@ export const getAccountContext = cache(async (): Promise<AccountContext> => {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { user: null, company: null, lots: [], producerLots: [] };
+    return {
+      user: null,
+      company: null,
+      designatedLots: [],
+      lots: [],
+      producerLots: [],
+    };
   }
 
   const { data: companyRow } = await supabase
@@ -61,17 +82,44 @@ export const getAccountContext = cache(async (): Promise<AccountContext> => {
         }
       : null;
 
-  let lots: AcquiredLot[] = [];
+  const designatedLots: DesignatedLot[] = [];
+  const lots: AcquiredLot[] = [];
   if (company?.companyType === "buyer" && company.walletAddress) {
     const { data } = await supabase
       .from("lots")
-      .select(
-        "lot_id, pda_address, status, volume_tonnes, purity_pct, price_usdc, fund_tx_signature, redeem_tx_signature, origin_id, indexed_at"
-      )
+      .select(LOT_COLUMNS)
       .eq("buyer_wallet", company.walletAddress)
-      .in("status", ["funded", "disputed", "redeemed", "claimed"])
+      .in("status", [...DESIGNATED_STATUSES, ...HISTORY_STATUSES])
       .order("indexed_at", { ascending: false });
-    lots = (data ?? []) as AcquiredLot[];
+
+    const rows = (data ?? []) as LotRow[];
+
+    // Producer names live behind companies_read_own RLS — resolve them
+    // server-side like the directory endpoint does.
+    const wallets = [...new Set(rows.map((l) => l.producer_wallet))];
+    const nameByWallet = new Map<string, string>();
+    if (wallets.length > 0) {
+      const service = createServiceClient();
+      const { data: producers } = await service
+        .from("companies")
+        .select("wallet_address, name")
+        .in("wallet_address", wallets);
+      for (const p of producers ?? []) {
+        if (p.wallet_address) nameByWallet.set(p.wallet_address, p.name);
+      }
+    }
+
+    for (const row of rows) {
+      const withProducer = {
+        ...row,
+        producer_name: nameByWallet.get(row.producer_wallet) ?? null,
+      };
+      if ((DESIGNATED_STATUSES as readonly string[]).includes(row.status)) {
+        designatedLots.push(withProducer as DesignatedLot);
+      } else {
+        lots.push(withProducer as AcquiredLot);
+      }
+    }
   }
 
   let producerLots: ProducerLot[] = [];
@@ -86,7 +134,7 @@ export const getAccountContext = cache(async (): Promise<AccountContext> => {
     producerLots = (data ?? []) as ProducerLot[];
   }
 
-  return { user, company, lots, producerLots };
+  return { user, company, designatedLots, lots, producerLots };
 });
 
 export type ContractParty = {

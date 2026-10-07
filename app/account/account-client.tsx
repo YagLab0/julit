@@ -28,17 +28,36 @@ export type AccountCompany = {
   carbonKgCo2ePerTonne: number | null;
 };
 
-export type AcquiredLot = {
+/** A lot row from the index joined with the producer's company name. */
+export type AccountLot = {
   lot_id: string;
   pda_address: string;
-  status: "funded" | "disputed" | "redeemed" | "claimed";
   volume_tonnes: number;
   purity_pct: number;
+  water_footprint_m3_per_tonne: number;
+  carbon_footprint_kg_co2e_per_tonne: number;
   price_usdc: number;
+  producer_wallet: string;
+  producer_name: string | null;
+  buyer_wallet: string;
+  mint_address: string;
+  claimable_after: string;
+  origin_id: string;
   fund_tx_signature: string | null;
   redeem_tx_signature: string | null;
-  origin_id: string;
+  dispute_tx_signature: string | null;
+  claim_tx_signature: string | null;
   indexed_at: string;
+};
+
+/** A designated lot still awaiting a buyer decision. */
+export type DesignatedLot = AccountLot & {
+  status: "listed" | "funded" | "disputed";
+};
+
+/** A settled lot: redeemed by the buyer or claimed by the producer. */
+export type AcquiredLot = AccountLot & {
+  status: "redeemed" | "claimed";
 };
 
 const CONTRACT_STATUS_LABELS: Record<string, string> = {
@@ -132,6 +151,11 @@ export function BuyerPortfolioCard({
   className?: string;
 }) {
   const { cluster } = useCluster();
+  const totalVolume = lots.reduce(
+    (sum, b) => sum + Number(b.volume_tonnes || 0),
+    0
+  );
+  const totalUsdc = lots.reduce((sum, b) => sum + Number(b.price_usdc || 0), 0);
 
   return (
     <section className={`${CARD} ${className ?? ""}`}>
@@ -141,12 +165,42 @@ export function BuyerPortfolioCard({
             Portafolio de Lotes Adquiridos
           </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Lotes designados a tu empresa con pago en escrow en Devnet.
+            Historial de lotes liquidados o cobrados por la productora en escrow
+            Devnet.
           </p>
         </div>
         <span className="rounded-full bg-secondary px-3 py-1 font-mono text-xs text-muted">
           {lots.length} {lots.length === 1 ? "lote" : "lotes"}
         </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl bg-secondary p-3">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+            Volumen total
+          </p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
+            {totalVolume.toLocaleString("es-AR")}{" "}
+            <span className="text-xs font-normal text-muted">t</span>
+          </p>
+        </div>
+        <div className="rounded-2xl bg-secondary p-3">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+            Inversión total
+          </p>
+          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
+            {totalUsdc.toLocaleString("es-AR")}{" "}
+            <span className="text-xs font-normal text-muted">dUSDC</span>
+          </p>
+        </div>
+        <div className="col-span-2 rounded-2xl bg-secondary p-3 sm:col-span-1">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
+            Liquidación
+          </p>
+          <p className="mt-1 text-xs font-semibold text-brand-700 dark:text-brand-400">
+            Escrow DvP en Devnet
+          </p>
+        </div>
       </div>
 
       {lots.length === 0 ? (
@@ -178,6 +232,7 @@ export function BuyerPortfolioCard({
                   <StatusBadge status={lot.status} />
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
+                  {lot.producer_name ?? ellipsify(lot.producer_wallet, 6)} ·{" "}
                   {lot.volume_tonnes} t · {Number(lot.purity_pct).toFixed(2)} %
                   Li₂CO₃ · Origen: {originName(lot.origin_id)}
                 </p>
@@ -190,10 +245,10 @@ export function BuyerPortfolioCard({
                 >
                   Ver Pasaporte
                 </Link>
-                {lot.redeem_tx_signature && (
+                {(lot.redeem_tx_signature ?? lot.claim_tx_signature) && (
                   <a
                     href={getExplorerUrl(
-                      `/tx/${lot.redeem_tx_signature}`,
+                      `/tx/${lot.redeem_tx_signature ?? lot.claim_tx_signature}`,
                       cluster
                     )}
                     target="_blank"

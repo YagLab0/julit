@@ -4,19 +4,26 @@ import {
   BuyerPortfolioCard,
   WalletCard,
   type AcquiredLot,
+  type DesignatedLot,
 } from "./account-client";
+import { DesignatedLotsCard } from "./designated-lots";
 import { WalletHero } from "./wallet-hero";
 import { getAccountContext, type ProducerLot } from "./account-data";
 
 export default async function AccountPage() {
-  const { company, lots, producerLots } = await getAccountContext();
+  const { company, lots, designatedLots, producerLots } =
+    await getAccountContext();
 
   // Layout renders the onboarding form when there is no company yet.
   if (!company) return null;
 
   const isBuyer = company.companyType === "buyer";
 
-  const stats = isBuyer ? buyerStats(lots) : producerStats(producerLots);
+  const buyerLots: (DesignatedLot | AcquiredLot)[] = [
+    ...designatedLots,
+    ...lots,
+  ];
+  const stats = isBuyer ? buyerStats(buyerLots) : producerStats(producerLots);
 
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-6">
@@ -49,10 +56,18 @@ export default async function AccountPage() {
       </div>
 
       {isBuyer ? (
-        <BuyerPortfolioCard
-          className="animate-bento-in sm:col-span-6"
-          lots={lots}
-        />
+        <>
+          <DesignatedLotsCard
+            className="animate-bento-in [--bento-i:5] sm:col-span-6"
+            lots={designatedLots}
+            companyName={company.name}
+            walletAddress={company.walletAddress}
+          />
+          <BuyerPortfolioCard
+            className="animate-bento-in [--bento-i:6] sm:col-span-6"
+            lots={lots}
+          />
+        </>
       ) : (
         <>
           <NavCard
@@ -141,7 +156,7 @@ const ICONS = {
   ),
 };
 
-function buyerStats(lots: AcquiredLot[]): Stat[] {
+function buyerStats(lots: (DesignatedLot | AcquiredLot)[]): Stat[] {
   const volume = lots.reduce((s, l) => s + Number(l.volume_tonnes || 0), 0);
   const usdc = lots.reduce((s, l) => s + Number(l.price_usdc || 0), 0);
   const inEscrow = lots.filter(
@@ -151,9 +166,9 @@ function buyerStats(lots: AcquiredLot[]): Stat[] {
   return [
     {
       icon: ICONS.lots,
-      label: "Lotes adquiridos",
+      label: "Lotes",
       value: String(lots.length),
-      hint: "con escrow en Devnet",
+      hint: "designados o adquiridos",
     },
     {
       icon: ICONS.volume,
