@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#123b32" />
-    <title>JuLit — Pitch en 4 voces</title>
+    <title>JuLit — Pitch Deck</title>
     <style>
       :root {
         color-scheme: light;
@@ -134,82 +134,82 @@
         gap: 64px;
         align-items: center;
       }
+      .cover-mark {
+        width: 220px;
+        justify-self: center;
+        text-align: center;
+        color: #729440;
+      }
+      .cover-mark svg {
+        width: 108px;
+        height: auto;
+      }
+      .cover-mark span {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 14px;
+      }
       .team {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px 24px;
-        margin-top: 28px;
-        font-size: 18px;
-        line-height: 1.5;
-      }
-      .cover-mark {
-        aspect-ratio: 1;
-        width: min(100%, 340px);
-        justify-self: end;
-        border: 1px solid var(--line);
-        border-radius: 50%;
-        display: grid;
-        place-content: center;
-        text-align: center;
-        background: #e9eee2;
-      }
-      .cover-mark svg {
-        width: clamp(72px, 10vw, 152px);
-        height: auto;
-        display: block;
-        margin: 0 auto;
-        color: var(--green);
-      }
-      .cover-mark span {
-        margin-top: 14px;
-        color: var(--muted);
-        font-size: 12px;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-      }
-      .cover-bottom {
-        margin-top: 48px;
+        gap: 12px 28px;
+        margin-top: 36px;
         padding-top: 24px;
         border-top: 1px solid var(--line);
+        font-size: 15px;
+        color: var(--muted);
+      }
+      .team span {
+        font-weight: 500;
+      }
+      .cover-bottom {
         display: flex;
         flex-wrap: wrap;
-        gap: 12px 32px;
-        font-size: 14px;
-        color: var(--muted);
+        gap: 16px 36px;
+        margin-top: 56px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #50742c;
       }
       .metrics {
         display: grid;
-        grid-template-columns: 1fr 1fr 1.1fr;
-        margin-top: 38px;
-        border-top: 1px solid var(--line);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        margin-top: 40px;
       }
       .metric {
-        padding: 28px 24px 0 0;
-      }
-      .metric + .metric {
-        border-left: 1px solid var(--line);
-        padding-left: 28px;
+        border-top: 1px solid var(--line);
+        padding-top: 24px;
       }
       .metric-value {
+        font-size: clamp(48px, 5.5vw, 80px);
+        font-weight: 500;
+        letter-spacing: -2px;
         display: block;
-        font-size: clamp(40px, 5vw, 72px);
-        line-height: 1.1;
-        letter-spacing: -3px;
-        margin-bottom: 12px;
+        line-height: 1;
       }
       .metric-value small {
         font-size: 0.45em;
-        letter-spacing: -1px;
-      }
-      .metric p {
-        font-size: 17px;
-        color: var(--muted);
-        line-height: 1.5;
+        font-weight: 400;
+        letter-spacing: normal;
       }
       .metric-title {
-        font-size: clamp(28px, 3vw, 42px);
-        line-height: 1.15;
-        letter-spacing: -1.5px;
+        font-size: clamp(32px, 3.2vw, 52px);
+        line-height: 1.05;
+      }
+      .metric p {
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.45;
+        margin-top: 14px;
       }
       .takeaway {
         margin-top: 32px;
@@ -532,29 +532,29 @@
         <div class="brand" aria-label="JuLit">Ju<span>Lit</span></div>
         <div style="display: flex; align-items: center; gap: 16px">
           <a
-            href="/pitch-en.html"
+            href="/pitch.html"
             class="lang-switch"
-            title="View English presentation"
-            >English</a
+            title="Ver presentación en español"
+            >Español</a
           >
-          <span class="masthead-label">Jujuy · Litio · Solana</span>
+          <span class="masthead-label">Jujuy · Lithium · Solana</span>
         </div>
       </header>
 
-      <main id="slides" aria-label="Diapositivas del pitch">
+      <main id="slides" aria-label="Pitch deck slides">
         <section class="slide cover" aria-labelledby="cover-title">
           <div class="cover-grid">
             <div>
               <h1 id="cover-title">
-                Del salar al mercado,<br />con el pago garantizado.
+                From the salt flat to the market,<br />with guaranteed payment.
               </h1>
               <p class="lead">
-                Directorio B2B y protocolo de entrega contra pago (DvP) en
-                Solana.
+                B2B Directory &amp; Delivery-versus-Payment (DvP) settlement
+                protocol on Solana.
               </p>
-              <div class="team" aria-label="Integrantes del equipo">
+              <div class="team" aria-label="Team members">
                 <span>Mauro Benjamin Mamani (Frontend)</span
-                ><span>Mayko Fernandez (Protocolo &amp; QA)</span
+                ><span>Mayko Fernandez (Protocol &amp; QA)</span
                 ><span>Samuel Paredes (Full-Stack)</span
                 ><span>Mauricio Rios (Team Lead &amp; Solana)</span>
               </div>
@@ -576,179 +576,187 @@
             </div>
           </div>
           <div class="cover-bottom">
-            <span>Origen en Jujuy</span
-            ><span>Certificado de planta SHA-256</span
-            ><span>Escrow DvP en Solana Devnet</span>
+            <span>Born in Jujuy</span><span>Plant Certificate SHA-256</span
+            ><span>Escrow DvP on Solana Devnet</span>
           </div>
         </section>
 
         <section class="slide" hidden aria-labelledby="finance-title">
           <div class="slide-meta">
-            <span class="eyebrow">01 / El dolor financiero</span
+            <span class="eyebrow">01 / The Market Bottleneck</span
             ><span class="time">Mauro Benjamin Mamani · 0:00–0:30</span>
           </div>
-          <h2 id="finance-title">El lote se entrega.<br />El dinero espera.</h2>
+          <h2 id="finance-title">The lot ships.<br />The money stalls.</h2>
           <p class="lead">
-            Más de $150.000 millones invertidos en gigafábricas de baterías.
-            Pero el suministro físico de carbonato de litio grado batería sigue
-            atrapado en cartas de crédito bancarias del siglo pasado.
+            Over $150B is pouring into battery gigafactories. Yet physical
+            cross-border trade of battery-grade lithium remains chained to
+            20th-century bank letters of credit.
           </p>
           <div class="metrics">
             <div class="metric">
               <strong class="metric-value">1.5%–3.5%</strong>
-              <p>de comisión bancaria por carta de crédito</p>
+              <p>in banking fees per letter of credit</p>
             </div>
             <div class="metric">
-              <strong class="metric-value">15–45 <small>días</small></strong>
-              <p>de trámites y capital inmovilizado</p>
+              <strong class="metric-value">15–45 <small>days</small></strong>
+              <p>of bureaucratic delays &amp; frozen capital</p>
             </div>
             <div class="metric">
               <strong class="metric-value metric-title"
-                >Riesgo<br />asimétrico.</strong
+                >Counterparty<br />Standoff.</strong
               >
-              <p>Nadie paga sin recibir ni entrega sin cobrar.</p>
+              <p>Nobody pays before delivery; nobody ships without payment.</p>
             </div>
           </div>
           <p class="takeaway">
-            El problema no es vender el litio. Es eliminar la fricción, los
-            costos bancarios y la desconfianza para cobrarlo.
+            The bottleneck of the clean energy transition isn't extraction—it's
+            trade friction and counterparty distrust.
           </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="risk-title">
           <div class="slide-meta">
-            <span class="eyebrow">02 / El riesgo documental</span
+            <span class="eyebrow">02 / The Evidence &amp; Regulatory Gap</span
             ><span class="time">Mayko Fernandez · 0:30–1:00</span>
           </div>
-          <h2 id="risk-title">Muchos PDFs.<br />Poca certeza.</h2>
+          <h2 id="risk-title">Fragmented PDFs.<br />Zero certainty.</h2>
           <p class="lead">
-            La pureza química (&ge; 99.50%) y la huella ambiental circulan por
-            correo en informes desconectados del cargamento físico.
+            Chemical purity (&ge; 99.50%) and environmental footprints circulate
+            via detached PDF emails, disconnected from the physical cargo.
           </p>
           <div class="flow">
             <div class="step">
-              <span class="step-number">01 / AISLADOS</span>
-              <h3>Archivos aislados</h3>
+              <span class="step-number">01 / SILOED DATA</span>
+              <h3>Isolated files</h3>
               <p>
-                Ensayos químicos y huella hídrica dispersos entre correos sin
-                trazabilidad común.
+                Chemical assays and water metrics scattered across email inboxes
+                without common traceability.
               </p>
             </div>
             <div class="step">
               <span class="step-number">02 / GREENWASHING</span>
-              <h3>Riesgo de fraude</h3>
+              <h3>Tamper risk</h3>
               <p>
-                Informes en PDF fáciles de alterar o reutilizar en otros
-                embarques sin control.
+                PDF certificates can be easily manipulated or reused across
+                separate shipments without detection.
               </p>
             </div>
             <div class="step">
-              <span class="step-number">03 / REGULACIÓN UE</span>
+              <span class="step-number">03 / EU REGULATION</span>
               <h3>Battery Passport</h3>
               <p>
-                El Reglamento UE 2023/1542 exigirá pasaporte digital verificable
-                desde febrero de 2027.
+                EU Regulation 2023/1542 mandates verifiable battery passports
+                starting February 2027.
               </p>
             </div>
           </div>
-          <p class="takeaway">
-            Los sistemas no se comunican y la verificación en papel no ofrece
-            garantías para el comercio global.
+          <div class="hash-strip">
+            <strong>PLANT CERTIFICATE → SHA-256 → ANCHOR PDA</strong
+            ><span
+              >Document integrity is permanently anchored on-chain: if the PDF
+              is altered, the cryptographic digest fails to match.</span
+            >
+          </div>
+          <p class="note">
+            Cryptographic hashing proves mathematical document integrity against
+            the producer's registered certificate, not physical sampling
+            reality.
           </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="solution-title">
           <div class="slide-meta">
-            <span class="eyebrow">03 / La solución JuLit</span
+            <span class="eyebrow">03 / The JuLit Solution</span
             ><span class="time">Samuel Paredes · 1:00–1:30</span>
           </div>
           <h2 id="solution-title">
-            Entrega contra pago,<br />asegurada en código.
+            Delivery versus payment,<br />enforced by code.
           </h2>
           <p class="lead">
-            Un protocolo de custodia programable (Escrow DvP) sobre Solana que
-            alinea a la minera y al comprador sin intermediarios bancarios.
+            An on-chain Delivery-versus-Payment (DvP) protocol with programmatic
+            escrow on Solana, aligning mining producers and buyers without
+            banks.
           </p>
           <div class="flow">
             <div class="step">
-              <span class="step-number">01 / REGISTRO</span>
-              <h3>Título en custodia</h3>
+              <span class="step-number">01 / REGISTRATION</span>
+              <h3>Title in Escrow</h3>
               <p>
-                La productora lista el lote y acuña un Título Digital (NFT)
-                directamente dentro del escrow de la PDA.
+                The producer lists the lot and mints a Digital Title (Metaplex
+                NFT) directly into the PDA escrow.
               </p>
             </div>
             <div class="step">
-              <span class="step-number">02 / FONDEO</span>
-              <h3>Depósito en USDC</h3>
+              <span class="step-number">02 / FUNDING</span>
+              <h3>USDC Deposit</h3>
               <p>
-                El comprador designado deposita el precio del lote en la cuenta
-                de custodia del contrato (fund_lot).
+                The designated buyer deposits the full lot price into the
+                contract's program-owned escrow (fund_lot).
               </p>
             </div>
             <div class="step">
-              <span class="step-number">03 / REDENCIÓN</span>
-              <h3>Liquidación DvP</h3>
+              <span class="step-number">03 / REDEMPTION</span>
+              <h3>Atomic Settlement</h3>
               <p>
-                Al confirmar la recepción física, el comprador firma redeem_lot:
-                quema el título y libera los fondos al instante.
+                Upon physical receipt, the buyer signs redeem_lot: burning the
+                title and releasing funds instantly.
               </p>
             </div>
           </div>
           <div class="hash-strip">
-            <strong>TIMEOUT Y DISPUTA</strong
+            <strong>BUILT-IN PROTOCOL SAFEGUARDS</strong
             ><span
-              >Si el comprador no responde, la minera cobra al vencer el plazo
-              (claim_timeout); ante disconformidad física, el comprador congela
-              el timeout (raise_dispute).</span
+              >Claim timeout lets producers collect if buyers go unresponsive
+              (claim_timeout); dispute flag freezes the escrow if cargo fails
+              specifications (raise_dispute).</span
             >
           </div>
           <p class="note">
-            El Título Digital nunca sale a una billetera externa: se acuña y se
-            quema dentro del contrato para evitar ventas secundarias o
-            especulación en tránsito.
+            The Digital Title never leaves escrow: it is minted and burned
+            strictly inside the contract, eliminating transfer-in-transit
+            speculation.
           </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="closing-title">
           <div class="slide-meta">
-            <span class="eyebrow">04 / Modelo y tracción</span
+            <span class="eyebrow">04 / Why Solana &amp; Traction</span
             ><span class="time">Mauricio Rios · 1:30–2:00</span>
           </div>
           <h2 id="closing-title">
-            Modelo validado.<br />Shippeado desde Jujuy.
+            Validated economics.<br />Shipped from Jujuy.
           </h2>
           <div class="closing-grid">
             <div class="closing-panel">
-              <h3>Modelo de negocio: Take Rate</h3>
+              <h3>Business Model: Take Rate</h3>
               <strong class="big">&lt; 1% vs 3.5%</strong>
               <p>
-                Comisión de protocolo (bps) cobrada al liberar el escrow. En un
-                lote de $1.000.000 USD, reduce el costo financiero de $25.000
-                USD a menos de $10.000 USD con pago instantáneo.
+                Protocol fee (bps) charged exclusively upon escrow release. On a
+                $1,000,000 USD shipment, it cuts financing costs from $25,000
+                USD to under $10,000 USD with instantaneous payment.
               </p>
             </div>
             <div class="closing-panel">
-              <h3>Tracción técnica en Devnet</h3>
+              <h3>Technical Traction on Devnet</h3>
               <strong class="big">100% on-chain</strong>
               <p>
-                Programa Anchor (BntbtLZd...Xtky) con suite completa de tests
-                LiteSVM y Vitest, gestión autónoma de PDAs y explorador de lotes
-                activo en /explorer.
+                Anchor program (BntbtLZd...Xtky) with full LiteSVM and Vitest
+                test suites, autonomous PDAs, and active lot explorer at
+                /explorer.
               </p>
             </div>
           </div>
           <p class="closing-line">
-            JuLit une la evidencia con la liquidación: nadie paga sin recibir,
-            ni entrega sin cobrar.
+            JuLit connects evidence with settlement: from the salt flat to the
+            market, with guaranteed payment.
           </p>
           <p class="note">
-            Desplegado en Solana Devnet con fondos de prueba (dUSDC):
-            operaciones reales ejecutadas en la red. El hash valida integridad
-            documental, no el muestreo físico. Equipo basado en San Salvador de
-            Jujuy, en el corazón del Triángulo del Litio.
+            Deployed on Solana Devnet with test funds (dUSDC): real on-chain
+            execution. Cryptographic hashing verifies document integrity, not
+            physical sampling. Team based in San Salvador de Jujuy, in the heart
+            of the South American Lithium Triangle.
           </p>
-          <p class="takeaway">Muchas gracias.</p>
+          <p class="takeaway">Thank you very much.</p>
         </section>
       </main>
 
@@ -758,7 +766,7 @@
             class="arrow"
             id="previous"
             type="button"
-            aria-label="Diapositiva anterior"
+            aria-label="Previous slide"
             disabled
           >
             ←</button
@@ -766,7 +774,7 @@
             class="arrow"
             id="next"
             type="button"
-            aria-label="Diapositiva siguiente"
+            aria-label="Next slide"
           >
             →</button
           ><span
@@ -778,38 +786,38 @@
             >1 / 5</span
           >
         </div>
-        <nav class="page-dots" aria-label="Elegir diapositiva">
+        <nav class="page-dots" aria-label="Choose slide">
           <button
             class="dot"
             type="button"
-            aria-label="1. Inicio"
+            aria-label="1. Cover"
             aria-current="step"
           ></button>
           <button
             class="dot"
             type="button"
-            aria-label="2. El dolor financiero"
+            aria-label="2. Market Bottleneck"
           ></button>
           <button
             class="dot"
             type="button"
-            aria-label="3. El riesgo documental"
+            aria-label="3. Evidence &amp; Regulatory Gap"
           ></button>
           <button
             class="dot"
             type="button"
-            aria-label="4. Escrow DvP y Título Digital"
+            aria-label="4. Escrow DvP &amp; Digital Title"
           ></button>
           <button
             class="dot"
             type="button"
-            aria-label="5. Modelo de negocio y cierre"
+            aria-label="5. Why Solana &amp; Traction"
           ></button>
         </nav>
         <div class="navigation">
-          <span class="hint">← → para navegar</span
+          <span class="hint">← → to navigate</span
           ><button class="fullscreen" id="fullscreen" type="button">
-            Pantalla completa
+            Fullscreen
           </button>
         </div>
       </footer>
@@ -882,13 +890,13 @@
           if (document.fullscreenElement) await document.exitFullscreen();
           else await document.documentElement.requestFullscreen();
         } catch {
-          counter.textContent = "Pantalla completa no disponible";
+          counter.textContent = "Fullscreen unavailable";
         }
       });
       document.addEventListener("fullscreenchange", () => {
         fullscreen.textContent = document.fullscreenElement
-          ? "Salir de pantalla completa"
-          : "Pantalla completa";
+          ? "Exit fullscreen"
+          : "Fullscreen";
       });
     </script>
   </body>
