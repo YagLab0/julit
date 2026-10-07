@@ -15,6 +15,7 @@ import { useCluster } from "../components/cluster-context";
 import { WalletButton } from "../components/wallet-button";
 import { StatusBadge } from "../explorer/components/lot-display";
 import { buildContractAgreementMessage } from "../lib/contracts";
+import { DesignatedLotsCard } from "./designated-lots";
 
 export type AccountCompany = {
   name: string;
@@ -24,17 +25,36 @@ export type AccountCompany = {
   originId: string | null;
 };
 
-export type AcquiredLot = {
+/** A lot row from the index joined with the producer's company name. */
+export type AccountLot = {
   lot_id: string;
   pda_address: string;
-  status: "funded" | "disputed" | "redeemed" | "claimed";
   volume_tonnes: number;
   purity_pct: number;
+  water_footprint_m3_per_tonne: number;
+  carbon_footprint_kg_co2e_per_tonne: number;
   price_usdc: number;
+  producer_wallet: string;
+  producer_name: string | null;
+  buyer_wallet: string;
+  mint_address: string;
+  claimable_after: string;
+  origin_id: string;
   fund_tx_signature: string | null;
   redeem_tx_signature: string | null;
-  origin_id: string;
+  dispute_tx_signature: string | null;
+  claim_tx_signature: string | null;
   indexed_at: string;
+};
+
+/** A designated lot still awaiting a buyer decision. */
+export type DesignatedLot = AccountLot & {
+  status: "listed" | "funded" | "disputed";
+};
+
+/** A settled lot: redeemed by the buyer or claimed by the producer. */
+export type AcquiredLot = AccountLot & {
+  status: "redeemed" | "claimed";
 };
 
 const CONTRACT_STATUS_LABELS: Record<string, string> = {
@@ -96,10 +116,12 @@ const NEXT_STEPS: Record<
 export function AccountClient({
   email,
   company,
+  designatedLots = [],
   acquiredLots = [],
 }: {
   email: string;
   company: AccountCompany;
+  designatedLots?: DesignatedLot[];
   acquiredLots?: AcquiredLot[];
 }) {
   const nextStep = NEXT_STEPS[company.companyType];
@@ -126,6 +148,11 @@ export function AccountClient({
 
       {company.companyType === "buyer" && (
         <>
+          <DesignatedLotsCard
+            lots={designatedLots}
+            companyName={company.name}
+            walletAddress={company.walletAddress}
+          />
           <BuyerPortfolioCard lots={acquiredLots} />
           <BuyerContractsCard />
         </>
@@ -171,7 +198,8 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
             Portafolio de Lotes Adquiridos
           </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Lotes designados a tu empresa con pago en escrow en Devnet.
+            Historial de lotes liquidados o cobrados por la productora en escrow
+            Devnet.
           </p>
         </div>
         <span className="font-mono text-xs text-muted">
@@ -195,7 +223,7 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
           </p>
           <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
             {totalUsdc.toLocaleString("es-AR")}{" "}
-            <span className="text-xs font-normal text-muted">USDC</span>
+            <span className="text-xs font-normal text-muted">dUSDC</span>
           </p>
         </div>
         <div className="rounded-xl border border-border-low bg-secondary/50 p-3 col-span-2 sm:col-span-1">
@@ -239,6 +267,7 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
                   <StatusBadge status={lot.status} />
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
+                  {lot.producer_name ?? ellipsify(lot.producer_wallet, 6)} ·{" "}
                   {lot.volume_tonnes} t · {Number(lot.purity_pct).toFixed(2)} %
                   Li₂CO₃ · Origen: {originName(lot.origin_id)}
                 </p>
@@ -251,10 +280,10 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
                 >
                   Ver Pasaporte
                 </Link>
-                {lot.redeem_tx_signature && (
+                {(lot.redeem_tx_signature ?? lot.claim_tx_signature) && (
                   <a
                     href={getExplorerUrl(
-                      `/tx/${lot.redeem_tx_signature}`,
+                      `/tx/${lot.redeem_tx_signature ?? lot.claim_tx_signature}`,
                       cluster
                     )}
                     target="_blank"
@@ -440,7 +469,10 @@ function BuyerContractsCard() {
   );
 
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-5">
+    <section
+      id="contratos"
+      className="scroll-mt-6 rounded-2xl border border-border-low bg-card p-5"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">
