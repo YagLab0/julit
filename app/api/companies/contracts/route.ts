@@ -1,9 +1,5 @@
 import { isAddress } from "@solana/kit";
-import {
-  contractPosture,
-  offerDirection,
-  type ContractRole,
-} from "../../../lib/company-contracts";
+import { offerDirection } from "../../../lib/company-contracts";
 import type { CompanyType } from "../../../lib/company";
 import { jsonError, readJsonBody } from "../../../lib/server/api";
 import {
@@ -29,71 +25,6 @@ async function sessionCompany(
     .eq("id", user.id)
     .maybeSingle();
   return { user, company };
-}
-
-/** Lists the contracts where the session's company is a party. */
-export async function GET() {
-  const supabase = await createClient();
-  const { user, company } = await sessionCompany(supabase);
-  if (!user) {
-    return jsonError("Iniciá sesión para ver tus contratos.", 401);
-  }
-  if (!company) {
-    return Response.json({ contracts: [] });
-  }
-
-  const service = createServiceClient();
-  const { data: contracts, error } = await service
-    .from("company_contracts")
-    .select(
-      "id, producer_id, counterparty_id, initiator_id, status, initiator_signature, counterparty_signature, initiator_signed_at, counterparty_signed_at, responded_at, created_at"
-    )
-    .or(`producer_id.eq.${company.id},counterparty_id.eq.${company.id}`)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return jsonError("No se pudieron cargar los contratos.", 500);
-  }
-
-  const companyIds = [
-    ...new Set(
-      (contracts ?? []).flatMap((c) => [c.producer_id, c.counterparty_id])
-    ),
-  ];
-  const { data: parties } = companyIds.length
-    ? await service
-        .from("companies")
-        .select("id, name, company_type, wallet_address, origin_id")
-        .in("id", companyIds)
-    : { data: [] };
-  const partyById = new Map((parties ?? []).map((p) => [p.id, p]));
-
-  return Response.json({
-    contracts: (contracts ?? []).map((c) => {
-      const counterparty = partyById.get(c.counterparty_id) ?? null;
-      const producer = partyById.get(c.producer_id) ?? null;
-      const role: ContractRole =
-        c.producer_id === company.id ? "producer" : "counterparty";
-      const posture = contractPosture(company.id, c.initiator_id);
-      return {
-        id: c.id,
-        status: c.status,
-        initiator_id: c.initiator_id,
-        initiator_signature: c.initiator_signature,
-        counterparty_signature: c.counterparty_signature,
-        initiator_signed_at: c.initiator_signed_at,
-        counterparty_signed_at: c.counterparty_signed_at,
-        responded_at: c.responded_at,
-        respondedAt: c.responded_at,
-        created_at: c.created_at,
-        createdAt: c.created_at,
-        producer,
-        counterparty,
-        role,
-        posture,
-      };
-    }),
-  });
 }
 
 /**

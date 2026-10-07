@@ -10,18 +10,18 @@ import {
   findLotPda,
   findMintPda,
   getCreateLotInstructionAsync,
-} from "../../generated/julit";
-import { Field } from "../../components/form-field";
-import { ellipsify, getExplorerUrl } from "../../lib/explorer";
-import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
-import { useWallet } from "../../lib/wallet/context";
-import { createSolanaClient } from "../../lib/solana-client";
+} from "../../../generated/julit";
+import { Field } from "../../../components/form-field";
+import { ellipsify, getExplorerUrl } from "../../../lib/explorer";
+import { useSendTransaction } from "../../../lib/hooks/use-send-transaction";
+import { useWallet } from "../../../lib/wallet/context";
+import { createSolanaClient } from "../../../lib/solana-client";
 import {
   findMasterEditionPda,
   findMetadataPda,
-} from "../../lib/solana/metaplex";
-import { useCluster } from "../../components/cluster-context";
-import { decimalFmt } from "../components/lot-display";
+} from "../../../lib/solana/metaplex";
+import { useCluster } from "../../../components/cluster-context";
+import { decimalFmt } from "../../../explorer/components/lot-display";
 import type { ProducerInfo } from "./new-lot-client";
 import {
   validateLotForm,
@@ -31,7 +31,7 @@ import {
 } from "./validation";
 
 const INPUT_CLASS =
-  "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25";
+  "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25";
 
 export type Counterparty = { name: string; wallet: string };
 
@@ -225,7 +225,7 @@ export function RegisterLotForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="mt-6">
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="rounded-3xl bg-card p-6">
         <p className="eyebrow">Identificación</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <Field
@@ -242,7 +242,7 @@ export function RegisterLotForm({
             />
           </Field>
           <Field label="Origen" hint="Del perfil de tu empresa.">
-            <p className="rounded-lg border border-border-low bg-cream/50 px-3 py-2 text-sm font-medium">
+            <p className="rounded-xl bg-secondary px-3 py-2 text-sm font-medium">
               {producer.originName}
             </p>
           </Field>
@@ -278,7 +278,7 @@ export function RegisterLotForm({
             error={errors.producerSpecs}
             span
           >
-            <p className="rounded-lg border border-border-low bg-cream/50 px-3 py-2 text-sm font-medium">
+            <p className="rounded-xl bg-secondary px-3 py-2 text-sm font-medium">
               Pureza {decimalFmt.format(Number(producer.specs.purityPct))} % ·
               Huella hídrica{" "}
               {decimalFmt.format(Number(producer.specs.waterM3PerTonne))} m³/t ·
@@ -361,13 +361,16 @@ export function RegisterLotForm({
           </span>
         </p>
         <div className="flex gap-2">
-          <Link href="/explorer" className="btn-secondary">
-            Volver al catálogo
+          <Link
+            href="/account/lotes"
+            className="btn-secondary rounded-full px-4"
+          >
+            Volver a lotes
           </Link>
           <button
             type="submit"
             disabled={isSending || indexing || cert.status === "uploading"}
-            className="btn-primary"
+            className="btn-primary rounded-full px-5"
           >
             {isSending
               ? "Firmando…"

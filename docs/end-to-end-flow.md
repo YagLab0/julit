@@ -52,15 +52,15 @@ DB trigger rejects index rows without an accepted contract.
    resolved from both companies' types, ADR-0019).
    - Optional proof: an Ed25519 signature over the canonical agreement
      message, or an SPL Memo transaction signature (`is_onchain: true`).
-     *Known gap: the on-chain path validates format only — see
-     `docs/blockchain-review-2026-10-06.md`, finding 1.*
+     _Known gap: the on-chain path validates format only — see
+     `docs/blockchain-review-2026-10-06.md`, finding 1._
 2. The responder (whichever party did not initiate) answers via
    `PATCH /api/companies/contracts/[id]` `{ action: "accept" | "decline" }`
    → `accepted` | `revoked`.
 
 ## 3. Lot registration (producer)
 
-`app/explorer/new` — gated by `VerifiedWalletGate`: the connected wallet
+`app/account/lotes/new` — gated by `VerifiedWalletGate`: the connected wallet
 must equal the company's verified wallet.
 
 1. The producer uploads the plant certificate PDF →
@@ -148,10 +148,10 @@ index status) and CAS-updates the index row.
 
 ## Trust boundary summary
 
-| Layer | Guarantees |
-| --- | --- |
-| Anchor program | Ownership (PDA seeds), party roles (signer constraints), state machine, exact-price escrow, bounded claim window, fee math |
-| API routes | Auth session, verified-wallet match, transaction authenticity (confirmed, correct program + discriminator, signer position), on-chain account re-read before indexing |
-| DB | Origin binding, accepted-contract requirement, unique wallet, single-use challenges, CAS status transitions |
-| Frontend | Form validation mirroring on-chain rules, verified-wallet gate, cluster pinning to Devnet for lifecycle actions |
-| Passport | Client-side digest contrast + field-by-field index-vs-chain contrast — no trust in the index alone |
+| Layer          | Guarantees                                                                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Anchor program | Ownership (PDA seeds), party roles (signer constraints), state machine, exact-price escrow, bounded claim window, fee math                                            |
+| API routes     | Auth session, verified-wallet match, transaction authenticity (confirmed, correct program + discriminator, signer position), on-chain account re-read before indexing |
+| DB             | Origin binding, accepted-contract requirement, unique wallet, single-use challenges, CAS status transitions                                                           |
+| Frontend       | Form validation mirroring on-chain rules, verified-wallet gate, cluster pinning to Devnet for lifecycle actions                                                       |
+| Passport       | Client-side digest contrast + field-by-field index-vs-chain contrast — no trust in the index alone                                                                    |

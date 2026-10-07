@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, type ReactNode } from "react";
 import { getBase58Decoder } from "@solana/kit";
 import { toast } from "sonner";
 import { COMPANY_TYPE_LABELS, type CompanyType } from "../lib/company";
@@ -15,6 +15,7 @@ import { useCluster } from "../components/cluster-context";
 import { WalletButton } from "../components/wallet-button";
 import { StatusBadge } from "../explorer/components/lot-display";
 import { buildContractAgreementMessage } from "../lib/contracts";
+import type { AccountContract } from "./account-data";
 
 export type AccountCompany = {
   name: string;
@@ -22,6 +23,9 @@ export type AccountCompany = {
   walletAddress: string | null;
   walletVerifiedAt: string | null;
   originId: string | null;
+  purityPct: number | null;
+  waterM3PerTonne: number | null;
+  carbonKgCo2ePerTonne: number | null;
 };
 
 export type AcquiredLot = {
@@ -48,123 +52,89 @@ const CONTRACT_STATUS_STYLES: Record<string, string> = {
     "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
   accepted:
     "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
-  revoked: "border-border-low bg-secondary text-muted",
+  revoked: "bg-secondary text-muted",
 };
 
-type ContractRow = {
-  id: string;
-  status: "pending" | "accepted" | "revoked";
-  initiator_signature?: string | null;
-  counterparty_signature?: string | null;
-  respondedAt?: string | null;
-  createdAt?: string;
-  producer?: {
-    id: string;
-    name: string;
-    company_type?: CompanyType;
-    wallet_address?: string;
-    origin_id?: string;
-  } | null;
-  counterparty?: {
-    id: string;
-    name: string;
-    company_type?: CompanyType;
-    wallet_address?: string;
-  } | null;
-  role?: "producer" | "counterparty";
-  posture?: "initiator" | "responder" | null;
+const CARD = "rounded-3xl bg-card p-6";
+
+const EMPTY_ICONS = {
+  lots: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="size-9"
+    >
+      <path d="M21 8 12 3 3 8v8l9 5 9-5V8Z" />
+      <path d="M3 8l9 5 9-5M12 13v8" />
+    </svg>
+  ),
+  contract: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="size-9"
+    >
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6Z" />
+      <path d="M14 3v6h6M9 13h6M9 17h4" />
+    </svg>
+  ),
+  offers: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="size-9"
+    >
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.5 5.5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.5A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.5Z" />
+    </svg>
+  ),
 };
 
-const NEXT_STEPS: Record<
-  CompanyType,
-  { title: string; body: string; href?: string; linkLabel?: string }
-> = {
-  producer: {
-    title: "Registrar lotes",
-    body: "Creá un lote con sus métricas de producción y sostenibilidad, designá el comprador y subí el certificado de planta.",
-    href: "/explorer/new",
-    linkLabel: "Registrar lote",
-  },
-  buyer: {
-    title: "Comprar lotes",
-    body: "Explorá el catálogo público: los lotes publicados que te designen compradora se fondean con escrow en Devnet.",
-    href: "/explorer",
-    linkLabel: "Ver catálogo",
-  },
-};
-
-export function AccountClient({
-  email,
-  company,
-  acquiredLots = [],
+export function EmptyState({
+  icon,
+  title,
+  body,
+  action,
+  secondaryAction,
 }: {
-  email: string;
-  company: AccountCompany;
-  acquiredLots?: AcquiredLot[];
+  icon: ReactNode;
+  title: string;
+  body: string;
+  action?: ReactNode;
+  secondaryAction?: ReactNode;
 }) {
-  const nextStep = NEXT_STEPS[company.companyType];
-
   return (
-    <div className="space-y-6">
-      <section>
-        <p className="eyebrow">{COMPANY_TYPE_LABELS[company.companyType]}</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          {company.name}
-        </h1>
-        <p className="mt-1 text-xs text-muted">Cuenta: {email}</p>
-        {company.companyType === "producer" && company.originId && (
-          <p className="mt-1 text-xs text-muted">
-            Origen: {originName(company.originId)}
-          </p>
-        )}
-      </section>
-
-      <WalletCard
-        walletAddress={company.walletAddress}
-        walletVerifiedAt={company.walletVerifiedAt}
-      />
-
-      {company.companyType === "buyer" && (
-        <>
-          <BuyerPortfolioCard lots={acquiredLots} />
-          <BuyerContractsCard />
-        </>
+    <div className="flex flex-col items-center px-6 py-10 text-center">
+      <div className="text-muted">{icon}</div>
+      <p className="mt-4 text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted">{body}</p>
+      {(action || secondaryAction) && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {action}
+          {secondaryAction}
+        </div>
       )}
-
-      {company.companyType === "producer" && (
-        <ContractsCard companyType={company.companyType} />
-      )}
-
-      {company.companyType === "producer" && <BuyerOffersCard />}
-
-      <section className="rounded-2xl border border-border-low bg-card p-5">
-        <h2 className="text-sm font-semibold">{nextStep.title}</h2>
-        <p className="mt-1 text-xs leading-relaxed text-muted">
-          {nextStep.body}
-        </p>
-        {nextStep.href && (
-          <Link
-            href={nextStep.href}
-            className="btn-secondary mt-3 inline-block"
-          >
-            {nextStep.linkLabel}
-          </Link>
-        )}
-      </section>
     </div>
   );
 }
 
-function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
+export function BuyerPortfolioCard({
+  lots,
+  className,
+}: {
+  lots: AcquiredLot[];
+  className?: string;
+}) {
   const { cluster } = useCluster();
-  const totalVolume = lots.reduce(
-    (sum, b) => sum + Number(b.volume_tonnes || 0),
-    0
-  );
-  const totalUsdc = lots.reduce((sum, b) => sum + Number(b.price_usdc || 0), 0);
 
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-5">
+    <section className={`${CARD} ${className ?? ""}`}>
       <div className="flex items-baseline justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">
@@ -174,62 +144,31 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
             Lotes designados a tu empresa con pago en escrow en Devnet.
           </p>
         </div>
-        <span className="font-mono text-xs text-muted">
+        <span className="rounded-full bg-secondary px-3 py-1 font-mono text-xs text-muted">
           {lots.length} {lots.length === 1 ? "lote" : "lotes"}
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-border-low bg-secondary/50 p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-            Volumen total
-          </p>
-          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
-            {totalVolume.toLocaleString("es-AR")}{" "}
-            <span className="text-xs font-normal text-muted">t</span>
-          </p>
-        </div>
-        <div className="rounded-xl border border-border-low bg-secondary/50 p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-            Inversión total
-          </p>
-          <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
-            {totalUsdc.toLocaleString("es-AR")}{" "}
-            <span className="text-xs font-normal text-muted">USDC</span>
-          </p>
-        </div>
-        <div className="rounded-xl border border-border-low bg-secondary/50 p-3 col-span-2 sm:col-span-1">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-            Liquidación
-          </p>
-          <p className="mt-1 text-xs font-semibold text-brand-700 dark:text-brand-400">
-            Escrow DvP en Devnet
-          </p>
-        </div>
-      </div>
-
       {lots.length === 0 ? (
-        <div className="mt-4 rounded-xl border border-dashed border-border-low p-6 text-center">
-          <p className="text-xs font-medium text-muted">
-            Tu empresa todavía no tiene lotes adquiridos.
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            Navegá el catálogo: los lotes publicados que te designen compradora
-            se fondean con escrow.
-          </p>
-          <Link
-            href="/explorer"
-            className="btn-primary mt-3 inline-block text-xs"
-          >
-            Ir al catálogo
-          </Link>
-        </div>
+        <EmptyState
+          icon={EMPTY_ICONS.lots}
+          title="Todavía no tenés lotes adquiridos"
+          body="Navegá el catálogo: los lotes publicados que te designen compradora se fondean con escrow."
+          action={
+            <Link
+              href="/account/catalogo"
+              className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition hover:opacity-90"
+            >
+              Ir al catálogo
+            </Link>
+          }
+        />
       ) : (
         <div className="mt-4 space-y-2">
           {lots.map((lot) => (
             <div
               key={lot.lot_id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-low bg-background p-3 text-sm"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-secondary p-4 text-sm"
             >
               <div>
                 <div className="flex items-center gap-2">
@@ -247,7 +186,7 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
               <div className="flex items-center gap-2">
                 <Link
                   href={`/batch/${lot.pda_address || lot.lot_id}`}
-                  className="btn-secondary text-xs px-2.5 py-1.5"
+                  className="btn-secondary rounded-full text-xs px-3 py-1.5"
                 >
                   Ver Pasaporte
                 </Link>
@@ -273,12 +212,17 @@ function BuyerPortfolioCard({ lots }: { lots: AcquiredLot[] }) {
   );
 }
 
-function BuyerContractsCard() {
+export function BuyerContractsCard({
+  contracts,
+  className,
+}: {
+  contracts: AccountContract[];
+  className?: string;
+}) {
+  const router = useRouter();
   const { wallet, signMessage } = useWallet();
   const { send: sendTransaction } = useSendTransaction();
   const { cluster } = useCluster();
-  const [contracts, setContracts] = useState<ContractRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [producers, setProducers] = useState<
     Array<{
@@ -291,22 +235,6 @@ function BuyerContractsCard() {
   const [selectedProducerId, setSelectedProducerId] = useState<string>("");
   const [requesting, setRequesting] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
-
-  async function loadContracts() {
-    try {
-      const res = await fetch("/api/companies/contracts");
-      if (res.ok) {
-        const data = await res.json();
-        setContracts(data.contracts ?? []);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadContracts();
-  }, []);
 
   async function openRequestModal() {
     setShowModal(true);
@@ -401,7 +329,7 @@ function BuyerContractsCard() {
       }
 
       setShowModal(false);
-      void loadContracts();
+      router.refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/reject|cancel|denied/i.test(msg)) {
@@ -429,7 +357,7 @@ function BuyerContractsCard() {
         toast.error(err?.error ?? "No se pudo responder el contrato.");
         return;
       }
-      await loadContracts();
+      router.refresh();
     } finally {
       setRespondingId(null);
     }
@@ -440,7 +368,7 @@ function BuyerContractsCard() {
   );
 
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-5">
+    <section className={`${CARD} ${className ?? ""}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">
@@ -454,14 +382,14 @@ function BuyerContractsCard() {
         <button
           type="button"
           onClick={() => void openRequestModal()}
-          className="btn-secondary text-xs px-3 py-1.5 cursor-pointer"
+          className="btn-secondary rounded-full text-xs px-4 py-1.5 cursor-pointer"
         >
           + Solicitar contrato
         </button>
       </div>
 
       {showModal && (
-        <div className="mt-4 rounded-xl border border-brand-500/30 bg-brand-50/40 dark:bg-brand-950/20 p-4">
+        <div className="mt-4 rounded-2xl bg-brand-50 dark:bg-brand-950/40 p-4">
           <p className="text-xs font-semibold text-foreground">
             Nueva solicitud de contrato de suministro
           </p>
@@ -473,7 +401,7 @@ function BuyerContractsCard() {
             <select
               value={selectedProducerId}
               onChange={(e) => setSelectedProducerId(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground"
+              className="rounded-full border border-border bg-card px-4 py-2 text-xs text-foreground"
             >
               {producers.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -486,7 +414,7 @@ function BuyerContractsCard() {
               type="button"
               disabled={requesting || !selectedProducerId}
               onClick={() => void handleCreateContract()}
-              className="btn-primary text-xs px-4 py-2 cursor-pointer"
+              className="btn-primary rounded-full text-xs px-4 py-2 cursor-pointer"
             >
               {requesting
                 ? "Firmando solicitud…"
@@ -496,7 +424,7 @@ function BuyerContractsCard() {
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="btn-secondary text-xs px-3 py-2 cursor-pointer"
+              className="btn-secondary rounded-full text-xs px-4 py-2 cursor-pointer"
             >
               Cancelar
             </button>
@@ -509,7 +437,7 @@ function BuyerContractsCard() {
           {pendingIncoming.map((c) => (
             <div
               key={c.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50/60 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/40"
             >
               <p className="text-xs">
                 <span className="font-medium">{c.producer?.name}</span>{" "}
@@ -520,7 +448,7 @@ function BuyerContractsCard() {
                   type="button"
                   onClick={() => void respondOffer(c.id, "accept")}
                   disabled={respondingId !== null}
-                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
+                  className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background"
                 >
                   Aceptar
                 </button>
@@ -528,7 +456,7 @@ function BuyerContractsCard() {
                   type="button"
                   onClick={() => void respondOffer(c.id, "decline")}
                   disabled={respondingId !== null}
-                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
+                  className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted"
                 >
                   Rechazar
                 </button>
@@ -539,24 +467,35 @@ function BuyerContractsCard() {
       )}
 
       <div className="mt-4">
-        {loading ? (
-          <p className="text-xs text-muted">Cargando contratos…</p>
-        ) : contracts.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border-low p-6 text-center">
-            <p className="text-xs text-muted">
-              Tu empresa todavía no tiene contratos comerciales registrados.
-            </p>
-            <p className="mt-1 text-[11px] text-muted">
-              Podés solicitar acuerdos desde el catálogo de lotes o con el botón
-              superior.
-            </p>
-          </div>
+        {contracts.length === 0 ? (
+          <EmptyState
+            icon={EMPTY_ICONS.contract}
+            title="Todavía no tenés contratos"
+            body="Solicitá un acuerdo de suministro a una productora para empezar a reservar lotes."
+            action={
+              <button
+                type="button"
+                onClick={() => void openRequestModal()}
+                className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition hover:opacity-90"
+              >
+                Solicitar contrato
+              </button>
+            }
+            secondaryAction={
+              <Link
+                href="/account/catalogo"
+                className="rounded-full border border-border px-4 py-2 text-xs font-medium text-foreground transition hover:bg-accent"
+              >
+                Ver catálogo
+              </Link>
+            }
+          />
         ) : (
           <ul className="space-y-2.5">
             {contracts.map((c) => (
               <li
                 key={c.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-low bg-background p-3.5 text-xs"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-secondary p-4 text-xs"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -629,48 +568,19 @@ function BuyerContractsCard() {
   );
 }
 
-function ContractsCard({ companyType }: { companyType: CompanyType }) {
-  const [contracts, setContracts] = useState<ContractRow[] | null>(null);
-  const [directory, setDirectory] = useState<
-    { id: string; name: string }[] | null
-  >(null);
+export function ContractsCard({
+  contracts,
+  directory,
+  className,
+}: {
+  contracts: AccountContract[];
+  directory: { id: string; name: string }[];
+  className?: string;
+}) {
+  const router = useRouter();
   const [counterpartyId, setCounterpartyId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reload, setReload] = useState(0);
-
-  const isProducer = companyType === "producer";
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/companies/contracts")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { contracts?: ContractRow[] } | null) => {
-        if (!cancelled) setContracts(data?.contracts ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setContracts([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reload]);
-
-  useEffect(() => {
-    if (!isProducer) return;
-    let cancelled = false;
-    fetch("/api/companies/directory?type=buyer")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { companies?: { id: string; name: string }[] } | null) => {
-        if (!cancelled) setDirectory(data?.companies ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setDirectory([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reload, isProducer]);
 
   async function offerContract() {
     if (!counterpartyId) return;
@@ -693,58 +603,55 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
 
     setCounterpartyId("");
     setBusy(false);
-    setReload((n) => n + 1);
+    router.refresh();
   }
 
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-5">
+    <section className={`${CARD} ${className ?? ""}`}>
       <h2 className="text-sm font-semibold">Contratos comerciales</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        {isProducer
-          ? "Ofrecé un contrato a una compradora para habilitarla como cliente de tus lotes."
-          : "Aceptá contratos de productoras para que te designen sus lotes."}
+        Ofrecé un contrato a una compradora para habilitarla como cliente de tus
+        lotes.
       </p>
 
-      {isProducer && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void offerContract();
-          }}
-          className="mt-4 flex flex-wrap gap-2"
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void offerContract();
+        }}
+        className="mt-4 flex flex-wrap gap-2"
+      >
+        <select
+          value={counterpartyId}
+          onChange={(e) => setCounterpartyId(e.target.value)}
+          disabled={busy}
+          aria-label="Compradora"
+          className="rounded-full border border-border bg-card px-4 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
         >
-          <select
-            value={counterpartyId}
-            onChange={(e) => setCounterpartyId(e.target.value)}
-            disabled={busy || directory === null}
-            aria-label="Compradora"
-            className="rounded-lg border border-border-low bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
-          >
-            <option value="">Elegir compradora…</option>
-            {(directory ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={busy || !counterpartyId}
-            className="btn-primary"
-          >
-            {busy ? "Enviando…" : "Ofrecer contrato"}
-          </button>
-        </form>
-      )}
+          <option value="">Elegir compradora…</option>
+          {directory.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          disabled={busy || !counterpartyId}
+          className="btn-primary rounded-full px-4"
+        >
+          {busy ? "Enviando…" : "Ofrecer contrato"}
+        </button>
+      </form>
 
-      {contracts !== null && contracts.length > 0 && (
+      {contracts.length > 0 && (
         <ul className="mt-4 space-y-1.5">
           {contracts.map((c) => {
             const other = c.role === "producer" ? c.counterparty : c.producer;
             return (
               <li
                 key={c.id}
-                className="flex items-center justify-between gap-2 rounded-lg border border-border-low px-3 py-2"
+                className="flex items-center justify-between gap-2 rounded-2xl bg-secondary px-4 py-3"
               >
                 <p className="text-xs">
                   <span className="font-medium">{other?.name}</span>{" "}
@@ -770,8 +677,12 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
         </ul>
       )}
 
-      {contracts !== null && contracts.length === 0 && (
-        <p className="mt-3 text-xs text-muted">Todavía no hay contratos.</p>
+      {contracts.length === 0 && (
+        <EmptyState
+          icon={EMPTY_ICONS.contract}
+          title="Todavía no hay contratos"
+          body="Ofrecé un contrato a una compradora desde el formulario para habilitarla como cliente de tus lotes."
+        />
       )}
 
       {error && (
@@ -783,26 +694,16 @@ function ContractsCard({ companyType }: { companyType: CompanyType }) {
   );
 }
 
-function BuyerOffersCard() {
-  const [offers, setOffers] = useState<ContractRow[] | null>(null);
+export function BuyerOffersCard({
+  contracts,
+  className,
+}: {
+  contracts: AccountContract[];
+  className?: string;
+}) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reload, setReload] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/companies/contracts")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { contracts?: ContractRow[] } | null) => {
-        if (!cancelled) setOffers(data?.contracts ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setOffers([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reload]);
 
   async function respond(id: string, action: "accept" | "decline") {
     setBusy(true);
@@ -823,33 +724,33 @@ function BuyerOffersCard() {
     }
 
     setBusy(false);
-    setReload((n) => n + 1);
+    router.refresh();
   }
 
-  const pending = (offers ?? []).filter(
+  const pending = contracts.filter(
     (c) => c.posture === "responder" && c.status === "pending"
   );
 
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-5">
+    <section className={`${CARD} ${className ?? ""}`}>
       <h2 className="text-sm font-semibold">Ofertas de compradoras</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
         Las compradoras te ofrecen contratos para reservar tus lotes. Aceptalas
         para habilitarlas como clientes.
       </p>
 
-      {offers === null ? (
-        <p className="mt-3 text-xs text-muted">Cargando ofertas…</p>
-      ) : pending.length === 0 ? (
-        <p className="mt-3 text-xs text-muted">
-          No hay ofertas pendientes de compradoras.
-        </p>
+      {pending.length === 0 ? (
+        <EmptyState
+          icon={EMPTY_ICONS.offers}
+          title="Sin ofertas pendientes"
+          body="Cuando una compradora te ofrezca un contrato para reservar tus lotes, va a aparecer acá."
+        />
       ) : (
         <div className="mt-4 space-y-2">
           {pending.map((c) => (
             <div
               key={c.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50/60 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/40"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50/60 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/40"
             >
               <p className="text-xs">
                 <span className="font-medium">{c.counterparty?.name}</span>{" "}
@@ -860,7 +761,7 @@ function BuyerOffersCard() {
                   type="button"
                   onClick={() => void respond(c.id, "accept")}
                   disabled={busy}
-                  className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background"
+                  className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background"
                 >
                   Aceptar
                 </button>
@@ -868,7 +769,7 @@ function BuyerOffersCard() {
                   type="button"
                   onClick={() => void respond(c.id, "decline")}
                   disabled={busy}
-                  className="rounded-md border border-border-low px-2.5 py-1 text-xs font-medium text-muted"
+                  className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted"
                 >
                   Rechazar
                 </button>
@@ -887,12 +788,14 @@ function BuyerOffersCard() {
   );
 }
 
-function WalletCard({
+export function WalletCard({
   walletAddress,
   walletVerifiedAt,
+  className,
 }: {
   walletAddress: string | null;
   walletVerifiedAt: string | null;
+  className?: string;
 }) {
   const { wallet, signMessage } = useWallet();
   const { cluster } = useCluster();
@@ -962,8 +865,19 @@ function WalletCard({
   }
 
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-5">
-      <h2 className="text-sm font-semibold">Wallet</h2>
+    <section className={`${CARD} ${className ?? ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold">Wallet</h2>
+        {walletAddress ? (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+            Verificada
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+            Pendiente
+          </span>
+        )}
+      </div>
 
       {walletAddress ? (
         <div className="mt-2 space-y-2">
@@ -971,7 +885,7 @@ function WalletCard({
             Wallet verificada. Queda fija como la wallet de tu empresa.
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <code className="rounded-md border border-border-low bg-secondary px-2 py-1 text-xs text-foreground">
+            <code className="rounded-full bg-secondary px-3 py-1 text-xs text-foreground">
               {ellipsify(walletAddress, 6)}
             </code>
             <a
@@ -1016,7 +930,7 @@ function WalletCard({
               type="button"
               onClick={() => void linkWallet()}
               disabled={busy}
-              className="btn-primary"
+              className="btn-primary rounded-full px-4"
             >
               {busy ? "Esperando la firma…" : "Firmar y vincular wallet"}
             </button>

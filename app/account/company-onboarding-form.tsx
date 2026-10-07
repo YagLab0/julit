@@ -38,7 +38,7 @@ export function CompanyOnboardingForm() {
   }
 
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-6 shadow-sm">
+    <section className="rounded-3xl bg-card p-8">
       <h1 className="text-lg font-semibold tracking-tight">
         Completá el perfil de tu empresa
       </h1>
@@ -58,7 +58,11 @@ export function CompanyOnboardingForm() {
             {error}
           </p>
         )}
-        <button type="submit" disabled={busy} className="btn-primary w-full">
+        <button
+          type="submit"
+          disabled={busy}
+          className="btn-primary w-full rounded-full py-2.5"
+        >
           {busy ? "Registrando…" : "Registrar empresa"}
         </button>
       </form>
