@@ -116,10 +116,10 @@ export default function Home() {
               Del salar al mercado, con el pago garantizado.
             </h1>
             <p className={styles.heroDescription}>
-              JuLit conecta productores y compradores de carbonato de litio.
-              El pago queda depositado en garantía y la productora lo cobra
-              recién cuando se confirma la entrega: nadie paga sin recibir ni
-              entrega sin cobrar.
+              JuLit conecta productores y compradores de carbonato de litio. El
+              pago queda depositado en garantía y la productora lo cobra recién
+              cuando se confirma la entrega: nadie paga sin recibir ni entrega
+              sin cobrar.
             </p>
             <div className={styles.heroActions}>
               <DemoLink />
@@ -163,8 +163,8 @@ export default function Home() {
             <path d="M12 11v6m0-10v1" stroke="currentColor" strokeWidth="1.5" />
           </svg>
           <p>
-            La demo funciona con dinero de prueba: las operaciones se
-            ejecutan de verdad, pero sin valor comercial.
+            La demo funciona con dinero de prueba: las operaciones se ejecutan
+            de verdad, pero sin valor comercial.
           </p>
         </aside>
         <CommerceSection />
@@ -212,9 +212,9 @@ export default function Home() {
               </div>
               <div>
                 <p className={styles.closeDescription}>
-                  Un directorio para que productores y compradores de
-                  carbonato de litio cierren operaciones con el pago
-                  garantizado contra la entrega.
+                  Un directorio para que productores y compradores de carbonato
+                  de litio cierren operaciones con el pago garantizado contra la
+                  entrega.
                 </p>
                 <div className={styles.closeAction}>
                   <DemoLink />
@@ -239,8 +239,8 @@ export default function Home() {
                 </nav>
               </div>
               <p className={styles.signature}>
-                JuLit · Comercio B2B de lotes de carbonato de litio, con el
-                pago garantizado contra la entrega.
+                JuLit · Comercio B2B de lotes de carbonato de litio, con el pago
+                garantizado contra la entrega.
               </p>
               <p className={styles.credit}>
                 Fotografía:{" "}

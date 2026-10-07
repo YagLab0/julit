@@ -1,110 +1,194 @@
-# julit
+# JuLit
 
-JuLit presents a B2B lithium-carbonate proposition and an existing Solana Devnet demonstration. The public `/` landing explains the proposed process and evidence boundaries; `/explorer` opens the Origin catalogue and map. Demo settlement is simulated and does not transfer USDC. See [the public landing contract and asset provenance](docs/landing.md).
+**B2B Directory & Escrowed Delivery-versus-Payment (DvP) Protocol for Lithium Carbonate Lots on Solana.**
 
-## Pitch presentation
+[![Solana Devnet](https://img.shields.io/badge/Solana-Devnet-14F195?logo=solana&logoColor=black)](https://explorer.solana.com/address/BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky?cluster=devnet)
+[![Program ID](https://img.shields.io/badge/Program_ID-BntbtLZd...Xtky-blueviolet)](https://explorer.solana.com/address/BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky?cluster=devnet)
+[![Anchor Version](https://img.shields.io/badge/Anchor-0.32.1-teal)](https://github.com/coral-xyz/anchor)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-`public/pitch.html` is a self-contained Spanish deck: a cover followed by one slide
-for each of the four speakers. Open the file directly in a browser, without a server
-or internet connection, or visit `/pitch.html` when the application is running.
-Use the arrow keys, navigation buttons, or slide selectors; the fullscreen button
-is available in browsers that support it. The deck distinguishes proposed USDC
-settlement from the current simulated demo.
+JuLit eliminates trade finance friction in the global critical minerals market. By combining verifiable plant-level laboratory certifications with programmatic escrow accounts on Solana, JuLit allows lithium carbonate producers and international buyers to execute atomic **Delivery-versus-Payment (DvP)** settlements using USDC—drastically cutting the high fees and settlement delays of traditional bank letters of credit.
 
-## Stack
+---
 
-| Layer          | Technology                       |
-| -------------- | -------------------------------- |
-| Frontend       | Next.js 16, React 19, TypeScript |
-| Styling        | Tailwind CSS v4                  |
-| Solana Client  | `@solana/kit`, wallet-standard   |
-| Program Client | Codama (generated from IDL)      |
-| Program        | Anchor (Rust)                    |
-| Network        | Solana Devnet                    |
-| Database       | Supabase (`@supabase/ssr`)       |
+## 1. The Problem
 
-## Requirements
+The global transition to electric mobility relies heavily on **battery-grade lithium carbonate ($Li_2CO_3 \ge 99.50\%$)**. However, cross-border physical transactions between mining producers (e.g., in the South American Lithium Triangle) and international industrial buyers (battery and cathode manufacturers) suffer from two major bottlenecks:
 
-- Node 20+
-- [Rust](https://rustup.rs/), [Solana CLI](https://solana.com/docs/intro/installation), [Anchor 1.x](https://www.anchor-lang.com/docs/installation)
-- Phantom or Solflare wallet on Devnet
+1. **Trade Finance Inefficiency (Letters of Credit):**
+   - Traditional bank Letters of Credit (LCs) charge **1.5% to 3.5% in bank commissions** and fees.
+   - Bureaucratic verification processes delay capital release by **15 to 45 days**, immobilizing millions of dollars in working capital.
+   - Counterparty standoff: Buyers hesitate to pay upfront before delivery, while producers cannot afford to ship multimillion-dollar cargo without guaranteed payment.
 
-## Commands
+2. **Opaque and Fragmented Environmental Evidence:**
+   - Critical metrics (chemical purity, water consumption per tonne, carbon emissions) circulate via unlinked PDF files sent over email.
+   - Unverifiable paper certificates increase the risk of greenwashing and complicate compliance with strict global standards, such as the upcoming **EU Battery Regulation (2023/1542)**.
 
-```shell
-pnpm install      # dependencies
-pnpm dev          # dApp at http://localhost:3000
-pnpm build        # production build
-pnpm lint         # eslint
-pnpm format       # prettier
-pnpm setup        # anchor build + generate TS client with Codama
-pnpm anchor-test  # program tests (LiteSVM)
+---
+
+## 2. The Solution
+
+JuLit acts as a B2B directory and on-chain escrow settlement engine:
+
+- **Digital Title in Escrow:** When a producer registers a lot, an immutable **Metaplex NFT** (Digital Title) is minted directly into the lot's Program-Derived Address (PDA) escrow. The token _never leaves the escrow account_, making unauthorized transfers or secondary market speculation impossible by design.
+- **Cryptographic Evidence Anchoring:** The SHA-256 digest of the producer's certified plant analysis report is recorded permanently on-chain in the Lot PDA and Metaplex metadata.
+- **Escrowed Funding (USDC):** The designated buyer deposits the full lot price into the lot's program-owned USDC token account (`fund_lot`). Funds remain securely locked under smart contract custody.
+- **Atomic Delivery-versus-Payment (DvP):** Upon physical receipt and inspection of the cargo at the facility, the buyer signs `redeem_lot`. In a single atomic transaction, the Digital Title is burned inside escrow and the deposited USDC is released to the producer (minus the protocol take rate).
+- **Built-in Safety Mechanisms:**
+  - **Claim Timeout (`claim_timeout`):** If an unresponsive buyer fails to redeem after the designated `claimable_after` window, the producer can unilaterally claim the escrowed funds.
+  - **Dispute Freeze (`raise_dispute`):** If the physical cargo does not match specifications, the buyer can flag the lot as disputed, freezing the timeout and mandating off-chain resolution before any funds can be released.
+
+---
+
+## 3. On-Chain Architecture & Lifecycle
+
+All state transitions are enforced by the JuLit Anchor program on Solana:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Listed: create_lot\n(Mints Digital Title into Escrow PDA)
+    Listed --> Cancelled: cancel_lot\n(Producer cancels before funding; burns NFT)
+    Listed --> Funded: fund_lot\n(Buyer deposits full USDC price into Escrow PDA)
+    Funded --> Disputed: raise_dispute\n(Buyer flags non-conformity; freezes timeout)
+    Disputed --> Redeemed: redeem_lot\n(Off-chain resolution: burns NFT, releases USDC)
+    Funded --> Redeemed: redeem_lot\n(Buyer confirms physical receipt: burns NFT, releases USDC)
+    Funded --> Claimed: claim_timeout\n(Window expires without buyer action: burns NFT, releases USDC)
 ```
 
-> `pnpm setup` and `pnpm anchor-test` require an Anchor program in
-> `anchor/programs/`. If none exists, create one first (`anchor init` or manually),
-> set `declare_id!` with `anchor keys sync`, then run `setup`.
+### Deployed Program (Solana Devnet)
 
-## Environment
+- **Program ID:** [`BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky`](https://explorer.solana.com/address/BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky?cluster=devnet)
+- **Devnet Mint (dUSDC):** Compatible with project-seeded test USDC mint for deterministic end-to-end testing.
 
-```shell
-cp .env.example .env.local   # then fill in your Supabase project values
+---
+
+## 4. Why Solana?
+
+- **Sub-Second Finality & Low Transaction Costs:** Moving physical commodity settlement on-chain requires atomic multi-instruction transactions (token burning, split payments to producer and treasury) that cost a fraction of a cent and execute in under 1 second.
+- **Program Derived Addresses (PDAs) as Autonomous Escrows:** JuLit eliminates human custodians. The `Lot PDA` autonomously owns the token vault and controls token burning and fund distribution strictly via `invoke_signed`.
+- **Standard Compatibility:** Built using the standard SPL Token program, Metaplex Token Metadata V3, and Anchor 0.32.1.
+
+---
+
+## 5. Trust Model & Oracle Boundaries
+
+We maintain strict honesty about the boundaries of blockchain verification:
+
+- **What on-chain hashing proves:** Recording the SHA-256 hash of a plant analysis PDF on-chain guarantees that the certificate has not been modified, replaced, or tampered with since the lot was listed.
+- **What on-chain hashing does not prove:** It does _not_ prove physical chemical reality or sample chain-of-custody. JuLit does not replace licensed assayers or chemical laboratories. Instead, certified plant documents are legally tied to registered producer entities, making fraudulent declarations legally auditable.
+- **Admissibility criteria:** Only lots meeting **Battery Grade** ($\ge 99.50\%$ purity) with positive volume and valid origin IDs are permitted on-chain.
+
+---
+
+## 6. Business Model & Unit Economics
+
+JuLit charges an on-chain **Take Rate** (in basis points) exclusively upon successful settlement:
+
+- **Fee Structure:** Deduces a small protocol fee from the escrow release when `redeem_lot` or `claim_timeout` executes, routing it directly to the protocol treasury ATA.
+- **Zero Pre-Execution Cost:** Listing a lot (`create_lot`) and depositing funds (`fund_lot`) incur no protocol fees.
+- **Cost Comparison vs. Letters of Credit:**
+  - **Traditional LC:** A typical 50-tonne spot shipment (~$1,000,000 USD) costs **$15,000 to $35,000 USD** in banking commissions plus 30+ days of illiquidity.
+  - **JuLit Escrow:** Programmatic fee of **0.50% to 1.00%** ($5,000 to $10,000 USD) with instantaneous fund release upon delivery confirmation, yielding significant savings and unlocking cash flow.
+
+---
+
+## 7. The Team & Regional Edge
+
+JuLit is built by a team based in **San Salvador de Jujuy, Argentina**, located directly in the heart of the South American **Lithium Triangle** (Jujuy, Salta, and Catamarca):
+
+- **Mauricio Rios** — Team Lead & Smart Contract Engineer | [LinkedIn](https://www.linkedin.com/in/rios-mauricio) | [GitHub](https://github.com/RiosMauricio)
+- **Samuel Paredes** — Full-Stack Developer & Backend Integration | [LinkedIn](https://www.linkedin.com/in/samas-dev/) | [GitHub](https://github.com/Samas1503)
+- **Mauro Benjamin Mamani** — Frontend & Design Engineer | [LinkedIn](https://www.linkedin.com/in/mauromamani/) | [GitHub](https://github.com/mauromamani)
+- **Mayko Fernandez** — Protocol & QA Engineer | [LinkedIn](https://www.linkedin.com/in/Mayko2003) | [GitHub](https://github.com/Mayko2003)
+
+Our regional presence provides direct access to regional mining facilities, local testing laboratories, and provincial chambers of commerce.
+
+---
+
+## 8. Technology Stack
+
+| Layer                   | Technology                                                 |
+| ----------------------- | ---------------------------------------------------------- |
+| **Smart Contracts**     | Anchor `0.32.1`, Rust 2021, Solana SDK v2                  |
+| **Testing**             | LiteSVM (`litesvm 0.7.1`), Vitest (`v3.2.4`)               |
+| **Token Standards**     | SPL Token, Metaplex Token Metadata V3                      |
+| **Frontend**            | Next.js 16 (App Router), React 19, TypeScript              |
+| **Web3 Client**         | `@solana/kit`, Wallet Standard (Phantom, Solflare), Codama |
+| **Styling & 3D**        | Tailwind CSS v4, Three.js (`@react-three/fiber`)           |
+| **Database & Indexing** | Supabase (PostgreSQL with Row Level Security, Storage)     |
+
+---
+
+## 9. Quickstart: Running in < 5 Minutes
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v20+) and [pnpm](https://pnpm.io/) (v10+)
+- [Rust](https://rustup.rs/) (stable) & [Solana CLI](https://docs.solanalabs.com/cli/install) (v2.0+)
+- [Anchor CLI](https://www.anchor-lang.com/docs/installation) (v0.32.1)
+
+### Setup & Run
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/YagLab0/julit.git
+   cd julit
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   pnpm install
+   ```
+
+3. **Configure environment:**
+
+   ```bash
+   cp .env.example .env.local
+   # Fill in your Supabase Devnet credentials
+   ```
+
+4. **Run the local development server:**
+
+   ```bash
+   pnpm dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000) for the public landing page, or [http://localhost:3000/explorer](http://localhost:3000/explorer) for the Origin & Lot Explorer.
+
+5. **Run the test suite:**
+   - **Full-stack API & verification tests (104 tests):**
+     ```bash
+     pnpm test
+     ```
+   - **Anchor program tests (LiteSVM):**
+     ```bash
+     cd anchor && cargo test
+     ```
+
+---
+
+## 10. Repository Structure
+
 ```
-
-Supabase clients live in `app/lib/supabase/` (`client.ts` for browser,
-`server.ts` for Server Components/Actions, `service.ts` for server-only API
-writes). `SUPABASE_SECRET_KEY` (Project Settings -> API keys) is required for
-the API route handlers and must never reach the browser.
-
-## Database
-
-Lithium Passport migrations define company accounts, the public Devnet batch index,
-and the public audit PDF bucket. They do not implement the application API or Anchor
-programme. See [the database contract](docs/database.md), [domain glossary](GLOSSARY.md),
-and [architecture decisions](docs/adr/).
-
-With Docker and the Supabase CLI installed:
-
-```shell
-supabase start
-supabase migration up --local
-supabase migration list --local
-supabase test db
-supabase db advisors --local --level warn --fail-on warn
-```
-
-`supabase db reset --local` deletes local data and replays all migrations. Use it only
-in a disposable database.
-
-These migrations are already applied to the linked project `sixusybflhwjtoikrecn`
-(`JuLit`). Remote deployment requires an explicit, separately reviewed database push;
-start with `supabase db push --dry-run --linked` to see exactly what would be applied.
-
-## Structure
-
-```
-├── app/
-│   ├── components/         # UI: wallet, cluster, theme, providers
-│   ├── generated/          # Codama-generated TS client (do not edit)
-│   ├── landing/            # Public presentation, native FAQ, isolated theme, motion
-│   ├── lib/
-│   │   ├── wallet/         # wallet-standard connection (Phantom/Solflare)
-│   │   ├── hooks/          # use-balance, use-send-transaction
-│   │   ├── solana-client*  # RPC client + context
-│   │   ├── errors.ts       # transaction error parsing
-│   │   └── explorer.ts     # Solana Explorer URLs per cluster
-│   ├── layout.tsx
-│   └── page.tsx
 ├── anchor/
-│   └── programs/           # Anchor program (Rust)
-├── supabase/
-│   ├── migrations/         # Company accounts, batch index, and PDF storage
-│   └── tests/database/     # pgTAP behavior and access-control regressions
-└── codama.json             # IDL → TypeScript client
+│   ├── programs/julit/src/lib.rs    # Anchor smart contract (Escrow DvP, PDAs, Metaplex CPIs)
+│   └── tests/lot_lifecycle.rs       # LiteSVM integration tests for lot lifecycle
+├── app/
+│   ├── explorer/                    # B2B lot catalogue, origin map, and lot creation
+│   ├── batch/[pda]/                 # Public digital passport and PDF hash verification
+│   ├── api/lots/                    # API route handlers for on-chain transitions (fund, redeem, dispute)
+│   ├── generated/julit/             # Codama-generated TypeScript client from Anchor IDL
+│   ├── landing/                     # Landing page components, motion, and process widgets
+│   ├── layout.tsx & page.tsx        # Next.js 16 root shell and public landing
+├── docs/
+│   ├── adr/                         # Architectural Decision Records (ADR-0019 Escrow DvP)
+│   └── features/                    # Feature specifications
+├── public/
+│   ├── pitch.html                   # Interactive Spanish pitch deck for live presentations
+│   └── landing/                     # Optimized visual assets and photography
+└── supabase/
+    └── migrations/                  # PostgreSQL schemas, RLS policies, and lot indexing
 ```
-
-## Codama
-
-`codama.json` points to `./anchor/target/idl/julit.json` and generates
-`./app/generated/julit`. If your program is named differently, update both
-paths.

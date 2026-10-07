@@ -16,9 +16,9 @@ export function PassportSection() {
               El historial de cada lote, en un solo lugar.
             </h2>
             <p className={styles.description}>
-              El Pasaporte es la vista pública de todo el recorrido del lote:
-              su título, sus operaciones y su certificado de planta,
-              verificables por cualquiera.
+              El Pasaporte es la vista pública de todo el recorrido del lote: su
+              título, sus operaciones y su certificado de planta, verificables
+              por cualquiera.
             </p>
             <p className={styles.integrityNote}>
               El título digital representa un derecho contractual sobre el lote;
@@ -142,10 +142,9 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. La demo funciona en un entorno de prueba con un token
-              ficticio creado por el proyecto. Las operaciones se ejecutan y
-              quedan registradas de verdad, pero el dinero no tiene valor
-              comercial.
+              No. La demo funciona en un entorno de prueba con un token ficticio
+              creado por el proyecto. Las operaciones se ejecutan y quedan
+              registradas de verdad, pero el dinero no tiene valor comercial.
             </p>
           </details>
 
@@ -155,11 +154,11 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              Un certificado digital único que representa el derecho
-              contractual sobre el lote. Queda resguardado por JuLit y se da de
-              baja cuando el comprador confirma la recepción: nunca cambia de
-              manos. Es la representación digital de ese derecho, no un título
-              legal automático.
+              Un certificado digital único que representa el derecho contractual
+              sobre el lote. Queda resguardado por JuLit y se da de baja cuando
+              el comprador confirma la recepción: nunca cambia de manos. Es la
+              representación digital de ese derecho, no un título legal
+              automático.
             </p>
           </details>
 
@@ -169,8 +168,8 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              Que el documento coincide con la versión registrada: se compara
-              la huella digital del PDF con la referencia declarada en el lote.
+              Que el documento coincide con la versión registrada: se compara la
+              huella digital del PDF con la referencia declarada en el lote.
               Prueba la integridad del documento, no la verdad de su contenido.
             </p>
           </details>
@@ -181,9 +180,9 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. El transporte y la recepción del cargamento ocurren por
-              fuera de JuLit. La confirmación del comprador registra que la
-              entrega se concretó; no es el mecanismo de entrega.
+              No. El transporte y la recepción del cargamento ocurren por fuera
+              de JuLit. La confirmación del comprador registra que la entrega se
+              concretó; no es el mecanismo de entrega.
             </p>
           </details>
 
@@ -193,10 +192,9 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. Todo lote nace reservado a un comprador: el acuerdo
-              comercial se cierra entre las empresas y solo ese comprador
-              puede depositar el pago y confirmar la recepción. No hay compra
-              abierta.
+              No. Todo lote nace reservado a un comprador: el acuerdo comercial
+              se cierra entre las empresas y solo ese comprador puede depositar
+              el pago y confirmar la recepción. No hay compra abierta.
             </p>
           </details>
 
