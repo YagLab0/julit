@@ -67,20 +67,37 @@
       .hint {
         color: var(--muted);
       }
-      .lang-switch {
+      .lang-toggle {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #ffffff;
+        padding: 2px;
+        gap: 2px;
+      }
+      .lang-option {
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
         text-transform: uppercase;
-        color: var(--green);
-        text-decoration: none;
-        padding: 4px 10px;
-        border: 1px solid var(--line);
+        padding: 4px 9px;
         border-radius: 4px;
+        text-decoration: none;
+        color: var(--muted);
         transition: all 0.15s ease;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
       }
-      .lang-switch:hover {
+      .lang-option:hover:not(.is-active) {
+        color: var(--green);
         background: #e7edde;
+      }
+      .lang-option.is-active {
+        background: var(--green);
+        color: #ffffff;
+        cursor: default;
       }
       main {
         flex: 1;
@@ -576,12 +593,20 @@
       <header class="masthead">
         <div class="brand" aria-label="JuLit">Ju<span>Lit</span></div>
         <div style="display: flex; align-items: center; gap: 16px">
-          <a
-            href="/pitch.html"
-            class="lang-switch"
-            title="Ver presentación en español"
-            >Español</a
-          >
+          <div class="lang-toggle" role="group" aria-label="Pitch language">
+            <a
+              href="/pitch.html"
+              class="lang-option"
+              title="Ver presentación en español"
+              >ES</a
+            >
+            <span
+              class="lang-option is-active"
+              aria-current="page"
+              title="English (active)"
+              >EN</span
+            >
+          </div>
           <span class="masthead-label">Jujuy · Lithium · Solana</span>
         </div>
       </header>
