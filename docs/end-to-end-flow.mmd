@@ -1,57 +1,77 @@
-%% End-to-end flow: JuLit / Lithium Passport.
-%% Actors, systems and the five stages from company onboarding to public passport verification.
+%% End-to-end flow: JuLit / Lithium Passport (lots + escrowed DvP model).
+%% Actors, systems and the stages from company onboarding to public passport
+%% verification. Narrative version: docs/end-to-end-flow.md
 %% Render: pnpm dlx @mermaid-js/mermaid-cli@12 -i docs/end-to-end-flow.mmd -o docs/end-to-end-flow.pdf
 sequenceDiagram
   autonumber
-  actor PROD as Productor
-  actor AUD as Auditor designado
-  actor BUY as Comprador
+  actor PROD as Productora
+  actor BUY as Compradora
+  actor VIS as Visitante público
   participant FE as Frontend Next
   participant API as API Next (route handlers)
   participant SB as Supabase Auth + DB + Storage
-  participant SC as Programa Anchor (Devnet)
+  participant SC as Programa Julit (Devnet)
 
   Note over PROD,SC: 1 · Alta de empresa y vinculación de wallet (una vez)
   PROD->>FE: Login Supabase Auth
-  FE->>API: POST companies (nombre + tipo)
+  FE->>API: POST /api/companies (nombre + tipo + origen)
   API->>SB: INSERT companies con id = auth.uid, sin wallet
-  FE->>API: POST companies/wallet/challenge (wallet)
+  FE->>API: POST /api/companies/wallet/challenge (wallet)
   API->>SB: INSERT wallet_link_challenges (nonce, expira en 5 min)
   API-->>FE: Mensaje domain-bound a firmar
   PROD->>FE: Firma el mensaje con signMessage
-  FE->>API: POST companies/wallet (nonce + firma)
+  FE->>API: POST /api/companies/wallet (nonce + wallet + firma)
   API->>API: Verifica firma ed25519 sobre el mensaje reconstruido
-  API->>SB: link_company_wallet consume el desafío y fija wallet + timestamp
+  API->>SB: link_company_wallet consume el desafío y fija wallet + verified_at
 
-  Note over PROD,SC: 2 · Productor crea el lote (on-chain y luego índice)
-  PROD->>FE: Formulario de métricas, origen, auditor y reservado opcional
-  FE->>SC: tx create_batch (firma la wallet)
+  Note over PROD,SC: 2 · Contrato comercial productora ↔ compradora
+  PROD->>FE: Ofrece contrato (opcional: firma ed25519 o tx Memo)
+  FE->>API: POST /api/companies/contracts
+  API->>SB: INSERT company_contracts status pending
+  BUY->>FE: Responde la oferta
+  FE->>API: PATCH /api/companies/contracts/[id] (accept | decline)
+  API->>SB: status accepted | revoked
+
+  Note over PROD,SC: 3 · Productora registra el lote (on-chain y luego índice)
+  PROD->>FE: Sube certificado de planta (PDF)
+  FE->>API: POST /api/companies/plant-certificate
+  API->>API: Recomputa SHA-256 del PDF
+  API->>SB: Storage en wallet/sha256.pdf, sin upsert
+  PROD->>FE: Formulario de métricas, comprador designado, claimable_after
+  FE->>SC: tx create_lot (firma la wallet)
+  SC->>SC: Lot PDA + mint NFT + escrow_title + escrow_usdc + Metaplex
   SC-->>FE: PDA confirmada + creation_tx_signature
-  FE->>API: POST batches (pda + tx)
-  API->>SC: Verifica owner, discriminador, PDA, tx confirmada y slot
-  API->>SB: service_role upsert batches status created
+  FE->>API: POST /api/lots (tx_signature)
+  API->>SC: Verifica tx, discriminador, PDA derivado, cuenta on-chain
+  API->>SB: INSERT lots status listed (campos leídos de la cuenta)
 
-  Note over AUD,SB: 3 · Auditor certifica (una sola vez por lote)
-  AUD->>FE: SHA-256 local del PDF
-  FE->>API: POST certificates (PDF + digest)
-  API->>API: Verifica auditor designado y recomputa el digest
-  API->>SB: Storage en ruta pda/sha256.pdf, sin upsert
-  AUD->>FE: Firma tx certify_batch (sha256, ESG, evaluación EU)
-  FE->>SC: certify_batch
-  SC-->>FE: confirmada + audit_tx_signature
-  FE->>API: POST batches audit (firma de tx)
-  API->>SB: status audited + hallazgos, pueden ser negativos
+  Note over BUY,SC: 4 · Compradora fondea el escrow (DvP)
+  BUY->>FE: Fondear lote listed (wallet = lot.buyer)
+  FE->>SC: tx create-ATA idempotente + fund_lot
+  SC->>SC: price_usdc: ATA compradora → escrow_usdc · Listed→Funded
+  SC-->>FE: confirmada + fund_tx_signature
+  FE->>API: POST /api/lots/fund (pda + tx)
+  API->>SB: CAS update status funded
 
-  Note over BUY,SB: 4 · Compra simulada, sin transferencia de USDC
-  BUY->>FE: Comprar (reservado solo el designado, spot cualquier buyer)
-  FE->>SC: tx complete_purchase
-  SC-->>FE: confirmada + completion_tx_signature
-  FE->>API: POST batches complete
-  API->>SB: status completed + buyer_wallet + firma de tx
+  Note over PROD,SC: 5 · Liquidación — exactamente una vía terminal
+  alt Compradora confirma recepción
+    BUY->>SC: tx redeem_lot (Funded o Disputed)
+    SC->>SC: quema título + escrow → productora menos fee → tesorería
+  else Compradora disputa
+    BUY->>SC: tx raise_dispute (Funded → Disputed, congela claim)
+  else Productora reclama por timeout
+    PROD->>SC: tx claim_timeout (Funded, now ≥ claimable_after)
+    SC->>SC: quema título + escrow → productora menos fee → tesorería
+  else Productora cancela antes del fondeo
+    PROD->>SC: tx cancel_lot (Listed → Cancelled, quema título)
+  end
+  SC-->>FE: confirmada + tx_signature
+  FE->>API: POST /api/lots/{redeem,dispute,claim,cancel}
+  API->>SB: CAS update del estado indexado
 
-  Note over FE,SC: 5 · Pasaporte público batch/PDA, sin cuenta
-  BUY->>FE: Abre catálogo o QR
-  FE->>SB: anon SELECT batches status audited + origins
+  Note over VIS,SC: 6 · Pasaporte público batch/PDA, sin cuenta
+  VIS->>FE: Abre catálogo /explorer o QR del pasaporte
+  FE->>SB: anon SELECT lots + origins
   FE->>SB: Descarga PDF público del bucket
-  FE->>SC: Lee PDA y digest on-chain
-  FE->>FE: SHA-256 del PDF descargado = digest on-chain
+  FE->>SC: Lee PDA y decodifica la cuenta del lote
+  FE->>FE: SHA-256 del PDF = plant_cert_hash + contraste índice ↔ cadena

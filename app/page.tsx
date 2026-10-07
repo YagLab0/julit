@@ -9,9 +9,9 @@ import { LandingMotion } from "./landing/landing-motion";
 import styles from "./landing/landing.module.css";
 
 export const metadata: Metadata = {
-  title: "JuLit | Del salar al mercado, con liquidación atómica",
+  title: "JuLit | Del salar al mercado, con el pago garantizado",
   description:
-    "Conocé JuLit: directorio B2B y liquidación atómica de lotes de carbonato de litio sobre Solana. Desde Jujuy hacia la cadena global del litio.",
+    "Conocé JuLit: el directorio que conecta productores y compradores de carbonato de litio. El pago queda en garantía y solo se libera cuando se confirma la entrega.",
 };
 
 function BrandMark() {
@@ -113,12 +113,13 @@ export default function Home() {
           </header>
           <div className={styles.heroContent} data-landing-reveal>
             <h1 id="hero-title">
-              Del salar al mercado, con liquidación atómica.
+              Del salar al mercado, con el pago garantizado.
             </h1>
             <p className={styles.heroDescription}>
               JuLit conecta productores y compradores de carbonato de litio.
-              Cada lote nace con un título digital, y el pago se liquida en la
-              misma transacción en que el título cambia de manos, sobre Solana.
+              El pago queda depositado en garantía y la productora lo cobra
+              recién cuando se confirma la entrega: nadie paga sin recibir ni
+              entrega sin cobrar.
             </p>
             <div className={styles.heroActions}>
               <DemoLink />
@@ -162,8 +163,8 @@ export default function Home() {
             <path d="M12 11v6m0-10v1" stroke="currentColor" strokeWidth="1.5" />
           </svg>
           <p>
-            La demo corre en Solana Devnet con tokens de prueba: las
-            transacciones son reales, el valor no.
+            La demo funciona con dinero de prueba: las operaciones se
+            ejecutan de verdad, pero sin valor comercial.
           </p>
         </aside>
         <CommerceSection />
@@ -175,17 +176,17 @@ export default function Home() {
         >
           <div className={styles.processIntro} data-landing-reveal>
             <div>
-              <p className="eyebrow mb-5">El ciclo de vida de un lote</p>
+              <p className="eyebrow mb-5">El recorrido de un lote</p>
               <h2 id="process-title" className={styles.sectionHeading}>
-                Cinco pasos, tres de ellos en la cadena.
+                Del acuerdo comercial al cobro, en cinco pasos.
               </h2>
             </div>
             <p className={styles.sectionDescription}>
               Así se mueve un lote por JuLit.
               <span className={styles.processCaption}>
-                Los pasos de tokenización, liquidación y redención ocurren en la
-                cadena; el descubrimiento y la entrega física quedan fuera del
-                protocolo.
+                El registro, el depósito y la liquidación quedan grabados de
+                forma permanente y verificable; el acuerdo comercial y la
+                entrega física ocurren entre las empresas.
               </span>
             </p>
           </div>
@@ -206,13 +207,14 @@ export default function Home() {
               <div>
                 <p className="eyebrow">Litio de Jujuy. Proyección global.</p>
                 <h2 id="close-title">
-                  Del salar al mercado, con liquidación atómica.
+                  Del salar al mercado, con el pago garantizado.
                 </h2>
               </div>
               <div>
                 <p className={styles.closeDescription}>
-                  Un directorio B2B y un protocolo de entrega contra pago para
-                  el carbonato de litio, construido sobre Solana.
+                  Un directorio para que productores y compradores de
+                  carbonato de litio cierren operaciones con el pago
+                  garantizado contra la entrega.
                 </p>
                 <div className={styles.closeAction}>
                   <DemoLink />
@@ -237,8 +239,8 @@ export default function Home() {
                 </nav>
               </div>
               <p className={styles.signature}>
-                JuLit · Directorio B2B y liquidación atómica de lotes de
-                carbonato de litio sobre Solana.
+                JuLit · Comercio B2B de lotes de carbonato de litio, con el
+                pago garantizado contra la entrega.
               </p>
               <p className={styles.credit}>
                 Fotografía:{" "}

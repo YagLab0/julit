@@ -92,7 +92,7 @@ export function BuyerReviewWidget() {
           </svg>
           <div>
             <span className={styles.confirmedTitle}>Liquidación</span>
-            <span className={styles.confirmedSub}>confirmada en una tx</span>
+            <span className={styles.confirmedSub}>confirmada al instante</span>
           </div>
         </div>
         <span className={styles.flowLine} />
@@ -102,7 +102,7 @@ export function BuyerReviewWidget() {
               <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
             </svg>
             <span>Título</span>
-            <span className={styles.stackMeta}>NFT · 1</span>
+            <span className={styles.stackMeta}>único</span>
           </div>
           <Skeleton w={110} />
           <Skeleton w={80} />
