@@ -96,13 +96,29 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
     .maybeSingle();
 
   const { rpc } = createSolanaClient("devnet");
-  const tx = await rpc
+  const txPromise = rpc
     .getTransaction(signature(txSignature), {
       commitment: "confirmed",
       maxSupportedTransactionVersion: 0,
       encoding: "json",
     })
     .send();
+
+  let tx: Awaited<typeof txPromise>;
+  let account: Awaited<ReturnType<typeof fetchMaybeLot>>;
+  try {
+    tx = await txPromise;
+    account = await fetchMaybeLot(rpc, address(lotPda), {
+      commitment: "confirmed",
+    });
+  } catch {
+    // Public RPCs flake under rate limits: surface a retryable error
+    // instead of a bare 500 so the client can offer re-indexing.
+    return jsonError(
+      "No se pudieron verificar los datos on-chain. Reintentá la indexación.",
+      502
+    );
+  }
 
   const message = tx?.transaction.message;
   const accountKeys = (message?.accountKeys ?? []) as readonly string[];
@@ -133,9 +149,6 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
     }
   }
 
-  const account = await fetchMaybeLot(rpc, address(lotPda), {
-    commitment: "confirmed",
-  });
   const lotData = account.exists ? account.data : null;
 
   const verdict = opts.verify({
