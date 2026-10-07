@@ -281,8 +281,8 @@ export function ParticipantsSection() {
             <h3>Cobrás cuando se confirma la entrega.</h3>
             <ul className={styles.participantList}>
               <li>
-                El pago del comprador se libera en el mismo instante en que
-                se confirma la entrega.
+                El pago del comprador se libera en el mismo instante en que se
+                confirma la entrega.
               </li>
               <li>
                 Declarás el certificado de planta una sola vez y cada lote lo
@@ -302,17 +302,17 @@ export function ParticipantsSection() {
             <h3>El pago no se mueve hasta que confirmás la entrega.</h3>
             <ul className={styles.participantList}>
               <li>
-                Depositás el precio del lote en garantía y solo se libera a
-                la productora cuando confirmás la recepción: no hay ventana
-                de riesgo.
+                Depositás el precio del lote en garantía y solo se libera a la
+                productora cuando confirmás la recepción: no hay ventana de
+                riesgo.
               </li>
               <li>
                 Verificás el certificado de planta y el historial del lote antes
                 y después de liquidar.
               </li>
               <li>
-                Tu confirmación cierra la operación y deja evidencia
-                permanente para ambas partes.
+                Tu confirmación cierra la operación y deja evidencia permanente
+                para ambas partes.
               </li>
             </ul>
           </article>
