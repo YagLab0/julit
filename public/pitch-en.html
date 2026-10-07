@@ -545,18 +545,22 @@
         <section class="slide cover" aria-labelledby="cover-title">
           <div class="cover-grid">
             <div>
+              <div class="eyebrow" style="margin-bottom: 12px">
+                Jujuy Lithium · Global Reach
+              </div>
               <h1 id="cover-title">
                 From the salt flat to the market,<br />with guaranteed payment.
               </h1>
               <p class="lead">
-                B2B Directory &amp; Delivery-versus-Payment (DvP) settlement
-                protocol on Solana.
+                B2B Directory &amp; Delivery-versus-Payment (DvP) protocol on
+                Solana: neither payment without delivery, nor delivery without
+                payment.
               </p>
               <div class="team" aria-label="Team members">
-                <span>Mauro Benjamin Mamani (Frontend)</span
+                <span>Mauro Benjamin Mamani (Frontend &amp; UX)</span
                 ><span>Mayko Fernandez (Protocol &amp; QA)</span
-                ><span>Samuel Paredes (Full-Stack)</span
-                ><span>Mauricio Rios (Team Lead &amp; Solana)</span>
+                ><span>Samuel Paredes (Full-Stack &amp; APIs)</span
+                ><span>Mauricio Rios (Team Lead &amp; Smart Contracts)</span>
               </div>
             </div>
             <div class="cover-mark" aria-hidden="true">
@@ -576,26 +580,26 @@
             </div>
           </div>
           <div class="cover-bottom">
-            <span>Born in Jujuy</span><span>Plant Certificate SHA-256</span
+            <span>B2B Directory</span><span>Plant Certificate SHA-256</span
             ><span>Escrow DvP on Solana Devnet</span>
           </div>
         </section>
 
         <section class="slide" hidden aria-labelledby="finance-title">
           <div class="slide-meta">
-            <span class="eyebrow">01 / The Market Bottleneck</span
+            <span class="eyebrow">01 / The Market Problem</span
             ><span class="time">Mauro Benjamin Mamani · 0:00–0:30</span>
           </div>
           <h2 id="finance-title">The lot ships.<br />The money stalls.</h2>
           <p class="lead">
-            Over $150B is pouring into battery gigafactories. Yet physical
-            cross-border trade of battery-grade lithium remains chained to
-            20th-century bank letters of credit.
+            In B2B lithium trade, paying before receiving or delivering before
+            getting paid leaves one party exposed. Traditional letters of credit
+            add costly friction and immobilize working capital.
           </p>
           <div class="metrics">
             <div class="metric">
               <strong class="metric-value">1.5%–3.5%</strong>
-              <p>in banking fees per letter of credit</p>
+              <p>in banking fees that burden every shipment</p>
             </div>
             <div class="metric">
               <strong class="metric-value">15–45 <small>days</small></strong>
@@ -603,64 +607,68 @@
             </div>
             <div class="metric">
               <strong class="metric-value metric-title"
-                >Counterparty<br />Standoff.</strong
+                >Risk<br />Window.</strong
               >
-              <p>Nobody pays before delivery; nobody ships without payment.</p>
+              <p>
+                Someone always bears the risk that the counterparty defaults.
+              </p>
             </div>
           </div>
           <p class="takeaway">
-            The bottleneck of the clean energy transition isn't extraction—it's
-            trade friction and counterparty distrust.
+            In a standard deal, payment and physical delivery do not happen at
+            the same time. The problem isn't selling lithium—it's the risk
+            window to get paid.
           </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="risk-title">
           <div class="slide-meta">
-            <span class="eyebrow">02 / The Evidence &amp; Regulatory Gap</span
+            <span class="eyebrow">02 / Evidence Friction</span
             ><span class="time">Mayko Fernandez · 0:30–1:00</span>
           </div>
           <h2 id="risk-title">Fragmented PDFs.<br />Zero certainty.</h2>
           <p class="lead">
-            Chemical purity (&ge; 99.50%) and environmental footprints circulate
-            via detached PDF emails, disconnected from the physical cargo.
+            Auditing each batch separately through PDFs sent by email does not
+            match how real industry certifies and multiplies documentation
+            friction.
           </p>
           <div class="flow">
             <div class="step">
-              <span class="step-number">01 / SILOED DATA</span>
-              <h3>Isolated files</h3>
+              <span class="step-number">01 / SINGLE RECORD</span>
+              <h3>No siloed data</h3>
               <p>
-                Chemical assays and water metrics scattered across email inboxes
-                without common traceability.
+                Each party keeps their own siloed records; reconciling them
+                fuels disputes and takes weeks.
               </p>
             </div>
             <div class="step">
-              <span class="step-number">02 / GREENWASHING</span>
-              <h3>Tamper risk</h3>
+              <span class="step-number">02 / PLANT-LEVEL</span>
+              <h3>Single certificate</h3>
               <p>
-                PDF certificates can be easily manipulated or reused across
-                separate shipments without detection.
+                The producer declares their plant certificate once; each lot
+                references its SHA-256 fingerprint.
               </p>
             </div>
             <div class="step">
-              <span class="step-number">03 / EU REGULATION</span>
-              <h3>Battery Passport</h3>
+              <span class="step-number">03 / LOT PASSPORT</span>
+              <h3>Unified history</h3>
               <p>
-                EU Regulation 2023/1542 mandates verifiable battery passports
-                starting February 2027.
+                The complete lot lifecycle is publicly verifiable, ready for EU
+                Regulation 2023/1542.
               </p>
             </div>
           </div>
           <div class="hash-strip">
             <strong>PLANT CERTIFICATE → SHA-256 → ANCHOR PDA</strong
             ><span
-              >Document integrity is permanently anchored on-chain: if the PDF
-              is altered, the cryptographic digest fails to match.</span
+              >Matches the PDF digital fingerprint against the registered
+              reference: proves the document matches the registered
+              version.</span
             >
           </div>
           <p class="note">
-            Cryptographic hashing proves mathematical document integrity against
-            the producer's registered certificate, not physical sampling
-            reality.
+            Proves mathematical document integrity against the registered
+            version, not physical assay veracity or sampling reality.
           </p>
         </section>
 
@@ -670,91 +678,90 @@
             ><span class="time">Samuel Paredes · 1:00–1:30</span>
           </div>
           <h2 id="solution-title">
-            Delivery versus payment,<br />enforced by code.
+            Payment and lot delivery,<br />in the exact same transaction.
           </h2>
           <p class="lead">
-            An on-chain Delivery-versus-Payment (DvP) protocol with programmatic
-            escrow on Solana, aligning mining producers and buyers without
-            banks.
+            JuLit closes the risk window around a digital title per lot,
+            enforced by a Delivery-versus-Payment (DvP) protocol on Solana.
           </p>
           <div class="flow">
             <div class="step">
-              <span class="step-number">01 / REGISTRATION</span>
+              <span class="step-number">01 / TOKENIZATION</span>
               <h3>Title in Escrow</h3>
               <p>
-                The producer lists the lot and mints a Digital Title (Metaplex
-                NFT) directly into the PDA escrow.
+                The lot is created reserved to a designated buyer: the Digital
+                Title (NFT) is minted directly into protocol escrow.
               </p>
             </div>
             <div class="step">
-              <span class="step-number">02 / FUNDING</span>
-              <h3>USDC Deposit</h3>
+              <span class="step-number">02 / ESCROW DEPOSIT</span>
+              <h3>Payment in custody</h3>
               <p>
-                The designated buyer deposits the full lot price into the
-                contract's program-owned escrow (fund_lot).
+                The designated buyer deposits the purchase price in USDC into
+                the PDA escrow (fund_lot). Funds locked securely.
               </p>
             </div>
             <div class="step">
-              <span class="step-number">03 / REDEMPTION</span>
-              <h3>Atomic Settlement</h3>
+              <span class="step-number">03 / ATOMIC REDEMPTION</span>
+              <h3>Atomic settlement</h3>
               <p>
-                Upon physical receipt, the buyer signs redeem_lot: burning the
-                title and releasing funds instantly.
+                Upon physical delivery, the buyer signs redeem_lot: at that
+                exact moment the producer gets paid and the title is burned.
               </p>
             </div>
           </div>
           <div class="hash-strip">
-            <strong>BUILT-IN PROTOCOL SAFEGUARDS</strong
+            <strong>RESERVED TRADES &amp; SAFEGUARDS</strong
             ><span
-              >Claim timeout lets producers collect if buyers go unresponsive
-              (claim_timeout); dispute flag freezes the escrow if cargo fails
-              specifications (raise_dispute).</span
+              >No open storefront: only the designated buyer can settle. If the
+              buyer is unresponsive, the producer collects via timeout
+              (claim_timeout); in case of non-conformity, the escrow freezes
+              (raise_dispute).</span
             >
           </div>
           <p class="note">
-            The Digital Title never leaves escrow: it is minted and burned
-            strictly inside the contract, eliminating transfer-in-transit
-            speculation.
+            Physical transport and customs clearance happen outside the
+            protocol. The digital title never enters an external wallet: it
+            lives and dies inside the escrow.
           </p>
         </section>
 
         <section class="slide" hidden aria-labelledby="closing-title">
           <div class="slide-meta">
-            <span class="eyebrow">04 / Why Solana &amp; Traction</span
+            <span class="eyebrow">04 / Business Model &amp; Traction</span
             ><span class="time">Mauricio Rios · 1:30–2:00</span>
           </div>
           <h2 id="closing-title">
-            Validated economics.<br />Shipped from Jujuy.
+            From the salt flat to the market,<br />with atomic settlement.
           </h2>
           <div class="closing-grid">
             <div class="closing-panel">
               <h3>Business Model: Take Rate</h3>
               <strong class="big">&lt; 1% vs 3.5%</strong>
               <p>
-                Protocol fee (bps) charged exclusively upon escrow release. On a
-                $1,000,000 USD shipment, it cuts financing costs from $25,000
-                USD to under $10,000 USD with instantaneous payment.
+                Protocol fee on escrow release. On a $1,000,000 USD lot, it
+                reduces financing costs to under $10,000 USD with instantaneous
+                payment against delivery.
               </p>
             </div>
             <div class="closing-panel">
               <h3>Technical Traction on Devnet</h3>
               <strong class="big">100% on-chain</strong>
               <p>
-                Anchor program (BntbtLZd...Xtky) with full LiteSVM and Vitest
-                test suites, autonomous PDAs, and active lot explorer at
+                Anchor program deployed (BntbtLZd...Xtky) with 100% unit tests
+                (LiteSVM &amp; Vitest). B2B catalogue and origin map live at
                 /explorer.
               </p>
             </div>
           </div>
           <p class="closing-line">
-            JuLit connects evidence with settlement: from the salt flat to the
-            market, with guaranteed payment.
+            JuLit connects mining producers and industrial buyers: neither
+            payment without delivery, nor delivery without payment.
           </p>
           <p class="note">
-            Deployed on Solana Devnet with test funds (dUSDC): real on-chain
-            execution. Cryptographic hashing verifies document integrity, not
-            physical sampling. Team based in San Salvador de Jujuy, in the heart
-            of the South American Lithium Triangle.
+            The demo runs on Solana Devnet with test money (dUSDC): transactions
+            are real, commercial value is not. Team based in San Salvador de
+            Jujuy, in the heart of the Lithium Triangle.
           </p>
           <p class="takeaway">Thank you very much.</p>
         </section>
