@@ -17,6 +17,11 @@ const PAST = "2026-10-01T10:00";
 const CTX: LotFormContext = {
   producerWallet: PRODUCER,
   originId: "pena_blanca",
+  producerSpecs: {
+    purityPct: "99.55",
+    waterM3PerTonne: "50.80",
+    carbonKgCo2ePerTonne: "8200.00",
+  },
   contractedBuyers: [BUYER],
   nowUnixSeconds: NOW,
 };
@@ -24,17 +29,17 @@ const CTX: LotFormContext = {
 const VALID: LotFormValues = {
   lotId: "LIT-2026-PBL-05",
   volumeTonnes: "420",
-  purityPct: "99.55",
-  waterM3PerTonne: "50.80",
-  carbonKgCo2ePerTonne: "8200.00",
   priceUsdc: "12000.123456",
   buyerWallet: BUYER,
   claimableAfter: FUTURE,
   plantCertSha256: CERT,
 };
 
-function check(overrides: Partial<LotFormValues> = {}) {
-  return validateLotForm({ ...VALID, ...overrides }, CTX);
+function check(
+  overrides: Partial<LotFormValues> = {},
+  ctx: Partial<LotFormContext> = {}
+) {
+  return validateLotForm({ ...VALID, ...overrides }, { ...CTX, ...ctx });
 }
 
 describe("validateLotForm", () => {
@@ -85,35 +90,39 @@ describe("validateLotForm", () => {
     });
   });
 
-  describe("purityPct", () => {
-    it("accepts the battery-grade band edges", () => {
-      expect(check({ purityPct: "99.50" }).errors.purityPct).toBeUndefined();
-      expect(check({ purityPct: "99.5" }).errors.purityPct).toBeUndefined();
-      expect(check({ purityPct: "100" }).errors.purityPct).toBeUndefined();
-      expect(check({ purityPct: "100.00" }).errors.purityPct).toBeUndefined();
+  describe("producerSpecs", () => {
+    it("scales the provisioned spec values into the payload", () => {
+      const { payload } = check(
+        {},
+        {
+          producerSpecs: {
+            purityPct: "99.50",
+            waterM3PerTonne: "50",
+            carbonKgCo2ePerTonne: "8200",
+          },
+        }
+      );
+      expect(payload?.purityBasisPoints).toBe("9950");
+      expect(payload?.waterM3PerTonneScaled).toBe("5000");
+      expect(payload?.carbonKgCo2ePerTonneScaled).toBe("820000");
     });
-    it("rejects below battery grade and above 100", () => {
-      expect(check({ purityPct: "99.49" }).errors.purityPct).toBeTruthy();
-      expect(check({ purityPct: "100.01" }).errors.purityPct).toBeTruthy();
+    it("rejects spec values outside the battery-grade band", () => {
+      for (const purityPct of ["99.49", "100.01"]) {
+        expect(
+          check({}, { producerSpecs: { ...CTX.producerSpecs, purityPct } })
+            .errors.producerSpecs
+        ).toBeTruthy();
+      }
     });
-    it("rejects more than 2 decimals", () => {
-      expect(check({ purityPct: "99.551" }).errors.purityPct).toBeTruthy();
-    });
-  });
-
-  describe("waterM3PerTonne and carbonKgCo2ePerTonne", () => {
-    it("accepts integers and 2-decimal values", () => {
-      expect(
-        check({ waterM3PerTonne: "50", carbonKgCo2ePerTonne: "8200" }).errors
-      ).toEqual({});
-    });
-    it("rejects more than 2 decimals and garbage", () => {
-      expect(
-        check({ waterM3PerTonne: "50.801" }).errors.waterM3PerTonne
-      ).toBeTruthy();
-      expect(
-        check({ carbonKgCo2ePerTonne: "abc" }).errors.carbonKgCo2ePerTonne
-      ).toBeTruthy();
+    it("rejects malformed spec values", () => {
+      for (const waterM3PerTonne of ["", "abc", "50.801"]) {
+        expect(
+          check(
+            {},
+            { producerSpecs: { ...CTX.producerSpecs, waterM3PerTonne } }
+          ).errors.producerSpecs
+        ).toBeTruthy();
+      }
     });
   });
 

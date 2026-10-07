@@ -32,7 +32,7 @@ function BeamSvg({ className }: { className: string }) {
   );
 }
 
-const producerSources = ["Pago USDC", "Título digital", "Lote 0042"];
+const producerSources = ["Origen", "Cert. de planta", "Lote 0042"];
 
 export function ProducerStructureWidget() {
   return (
@@ -51,7 +51,7 @@ export function ProducerStructureWidget() {
         <BeamSvg className={styles.beams} />
         <div className={styles.hub}>
           <span className={styles.hubDot} />
-          Escrow del lote
+          Título digital
         </div>
         <span className={styles.flowLine} />
         <div className={styles.docCard}>
@@ -91,8 +91,8 @@ export function BuyerReviewWidget() {
             <path d="m9 12 2 2 4-4" fill="none" />
           </svg>
           <div>
-            <span className={styles.confirmedTitle}>En custodia</span>
-            <span className={styles.confirmedSub}>escrow del lote</span>
+            <span className={styles.confirmedTitle}>Liquidación</span>
+            <span className={styles.confirmedSub}>confirmada al instante</span>
           </div>
         </div>
         <span className={styles.flowLine} />
@@ -101,8 +101,8 @@ export function BuyerReviewWidget() {
             <svg viewBox="0 0 24 24" className={styles.stackIcon}>
               <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
             </svg>
-            <span>Recepción</span>
-            <span className={styles.stackMeta}>confirmada</span>
+            <span>Título</span>
+            <span className={styles.stackMeta}>único</span>
           </div>
           <Skeleton w={110} />
           <Skeleton w={80} />

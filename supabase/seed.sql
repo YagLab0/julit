@@ -76,10 +76,13 @@ values
   )
 on conflict do nothing;
 
-insert into public.companies (id, name, company_type, origin_id, wallet_address, wallet_verified_at) values
-  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', null, null),
-  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor', null, null),
-  ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, null, null)
+insert into public.companies (
+  id, name, company_type, origin_id, wallet_address, wallet_verified_at,
+  purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne
+) values
+  ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', null, null, 99.55, 50.80, 8200.00),
+  ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor', null, null, 99.62, 64.25, 9100.00),
+  ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, null, null, null, null, null)
 on conflict (id) do update set
   wallet_address = excluded.wallet_address,
   wallet_verified_at = excluded.wallet_verified_at;

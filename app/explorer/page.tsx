@@ -523,7 +523,6 @@ export default function JuLitAppPage() {
         <OriginModal
           key={selectedOrigin.id}
           origin={selectedOrigin}
-          filter={catalogFilter}
           onClose={() => setSelectedId(null)}
         />
       )}

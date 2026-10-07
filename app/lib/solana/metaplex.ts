@@ -18,7 +18,11 @@ const utf8 = (s: string) =>
 export function findMetadataPda(mint: Address) {
   return getProgramDerivedAddress({
     programAddress: TOKEN_METADATA_PROGRAM_ADDRESS,
-    seeds: [utf8("metadata"), getAddressEncoder().encode(mint)],
+    seeds: [
+      utf8("metadata"),
+      getAddressEncoder().encode(TOKEN_METADATA_PROGRAM_ADDRESS),
+      getAddressEncoder().encode(mint),
+    ],
   });
 }
 
@@ -28,6 +32,7 @@ export function findMasterEditionPda(mint: Address) {
     programAddress: TOKEN_METADATA_PROGRAM_ADDRESS,
     seeds: [
       utf8("metadata"),
+      getAddressEncoder().encode(TOKEN_METADATA_PROGRAM_ADDRESS),
       getAddressEncoder().encode(mint),
       utf8("edition"),
     ],

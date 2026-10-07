@@ -8,21 +8,21 @@ const lifecycleSteps = [
     title: "Descubrimiento",
     onchain: false,
     description:
-      "Directorio B2B: origen, capacidad y certificación de planta. El acuerdo comercial se negocia en privado entre las empresas.",
+      "El comprador encuentra productores y orígenes en el directorio; el acuerdo comercial se cierra entre las empresas, como siempre.",
   },
   {
     number: "02",
-    title: "Tokenización",
+    title: "Registro",
     onchain: true,
     description:
-      "El productor registra el lote ya reservado a su comprador: nace el título digital (un NFT), que queda en custodia del protocolo.",
+      "El productor publica el lote ya reservado a su comprador: nace su título digital único, que queda resguardado por JuLit.",
   },
   {
     number: "03",
-    title: "Fondeo",
+    title: "Depósito en garantía",
     onchain: true,
     description:
-      "El comprador designado deposita el precio total: el USDC queda en garantía, custodiado por el mismo protocolo que guarda el título.",
+      "El comprador deposita el precio del lote en garantía: queda bloqueado hasta que confirme la entrega.",
   },
   {
     number: "04",
@@ -30,24 +30,24 @@ const lifecycleSteps = [
     onchain: false,
     wide: true,
     description:
-      "La logística, la aduana y la recepción del cargamento ocurren fuera del protocolo.",
+      "La logística, la aduana y la recepción del cargamento ocurren entre las partes, como en cualquier operación.",
   },
   {
     number: "05",
-    title: "Redención",
+    title: "Liquidación",
     onchain: true,
     description:
-      "El comprador confirma la recepción: el título se quema y el pago custodiado se libera al productor, en la misma transacción.",
+      "El comprador confirma la recepción: en ese mismo instante la productora cobra el pago depositado y el título queda dado de baja, con un registro permanente y verificable.",
   },
 ] as const;
 
 const origins = ["Salar de Olaroz", "Salinas Grandes", "Cauchari"] as const;
 
 const lifecycleRecord = [
-  "Título acuñado en custodia",
-  "Fondeo en garantía",
+  "Título emitido",
+  "Pago depositado en garantía",
   "Entrega física",
-  "Título quemado · pago liberado",
+  "Título dado de baja · pago liberado",
 ] as const;
 
 function ArrowRight() {
@@ -94,7 +94,7 @@ function TitleScene() {
     <div className={styles.mock}>
       <div className={styles.fileRow}>
         <div className={styles.fileIcon}>
-          <span className={styles.fileBadge}>NFT</span>
+          <span className={styles.fileBadge}>Título</span>
         </div>
         <div className={styles.fileMeta}>
           <p className={styles.fileName}>titulo-lote-0042</p>
@@ -102,7 +102,7 @@ function TitleScene() {
             <span />
           </div>
           <p className={styles.fileCaption}>
-            Suministro 1 · en custodia del protocolo
+            Título único · resguardado por JuLit
           </p>
         </div>
       </div>
@@ -113,25 +113,25 @@ function TitleScene() {
 function FundingScene() {
   return (
     <div className={styles.mock}>
-      <p className={styles.mockTitle}>fund_lot</p>
+      <p className={styles.mockTitle}>El pago queda en garantía</p>
       <div className={styles.txFrame}>
         <div className={styles.leg}>
-          <span className={styles.legFrom}>USDC</span>
+          <span className={styles.legFrom}>Pago</span>
           <span className={styles.legArrow}>
             <ArrowRight />
           </span>
-          <span className={styles.legTo}>Escrow del lote</span>
+          <span className={styles.legTo}>Depósito en garantía</span>
         </div>
         <div className={styles.leg}>
           <span className={styles.legFrom}>Título digital</span>
           <span className={styles.legArrow}>
             <ArrowRight />
           </span>
-          <span className={styles.legTo}>ya en custodia</span>
+          <span className={styles.legTo}>Sigue resguardado</span>
         </div>
       </div>
       <p className={styles.legNote}>
-        El pago queda en garantía, no en manos del productor.
+        Nada se libera hasta la confirmación de entrega.
       </p>
     </div>
   );
@@ -145,7 +145,7 @@ function RecordScene() {
           <li
             key={event}
             className={
-              event === "Título quemado · pago liberado"
+              event === "Título dado de baja · pago liberado"
                 ? styles.timelineDone
                 : undefined
             }
@@ -183,7 +183,7 @@ export function LifecycleCards() {
                 {step.number}
               </span>
               <span className={styles.cardTag}>
-                {step.onchain ? "En la cadena" : "Fuera de la cadena"}
+                {step.onchain ? "Registro verificable" : "Entre las partes"}
               </span>
             </div>
             <h3>{step.title}</h3>

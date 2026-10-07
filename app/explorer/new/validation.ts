@@ -11,9 +11,6 @@ const DECIMAL_RE = /^([0-9]+)(?:\.([0-9]+))?$/;
 export type LotFormValues = {
   lotId: string;
   volumeTonnes: string;
-  purityPct: string;
-  waterM3PerTonne: string;
-  carbonKgCo2ePerTonne: string;
   priceUsdc: string;
   /** Designated buyer wallet — mandatory, must hold an accepted contract. */
   buyerWallet: string;
@@ -23,14 +20,24 @@ export type LotFormValues = {
   plantCertSha256: string;
 };
 
+/** The producer's Production Specification, provisioned on its company
+ *  record (ADR-0020) — decimal strings, never user input. */
+export type ProducerSpecs = {
+  purityPct: string;
+  waterM3PerTonne: string;
+  carbonKgCo2ePerTonne: string;
+};
+
 export type FieldKey = keyof LotFormValues;
-export type FieldErrors = Partial<Record<FieldKey, string>>;
+export type FieldErrors = Partial<Record<FieldKey | "producerSpecs", string>>;
 
 export type LotFormContext = {
   /** The producer's verified company wallet. */
   producerWallet: string;
   /** The producer's bound origin (from the company profile, not user input). */
   originId: string;
+  /** The producer's provisioned Production Specification. */
+  producerSpecs: ProducerSpecs;
   /** Wallets of buyers holding an accepted contract with the producer. */
   contractedBuyers: string[];
   /** Unix seconds now, injected so tests stay deterministic. */
@@ -91,24 +98,23 @@ export function validateLotForm(
     errors.volumeTonnes = "El volumen supera el máximo representable.";
   }
 
-  const purity = scaledInt(values.purityPct, 2);
-  if (purity === null || purity < 9950n || purity > 10000n) {
-    errors.purityPct =
-      "Solo grado batería: entre 99,50 y 100,00 con hasta 2 decimales.";
-  }
-
-  const water = scaledInt(values.waterM3PerTonne, 2);
-  if (water === null) {
-    errors.waterM3PerTonne = "Ingresá un valor con hasta 2 decimales.";
-  } else if (water > U64_MAX) {
-    errors.waterM3PerTonne = "El valor supera el máximo representable.";
-  }
-
-  const carbon = scaledInt(values.carbonKgCo2ePerTonne, 2);
-  if (carbon === null) {
-    errors.carbonKgCo2ePerTonne = "Ingresá un valor con hasta 2 decimales.";
-  } else if (carbon > U64_MAX) {
-    errors.carbonKgCo2ePerTonne = "El valor supera el máximo representable.";
+  // The Production Specification comes from the producer's company record,
+  // not the form. The page gates on its presence and the schema enforces
+  // scale/range, so an invalid value here is a data error, not user input.
+  const purity = scaledInt(ctx.producerSpecs.purityPct, 2);
+  const water = scaledInt(ctx.producerSpecs.waterM3PerTonne, 2);
+  const carbon = scaledInt(ctx.producerSpecs.carbonKgCo2ePerTonne, 2);
+  if (
+    purity === null ||
+    purity < 9950n ||
+    purity > 10000n ||
+    water === null ||
+    water > U64_MAX ||
+    carbon === null ||
+    carbon > U64_MAX
+  ) {
+    errors.producerSpecs =
+      "Las especificaciones de producción de tu empresa no son válidas. Contactá al operador de la demo.";
   }
 
   const price = scaledInt(values.priceUsdc, 6);

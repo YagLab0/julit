@@ -16,9 +16,9 @@ export function PassportSection() {
               El historial de cada lote, en un solo lugar.
             </h2>
             <p className={styles.description}>
-              El Pasaporte es la vista pública del ciclo de vida del lote: su
-              título, sus transacciones y su certificado de planta, verificables
-              por cualquiera.
+              El Pasaporte es la vista pública de todo el recorrido del lote:
+              su título, sus operaciones y su certificado de planta,
+              verificables por cualquiera.
             </p>
             <p className={styles.integrityNote}>
               El título digital representa un derecho contractual sobre el lote;
@@ -69,17 +69,17 @@ export function PassportSection() {
                     {
                       title: "Título digital",
                       description:
-                        "El NFT del lote y la custodia que lo resguarda hasta la redención.",
+                        "El título único del lote y la custodia que lo resguarda hasta la liquidación.",
                     },
                     {
-                      title: "Estado del ciclo",
+                      title: "Estado del lote",
                       description:
-                        "Listado, fondeado o redimido: dónde está el lote en su recorrido.",
+                        "Listado, con depósito o liquidado: dónde está el lote en su recorrido.",
                     },
                     {
-                      title: "Transacciones",
+                      title: "Operaciones",
                       description:
-                        "Registro, fondeo y redención, enlazadas a la cadena.",
+                        "Registro, depósito y liquidación, cada una con su comprobante público.",
                     },
                   ].map((field, index) => (
                     <li key={field.title} className={styles.field}>
@@ -138,14 +138,14 @@ export function FaqSection() {
         >
           <details className={styles.question}>
             <summary>
-              <span>¿Los tokens y la liquidación tienen valor real?</span>
+              <span>¿La demo mueve dinero real?</span>
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. La demo corre en Solana Devnet con dUSDC, un token de prueba
-              creado por el proyecto. Las transacciones son reales — se ejecutan
-              y quedan registradas en la cadena — pero los tokens no tienen
-              valor comercial.
+              No. La demo funciona en un entorno de prueba con un token
+              ficticio creado por el proyecto. Las operaciones se ejecutan y
+              quedan registradas de verdad, pero el dinero no tiene valor
+              comercial.
             </p>
           </details>
 
@@ -155,11 +155,11 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              Un NFT que representa el derecho contractual sobre el lote. Vive
-              en custodia del protocolo desde el registro hasta la redención, y
-              se quema cuando el comprador confirma la recepción. Es una
-              representación digital de ese derecho, no un título legal
-              automático.
+              Un certificado digital único que representa el derecho
+              contractual sobre el lote. Queda resguardado por JuLit y se da de
+              baja cuando el comprador confirma la recepción: nunca cambia de
+              manos. Es la representación digital de ese derecho, no un título
+              legal automático.
             </p>
           </details>
 
@@ -169,8 +169,8 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              Que el documento coincide con la versión registrada: se compara el
-              resumen SHA-256 del PDF con la referencia declarada en el lote.
+              Que el documento coincide con la versión registrada: se compara
+              la huella digital del PDF con la referencia declarada en el lote.
               Prueba la integridad del documento, no la verdad de su contenido.
             </p>
           </details>
@@ -181,9 +181,9 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. El transporte y la recepción del cargamento ocurren fuera del
-              protocolo. La redención es la confirmación en la cadena de que la
-              entrega se concretó, no el mecanismo de entrega.
+              No. El transporte y la recepción del cargamento ocurren por
+              fuera de JuLit. La confirmación del comprador registra que la
+              entrega se concretó; no es el mecanismo de entrega.
             </p>
           </details>
 
@@ -193,9 +193,10 @@ export function FaqSection() {
               <span className={styles.disclosureMarker} aria-hidden="true" />
             </summary>
             <p className={styles.answer}>
-              No. Todo lote nace reservado a un comprador designado: el acuerdo
-              comercial se negocia entre las empresas y solo el comprador
-              designado puede fondearlo. No hay compra abierta.
+              No. Todo lote nace reservado a un comprador: el acuerdo
+              comercial se cierra entre las empresas y solo ese comprador
+              puede depositar el pago y confirmar la recepción. No hay compra
+              abierta.
             </p>
           </details>
 

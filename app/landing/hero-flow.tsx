@@ -45,14 +45,14 @@ function Beams({ paths, flip }: { paths: string[]; flip?: boolean }) {
 }
 
 const inputs = [
-  { label: "Lote 0042", meta: "reservado" },
-  { label: "Título", meta: "NFT · 1" },
-  { label: "Pago", meta: "USDC" },
+  { label: "Lote 0042", meta: "pago en garantía" },
+  { label: "Título", meta: "resguardado" },
+  { label: "Recepción", meta: "confirmada" },
 ];
 
 const outputs = [
-  { asset: "USDC", to: "Productor" },
-  { asset: "Título", to: "quemado" },
+  { asset: "Pago", to: "Productor" },
+  { asset: "Título", to: "dado de baja" },
 ];
 
 function SideCell({ flip }: { flip?: boolean }) {
@@ -70,7 +70,7 @@ function SideCell({ flip }: { flip?: boolean }) {
           <span style={{ width: 60 }} />
         </div>
         <span className={styles.cellCaption}>
-          {flip ? "una sola transacción" : "entrega contra pago"}
+          {flip ? "una sola operación" : "entrega contra pago"}
         </span>
       </div>
     </div>
@@ -97,7 +97,7 @@ export function HeroFlow() {
           <div className={styles.node}>
             <HexMark />
           </div>
-          <span className={styles.nodeLabel}>escrow</span>
+          <span className={styles.nodeLabel}>Liquidación</span>
         </div>
         <Beams paths={outPaths} flip />
         <div className={styles.outputs}>
@@ -113,7 +113,7 @@ export function HeroFlow() {
         </div>
         <span className={styles.txChip}>
           <span className={styles.txDot} />
-          confirmada · una sola transacción
+          confirmada · una sola operación
         </span>
       </div>
       <SideCell flip />
