@@ -380,6 +380,7 @@ export const es = {
       reviewFields: "Revisá los campos marcados.",
       notIndexed: "El lote quedó on-chain pero no se indexó",
       notIndexedDesc: "Reintentá la indexación más tarde.",
+      retry: "Reintentar",
       published: "Lote {lot} publicado",
       publishedDesc:
         "La transacción quedó confirmada e indexada como publicada.",

@@ -176,45 +176,60 @@ export function RegisterLotForm({
 
       const txSignature = await send({ instructions: [instruction] });
 
-      setIndexing(true);
-      const response = await fetch("/api/lots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tx_signature: txSignature }),
-      });
-      setIndexing(false);
+      // From here the transaction is on-chain: a failure means it did not
+      // index, not that it did not land. The endpoint re-verifies the same
+      // signature, so a failed POST is safe to retry from the toast.
+      const explorerAction = {
+        label: dict.common.viewTx,
+        onClick: () =>
+          window.open(getExplorerUrl(`/tx/${txSignature}`, cluster), "_blank"),
+      };
 
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
+      const indexAndReport = async (): Promise<boolean> => {
+        const response = await fetch("/api/lots", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tx_signature: txSignature }),
+        }).catch(() => null);
+
+        if (response?.ok) return true;
+
+        const body = response
+          ? ((await response.json().catch(() => null)) as {
+              error?: string;
+            } | null)
+          : null;
         toast.error(f.notIndexed, {
           description: body?.error ?? f.notIndexedDesc,
           action: {
-            label: dict.common.viewTx,
-            onClick: () =>
-              window.open(
-                getExplorerUrl(`/tx/${txSignature}`, cluster),
-                "_blank"
-              ),
+            label: f.retry,
+            onClick: () => void retryIndex(),
           },
+          cancel: explorerAction,
         });
-        return;
-      }
+        return false;
+      };
 
-      toast.success(t(f.published, { lot: payload.lotId }), {
-        description: f.publishedDesc,
-        action: {
-          label: dict.common.viewTx,
-          onClick: () =>
-            window.open(
-              getExplorerUrl(`/tx/${txSignature}`, cluster),
-              "_blank"
-            ),
-        },
-      });
-      setValues(INITIAL);
-      setCert({ status: "idle" });
+      const onIndexed = () => {
+        toast.success(t(f.published, { lot: payload.lotId }), {
+          description: f.publishedDesc,
+          action: explorerAction,
+        });
+        setValues(INITIAL);
+        setCert({ status: "idle" });
+      };
+
+      const retryIndex = async () => {
+        setIndexing(true);
+        const ok = await indexAndReport();
+        setIndexing(false);
+        if (ok) onIndexed();
+      };
+
+      setIndexing(true);
+      const ok = await indexAndReport();
+      setIndexing(false);
+      if (ok) onIndexed();
     } catch (err) {
       setIndexing(false);
       const message = err instanceof Error ? err.message : "";

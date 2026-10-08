@@ -374,6 +374,7 @@ export const en: AccountDict = {
       reviewFields: "Check the highlighted fields.",
       notIndexed: "The lot landed on-chain but was not indexed",
       notIndexedDesc: "Retry indexing later.",
+      retry: "Retry",
       published: "Lot {lot} published",
       publishedDesc: "The transaction was confirmed and indexed as published.",
       submitError: "Could not register the lot.",

@@ -104,13 +104,25 @@ export async function POST(request: Request) {
   }
 
   const { rpc } = createSolanaClient("devnet");
-  const tx = await rpc
+  const txPromise = rpc
     .getTransaction(signature(txSignature), {
       commitment: "confirmed",
       maxSupportedTransactionVersion: 0,
       encoding: "json",
     })
     .send();
+
+  let tx: Awaited<typeof txPromise>;
+  try {
+    tx = await txPromise;
+  } catch {
+    // Public RPCs flake under rate limits: surface a retryable error
+    // instead of a bare 500 so the client can offer re-indexing.
+    return jsonError(
+      "No se pudieron verificar los datos on-chain. Reintentá la indexación.",
+      502
+    );
+  }
 
   const message = tx?.transaction.message;
   const accountKeys = (message?.accountKeys ?? []) as readonly string[];
@@ -126,21 +138,34 @@ export async function POST(request: Request) {
 
   let expectedPda: string | null = null;
   if (instruction) {
-    const data = getCreateLotInstructionDataDecoder().decode(
-      getBase58Encoder().encode(instruction.data)
-    );
-    const [pda] = await findLotPda({
-      producer: address(company.wallet_address),
-      lotId: data.lotId,
-    });
-    expectedPda = pda;
+    try {
+      const data = getCreateLotInstructionDataDecoder().decode(
+        getBase58Encoder().encode(instruction.data)
+      );
+      const [pda] = await findLotPda({
+        producer: address(company.wallet_address),
+        lotId: data.lotId,
+      });
+      expectedPda = pda;
+    } catch {
+      // A found-but-undecodable payload is simply not our create_lot.
+      expectedPda = null;
+    }
   }
 
-  const account = expectedPda
-    ? await fetchMaybeLot(rpc, address(expectedPda), {
+  let account: Awaited<ReturnType<typeof fetchMaybeLot>> | null = null;
+  if (expectedPda) {
+    try {
+      account = await fetchMaybeLot(rpc, address(expectedPda), {
         commitment: "confirmed",
-      })
-    : null;
+      });
+    } catch {
+      return jsonError(
+        "No se pudieron verificar los datos on-chain. Reintentá la indexación.",
+        502
+      );
+    }
+  }
   const lotData = account && account.exists ? account.data : null;
 
   const verdict = verifyLotCreation({
@@ -210,6 +235,24 @@ export async function POST(request: Request) {
 
   if (error) {
     if (error.code === "23505") {
+      // The previous POST may have committed while its response never
+      // reached the client. If the existing row carries this exact
+      // signature, the lot is already indexed — report success so a
+      // retry settles instead of reporting a conflict.
+      const { data: existing } = await service
+        .from("lots")
+        .select("pda_address, lot_id, status, creation_tx_signature")
+        .eq("pda_address", expectedPda)
+        .maybeSingle();
+      if (existing?.creation_tx_signature === txSignature) {
+        return Response.json({
+          lot: {
+            pda_address: existing.pda_address,
+            lot_id: existing.lot_id,
+            status: existing.status,
+          },
+        });
+      }
       return jsonError("Este lote ya fue indexado.", 409);
     }
     if (error.code === "23514") {
