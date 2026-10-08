@@ -24,7 +24,12 @@ export default async function AccountLayout({
     redirect("/sign-in");
   }
 
-  if (!company) {
+  const isAdminUser =
+    user.email?.toLowerCase().includes("admin") ||
+    user.app_metadata?.role === "admin" ||
+    company?.companyType === "admin";
+
+  if (!isAdminUser && !company) {
     return (
       <AccountI18nProvider dict={dict}>
         <div className="min-h-screen bg-secondary text-foreground">
@@ -48,10 +53,21 @@ export default async function AccountLayout({
     );
   }
 
+  const activeCompany = company ?? {
+    name: "JuLit Protocol Admin",
+    companyType: "admin" as const,
+    walletAddress: null,
+    walletVerifiedAt: null,
+    originId: null,
+    purityPct: null,
+    waterM3PerTonne: null,
+    carbonKgCo2ePerTonne: null,
+  };
+
   return (
     <div className="min-h-screen bg-secondary text-foreground">
       <AccountShell
-        company={company}
+        company={activeCompany}
         email={user.email ?? ""}
         dict={dict}
         locale={locale}

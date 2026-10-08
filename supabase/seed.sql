@@ -38,6 +38,16 @@ insert into auth.users (
   ),
   (
     '00000000-0000-0000-0000-000000000000',
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    'authenticated', 'authenticated',
+    'admin@julit.dev',
+    extensions.crypt('julit-demo-2026', extensions.gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+    '', '', '', '', '', ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
     'a1a1a1a1-0000-4000-8000-000000000004',
     'authenticated', 'authenticated',
     'comprador@julit.dev',
@@ -68,6 +78,13 @@ values
     'email', now(), now(), now()
   ),
   (
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    'a1a1a1a1-0000-4000-8000-000000000003',
+    '{"sub":"a1a1a1a1-0000-4000-8000-000000000003","email":"admin@julit.dev","email_verified":true}'::jsonb,
+    'email', now(), now(), now()
+  ),
+  (
     'a1a1a1a1-0000-4000-8000-000000000004',
     'a1a1a1a1-0000-4000-8000-000000000004',
     'a1a1a1a1-0000-4000-8000-000000000004',
@@ -82,6 +99,7 @@ insert into public.companies (
 ) values
   ('a1a1a1a1-0000-4000-8000-000000000001', 'Sales del Altiplano S.A.', 'producer', 'pena_blanca', null, null, 99.55, 50.80, 8200.00),
   ('a1a1a1a1-0000-4000-8000-000000000002', 'Minera Cóndor S.A.', 'producer', 'condor', null, null, 99.62, 64.25, 9100.00),
+  ('a1a1a1a1-0000-4000-8000-000000000003', 'JuLit Protocol Admin', 'admin', null, 'EwpCo293GQT8X6dpiLFdfvbu1wRLCheUDB4WmuPEXbyF', now(), null, null, null),
   ('a1a1a1a1-0000-4000-8000-000000000004', 'Comprador Demo', 'buyer', null, null, null, null, null, null)
 on conflict (id) do update set
   wallet_address = excluded.wallet_address,

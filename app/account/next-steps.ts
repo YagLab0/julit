@@ -5,4 +5,5 @@ import type { CompanyType } from "../lib/company";
 export const NEXT_STEPS: Record<CompanyType, { href: string }> = {
   producer: { href: "/account/lotes/new" },
   buyer: { href: "/account/catalogo" },
+  admin: { href: "/account#treasury-card" },
 };

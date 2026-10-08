@@ -35,20 +35,54 @@ export function SessionMenu() {
         return;
       }
 
-      const { data: company } = await supabase
-        .from("companies")
-        .select("name, company_type")
-        .eq("id", user.id)
-        .maybeSingle();
+      let companyName: string | null = null;
+      let companyTypeLabel: string | null = null;
+
+      try {
+        const res = await fetch("/api/account/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.company) {
+            companyName = data.company.name ?? null;
+            const cType: unknown = data.company.companyType;
+            if (isCompanyType(cType)) {
+              companyTypeLabel = COMPANY_TYPE_LABELS[cType];
+            }
+          }
+        }
+      } catch {
+        // Fallback to client query if endpoint fetch fails
+      }
+
+      if (!companyName) {
+        const { data: company } = await supabase
+          .from("companies")
+          .select("name, company_type")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (company) {
+          companyName = company.name ?? null;
+          if (isCompanyType(company.company_type)) {
+            companyTypeLabel = COMPANY_TYPE_LABELS[company.company_type];
+          }
+        }
+      }
 
       if (!active) return;
       setState({
         status: "authenticated",
         email: user.email ?? null,
-        companyName: company?.name ?? null,
-        companyTypeLabel: isCompanyType(company?.company_type)
-          ? COMPANY_TYPE_LABELS[company.company_type]
-          : null,
+        companyName:
+          companyName ??
+          (user.email?.toLowerCase().includes("admin")
+            ? "JuLit Protocol Admin"
+            : null),
+        companyTypeLabel:
+          companyTypeLabel ??
+          (user.email?.toLowerCase().includes("admin")
+            ? "Administrador"
+            : null),
       });
     }
 
@@ -105,7 +139,7 @@ export function SessionMenu() {
           {state.companyName ?? state.email ?? "Mi cuenta"}
         </span>
         <span className="truncate text-[10px] leading-tight text-muted">
-          {state.companyTypeLabel ?? "Completá tu empresa"}
+          {state.companyTypeLabel ?? "Cuenta"}
         </span>
       </Link>
       <button

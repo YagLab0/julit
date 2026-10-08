@@ -52,15 +52,21 @@ export function AccountSidebar({
   const pathname = usePathname();
   const dict = useAccountDict();
 
-  const navItems = [
-    { label: dict.sidebar.nav.summary, href: "/account" },
-    { label: dict.sidebar.nav.contracts, href: "/account/contratos" },
-    ...(companyType === "producer"
-      ? [{ label: dict.sidebar.nav.offers, href: "/account/ofertas" }]
-      : []),
-    { label: dict.sidebar.nav.lots, href: "/account/lotes" },
-    { label: dict.sidebar.nav.catalog, href: "/account/catalogo" },
-  ];
+  const navItems =
+    companyType === "admin"
+      ? [
+          { label: dict.sidebar.nav.summary, href: "/account" },
+          { label: dict.sidebar.nav.catalog, href: "/account/catalogo" },
+        ]
+      : [
+          { label: dict.sidebar.nav.summary, href: "/account" },
+          { label: dict.sidebar.nav.contracts, href: "/account/contratos" },
+          ...(companyType === "producer"
+            ? [{ label: dict.sidebar.nav.offers, href: "/account/ofertas" }]
+            : []),
+          { label: dict.sidebar.nav.lots, href: "/account/lotes" },
+          { label: dict.sidebar.nav.catalog, href: "/account/catalogo" },
+        ];
 
   const initials = companyName
     .split(/\s+/)
@@ -116,9 +122,16 @@ export function AccountSidebar({
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-foreground">
-                {companyName}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-xs font-semibold text-foreground">
+                  {companyName}
+                </p>
+                {companyType === "admin" && (
+                  <span className="shrink-0 rounded-full bg-brand-100 px-1.5 py-0.5 text-[9px] font-bold text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">
+                    Admin
+                  </span>
+                )}
+              </div>
               <p className="truncate text-[10px] text-muted">
                 {dict.roles[companyType]} · {email}
               </p>

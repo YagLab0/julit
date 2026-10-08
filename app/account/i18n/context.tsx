@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import type { AccountDict } from "./index";
+import { es } from "./es";
 
 const AccountI18nContext = createContext<AccountDict | null>(null);
 
@@ -19,12 +20,9 @@ export function AccountI18nProvider({
   );
 }
 
-/** Account dictionary for client components; the account layout always
- *  renders the provider, so a missing value is a wiring bug. */
+/** Account dictionary for client components. Falls back to Spanish if rendered
+ *  outside the provider (e.g. in standalone tests). */
 export function useAccountDict(): AccountDict {
   const dict = useContext(AccountI18nContext);
-  if (!dict) {
-    throw new Error("useAccountDict must be used within AccountI18nProvider");
-  }
-  return dict;
+  return dict ?? es;
 }

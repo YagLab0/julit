@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { formatNumber } from "../data/points";
 import type { Origin } from "../data/origins";
 import { Modal } from "./modal";
@@ -31,6 +32,24 @@ export function OriginModal({
   origin: Origin;
   onClose: () => void;
 }) {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/account/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.company?.companyType === "admin") {
+          setIsAdmin(true);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const stats = [
     {
       label: "Capacidad",
@@ -115,14 +134,16 @@ export function OriginModal({
         </a>
       </div>
 
-      <footer className="flex shrink-0 justify-center border-t border-border bg-card px-4 py-3">
-        <a
-          href={PRODUCER_CONTACT_HREF}
-          className="btn-primary px-5 py-2.5 text-sm"
-        >
-          Conectar con productor
-        </a>
-      </footer>
+      {!isAdmin && (
+        <footer className="flex shrink-0 justify-center border-t border-border bg-card px-4 py-3">
+          <a
+            href={PRODUCER_CONTACT_HREF}
+            className="btn-primary px-5 py-2.5 text-sm"
+          >
+            Conectar con productor
+          </a>
+        </footer>
+      )}
     </Modal>
   );
 }

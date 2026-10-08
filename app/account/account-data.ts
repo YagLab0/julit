@@ -13,6 +13,7 @@ import type {
   AcquiredLot,
   DesignatedLot,
 } from "./account-client";
+import { ORIGIN_COLUMNS, type Origin } from "../explorer/data/origins";
 
 export type ProducerLot = {
   lot_id: string;
@@ -36,12 +37,53 @@ type LotRow = Omit<DesignatedLot, "producer_name" | "status"> & {
   status: string;
 };
 
+export type AdminLot = {
+  lot_id: string;
+  pda_address: string;
+  status: string;
+  volume_tonnes: number;
+  purity_pct: number;
+  water_footprint_m3_per_tonne: number | null;
+  carbon_footprint_kg_co2e_per_tonne: number | null;
+  price_usdc: number;
+  producer_wallet: string;
+  buyer_wallet: string;
+  mint_address: string | null;
+  claimable_after: number | null;
+  origin_id: string;
+  fund_tx_signature: string | null;
+  redeem_tx_signature: string | null;
+  dispute_tx_signature: string | null;
+  claim_tx_signature: string | null;
+  indexed_at: string;
+  producer_name?: string | null;
+  buyer_name?: string | null;
+};
+
+export type AdminCompany = {
+  id: string;
+  name: string;
+  company_type: CompanyType;
+  wallet_address: string | null;
+  wallet_verified_at: string | null;
+  origin_id: string | null;
+  purity_pct: number | null;
+  water_footprint_m3_per_tonne: number | null;
+  carbon_footprint_kg_co2e_per_tonne: number | null;
+  created_at: string;
+  email?: string | null;
+};
+
 export type AccountContext = {
   user: User | null;
   company: AccountCompany | null;
   designatedLots: DesignatedLot[];
   lots: AcquiredLot[];
   producerLots: ProducerLot[];
+  adminStats?: AdminStats | null;
+  adminLots?: AdminLot[];
+  adminCompanies?: AdminCompany[];
+  adminOrigins?: Origin[];
 };
 
 export const getAccountContext = cache(async (): Promise<AccountContext> => {
@@ -57,16 +99,49 @@ export const getAccountContext = cache(async (): Promise<AccountContext> => {
       designatedLots: [],
       lots: [],
       producerLots: [],
+      adminStats: null,
     };
   }
 
-  const { data: companyRow } = await supabase
+  const service = createServiceClient();
+  let { data: companyRow } = await service
     .from("companies")
     .select(
       "name, company_type, wallet_address, wallet_verified_at, origin_id, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne"
     )
     .eq("id", user.id)
     .maybeSingle();
+
+  const isAdminUser =
+    user.email?.toLowerCase().includes("admin") ||
+    user.app_metadata?.role === "admin";
+
+  // Only auto-provision for admin accounts; regular accounts must go through onboarding if not registered
+  if (!companyRow && isAdminUser) {
+    const adminCompany = {
+      id: user.id,
+      name: "JuLit Protocol Admin",
+      company_type: "admin" as const,
+    };
+
+    const { data: inserted } = await service
+      .from("companies")
+      .upsert(adminCompany)
+      .select(
+        "name, company_type, wallet_address, wallet_verified_at, origin_id, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne"
+      )
+      .maybeSingle();
+
+    companyRow = inserted ?? {
+      ...adminCompany,
+      wallet_address: null,
+      wallet_verified_at: null,
+      origin_id: null,
+      purity_pct: null,
+      water_footprint_m3_per_tonne: null,
+      carbon_footprint_kg_co2e_per_tonne: null,
+    };
+  }
 
   const company =
     companyRow && isCompanyType(companyRow.company_type)
@@ -80,7 +155,18 @@ export const getAccountContext = cache(async (): Promise<AccountContext> => {
           waterM3PerTonne: companyRow.water_footprint_m3_per_tonne,
           carbonKgCo2ePerTonne: companyRow.carbon_footprint_kg_co2e_per_tonne,
         }
-      : null;
+      : isAdminUser
+        ? {
+            name: "JuLit Protocol Admin",
+            companyType: "admin" as CompanyType,
+            walletAddress: null,
+            walletVerifiedAt: null,
+            originId: null,
+            purityPct: null,
+            waterM3PerTonne: null,
+            carbonKgCo2ePerTonne: null,
+          }
+        : null;
 
   const designatedLots: DesignatedLot[] = [];
   const lots: AcquiredLot[] = [];
@@ -134,7 +220,112 @@ export const getAccountContext = cache(async (): Promise<AccountContext> => {
     producerLots = (data ?? []) as ProducerLot[];
   }
 
-  return { user, company, designatedLots, lots, producerLots };
+  let adminStats: AdminStats | null = null;
+  let adminLots: AdminLot[] = [];
+  let adminCompanies: AdminCompany[] = [];
+  let adminOrigins: Origin[] = [];
+  if (company?.companyType === "admin") {
+    try {
+      adminStats = await getProtocolStats();
+    } catch {
+      adminStats = null;
+    }
+
+    try {
+      const service = createServiceClient();
+      const { data: rawLots } = await service
+        .from("lots")
+        .select(LOT_COLUMNS)
+        .order("indexed_at", { ascending: false });
+
+      const rows = (rawLots ?? []) as unknown as AdminLot[];
+      const wallets = [
+        ...new Set(
+          rows
+            .flatMap((l) => [l.producer_wallet, l.buyer_wallet])
+            .filter((w): w is string => Boolean(w))
+        ),
+      ];
+
+      const nameByWallet = new Map<string, string>();
+      if (wallets.length > 0) {
+        const { data: companies } = await service
+          .from("companies")
+          .select("wallet_address, name")
+          .in("wallet_address", wallets);
+        for (const c of companies ?? []) {
+          if (c.wallet_address) nameByWallet.set(c.wallet_address, c.name);
+        }
+      }
+
+      adminLots = rows.map((r) => ({
+        ...r,
+        producer_name: nameByWallet.get(r.producer_wallet) ?? null,
+        buyer_name: nameByWallet.get(r.buyer_wallet) ?? null,
+      }));
+    } catch {
+      adminLots = [];
+    }
+
+    try {
+      const service = createServiceClient();
+      const { data: allCompanies } = await service
+        .from("companies")
+        .select(
+          "id, name, company_type, wallet_address, wallet_verified_at, origin_id, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, created_at"
+        )
+        .order("created_at", { ascending: false });
+
+      const { data: usersData } = await service.auth.admin.listUsers();
+      const emailById = new Map<string, string>();
+      for (const u of usersData?.users ?? []) {
+        if (u.email) emailById.set(u.id, u.email);
+      }
+
+      adminCompanies = (allCompanies ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        company_type: c.company_type as CompanyType,
+        wallet_address: c.wallet_address,
+        wallet_verified_at: c.wallet_verified_at,
+        origin_id: c.origin_id,
+        purity_pct: c.purity_pct ? Number(c.purity_pct) : null,
+        water_footprint_m3_per_tonne: c.water_footprint_m3_per_tonne
+          ? Number(c.water_footprint_m3_per_tonne)
+          : null,
+        carbon_footprint_kg_co2e_per_tonne: c.carbon_footprint_kg_co2e_per_tonne
+          ? Number(c.carbon_footprint_kg_co2e_per_tonne)
+          : null,
+        created_at: c.created_at,
+        email: emailById.get(c.id) ?? null,
+      }));
+    } catch {
+      adminCompanies = [];
+    }
+
+    try {
+      const service = createServiceClient();
+      const { data: allOrigins } = await service
+        .from("origins")
+        .select(ORIGIN_COLUMNS)
+        .order("name", { ascending: true });
+      adminOrigins = (allOrigins ?? []) as Origin[];
+    } catch {
+      adminOrigins = [];
+    }
+  }
+
+  return {
+    user,
+    company,
+    designatedLots,
+    lots,
+    producerLots,
+    adminStats,
+    adminLots,
+    adminCompanies,
+    adminOrigins,
+  };
 });
 
 export type ContractParty = {
@@ -234,3 +425,163 @@ export const getBuyerDirectory = cache(
     ) as { id: string; name: string }[];
   }
 );
+
+export type ProtocolStats = {
+  companies: {
+    total: number;
+    producers: number;
+    buyers: number;
+    admins: number;
+    verifiedWallets: number;
+  };
+  contracts: {
+    total: number;
+    pending: number;
+    accepted: number;
+    revoked: number;
+  };
+  lots: {
+    total: number;
+    byStatus: {
+      listed: number;
+      funded: number;
+      disputed: number;
+      redeemed: number;
+      claimed: number;
+      cancelled: number;
+    };
+    totalVolumeTonnes: number;
+    settledVolumeTonnes: number;
+    listedVolumeTonnes: number;
+    fundedVolumeTonnes: number;
+    totalValueUsdc: number;
+    settledValueUsdc: number;
+    escrowedValueUsdc: number;
+    estimatedProtocolFeesUsdc: number;
+  };
+};
+
+export type AdminStats = ProtocolStats;
+
+export type RawCompanyStat = {
+  company_type: string;
+  wallet_address?: string | null;
+  wallet_verified_at?: string | null;
+};
+
+export type RawContractStat = {
+  status: string;
+};
+
+export type RawLotStat = {
+  status: string;
+  volume_tonnes: number | string | null;
+  price_usdc: number | string | null;
+};
+
+export function calculateProtocolStats(data: {
+  companies: RawCompanyStat[];
+  contracts: RawContractStat[];
+  lots: RawLotStat[];
+}): ProtocolStats {
+  const companies = data.companies ?? [];
+  const contracts = data.contracts ?? [];
+  const lots = data.lots ?? [];
+
+  const companyStats = {
+    total: companies.length,
+    producers: companies.filter((c) => c.company_type === "producer").length,
+    buyers: companies.filter((c) => c.company_type === "buyer").length,
+    admins: companies.filter((c) => c.company_type === "admin").length,
+    verifiedWallets: companies.filter((c) => Boolean(c.wallet_address)).length,
+  };
+
+  const contractStats = {
+    total: contracts.length,
+    pending: contracts.filter((c) => c.status === "pending").length,
+    accepted: contracts.filter((c) => c.status === "accepted").length,
+    revoked: contracts.filter((c) => c.status === "revoked").length,
+  };
+
+  const byStatus = {
+    listed: lots.filter((l) => l.status === "listed").length,
+    funded: lots.filter((l) => l.status === "funded").length,
+    disputed: lots.filter((l) => l.status === "disputed").length,
+    redeemed: lots.filter((l) => l.status === "redeemed").length,
+    claimed: lots.filter((l) => l.status === "claimed").length,
+    cancelled: lots.filter((l) => l.status === "cancelled").length,
+  };
+
+  let totalVolumeTonnes = 0;
+  let settledVolumeTonnes = 0;
+  let listedVolumeTonnes = 0;
+  let fundedVolumeTonnes = 0;
+
+  let totalValueUsdc = 0;
+  let settledValueUsdc = 0;
+  let escrowedValueUsdc = 0;
+
+  for (const lot of lots) {
+    const vol = Number(lot.volume_tonnes || 0);
+    const val = Number(lot.price_usdc || 0);
+
+    totalVolumeTonnes += vol;
+    totalValueUsdc += val;
+
+    if (lot.status === "redeemed" || lot.status === "claimed") {
+      settledVolumeTonnes += vol;
+      settledValueUsdc += val;
+    } else if (lot.status === "listed") {
+      listedVolumeTonnes += vol;
+    } else if (lot.status === "funded") {
+      fundedVolumeTonnes += vol;
+      escrowedValueUsdc += val;
+    } else if (lot.status === "disputed") {
+      escrowedValueUsdc += val;
+    }
+  }
+
+  // 1% take rate (100 bps)
+  const estimatedProtocolFeesUsdc =
+    Math.round(settledValueUsdc * 0.01 * 100) / 100;
+
+  return {
+    companies: companyStats,
+    contracts: contractStats,
+    lots: {
+      total: lots.length,
+      byStatus,
+      totalVolumeTonnes: Math.round(totalVolumeTonnes * 100) / 100,
+      settledVolumeTonnes: Math.round(settledVolumeTonnes * 100) / 100,
+      listedVolumeTonnes: Math.round(listedVolumeTonnes * 100) / 100,
+      fundedVolumeTonnes: Math.round(fundedVolumeTonnes * 100) / 100,
+      totalValueUsdc: Math.round(totalValueUsdc * 1000000) / 1000000,
+      settledValueUsdc: Math.round(settledValueUsdc * 1000000) / 1000000,
+      escrowedValueUsdc: Math.round(escrowedValueUsdc * 1000000) / 1000000,
+      estimatedProtocolFeesUsdc,
+    },
+  };
+}
+
+export const getProtocolStats = cache(
+  async (
+    client?: ReturnType<typeof createServiceClient>
+  ): Promise<ProtocolStats> => {
+    const service = client ?? createServiceClient();
+    const [companiesRes, contractsRes, lotsRes] = await Promise.all([
+      service
+        .from("companies")
+        .select("company_type, wallet_address, wallet_verified_at"),
+      service.from("company_contracts").select("status"),
+      service.from("lots").select("status, volume_tonnes, price_usdc"),
+    ]);
+
+    return calculateProtocolStats({
+      companies: (companiesRes.data ?? []) as RawCompanyStat[],
+      contracts: (contractsRes.data ?? []) as RawContractStat[],
+      lots: (lotsRes.data ?? []) as RawLotStat[],
+    });
+  }
+);
+
+export const getAdminStats = getProtocolStats;

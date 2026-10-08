@@ -11,13 +11,37 @@ import { WalletHero } from "./wallet-hero";
 import { getAccountContext, type ProducerLot } from "./account-data";
 import { getAccountDict } from "./i18n/server";
 import type { AccountDict } from "./i18n";
+import { AdminDashboard } from "./admin/admin-dashboard";
 
 export default async function AccountPage() {
-  const [{ company, lots, designatedLots, producerLots }, dict] =
-    await Promise.all([getAccountContext(), getAccountDict()]);
+  const [
+    {
+      company,
+      lots,
+      designatedLots,
+      producerLots,
+      adminStats,
+      adminLots,
+      adminCompanies,
+      adminOrigins,
+    },
+    dict,
+  ] = await Promise.all([getAccountContext(), getAccountDict()]);
 
   // Layout renders the onboarding form when there is no company yet.
   if (!company) return null;
+
+  if (company.companyType === "admin") {
+    return (
+      <AdminDashboard
+        company={company}
+        initialStats={adminStats ?? null}
+        initialLots={adminLots ?? []}
+        initialCompanies={adminCompanies ?? []}
+        initialOrigins={adminOrigins ?? []}
+      />
+    );
+  }
 
   const isBuyer = company.companyType === "buyer";
 

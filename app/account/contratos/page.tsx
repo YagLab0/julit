@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import {
   BuyerContractsCard,
   ContractsCard,
@@ -14,6 +15,10 @@ export default async function ContratosPage() {
 
   // Layout renders the onboarding form when there is no company yet.
   if (!company || !user) return null;
+
+  if (company.companyType === "admin") {
+    redirect("/account");
+  }
 
   const contracts = await getCompanyContracts(user.id);
   const directory =

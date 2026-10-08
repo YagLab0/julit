@@ -59,3 +59,8 @@ export function useCluster() {
   if (!ctx) throw new Error("useCluster must be used within ClusterProvider");
   return ctx;
 }
+
+export function useOptionalCluster(): ClusterMoniker {
+  const ctx = useContext(ClusterContext);
+  return ctx?.cluster ?? "devnet";
+}

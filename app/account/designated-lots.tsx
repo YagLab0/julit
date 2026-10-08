@@ -11,8 +11,6 @@ import {
 } from "@solana/kit";
 import { toast } from "sonner";
 import {
-  fetchConfig,
-  findConfigPda,
   findMintPda,
   getFundLotInstructionAsync,
   getRedeemLotInstructionAsync,
@@ -31,10 +29,16 @@ import { VerifiedWalletGate } from "../components/verified-wallet-gate";
 import { ellipsify } from "../lib/explorer";
 import { originName } from "../lib/origins";
 import { findAssociatedTokenAddress } from "../lib/solana/ata";
+import { fetchProtocolConfig } from "../lib/solana/config";
 import { useSendTransaction } from "../lib/hooks/use-send-transaction";
 import { useSolanaClient } from "../lib/solana-client-context";
 import { useWallet } from "../lib/wallet/context";
-import { buyerLotVerdict, type BuyerLotAction } from "./lot-actions";
+import {
+  buyerLotVerdict,
+  calculateLotFee,
+  calculateLotSettlement,
+  type BuyerLotAction,
+} from "./lot-actions";
 import { useAccountDict } from "./i18n/context";
 import { t, type AccountDict } from "./i18n";
 import { LotGridCard } from "./lotes/lot-card";
@@ -43,6 +47,7 @@ import type { AcquiredLot, DesignatedLot } from "./account-client";
 type Settlement = {
   usdcMint: Address;
   treasury: Address;
+  feeBps: number;
 };
 
 /** Confirm-modal copy for a buyer action, resolved from the dictionary. */
@@ -135,12 +140,10 @@ function useSettlement(buyerWallet: string | null): LotActionCtx {
     let cancelled = false;
     (async () => {
       try {
-        const [configPda] = await findConfigPda();
-        const config = await fetchConfig(client.rpc, configPda, {
-          commitment: "confirmed",
-        });
-        const usdcMint = config.data.usdcMint;
-        const treasury = config.data.treasury;
+        const config = await fetchProtocolConfig(client.rpc);
+        const usdcMint = config.usdcMint;
+        const treasury = config.treasury;
+        const feeBps = config.feeBps;
         const [ata] = await findAssociatedTokenAddress(
           address(buyerWallet),
           usdcMint
@@ -161,7 +164,7 @@ function useSettlement(buyerWallet: string | null): LotActionCtx {
         }
         if (!cancelled) {
           setState({
-            settlement: { usdcMint, treasury },
+            settlement: { usdcMint, treasury, feeBps },
             dUsdcBalance: balance,
             balanceFailed: false,
           });
@@ -240,7 +243,7 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
   const { send, isSending } = useSendTransaction();
   const { getExplorerUrl } = useCluster();
   const dict = useAccountDict();
-  const { settlement, dUsdcBalance, balanceFailed, deductBalance } = ctx;
+  const { settlement, dUsdcBalance, deductBalance } = ctx;
 
   const [confirming, setConfirming] = useState<BuyerLotAction | null>(null);
   const [indexing, setIndexing] = useState(false);
@@ -557,6 +560,23 @@ function LotActionDialog({
           <ConfirmRow label={content.amountLabel}>
             {priceFmt.format(lot.price_usdc)} dUSDC
           </ConfirmRow>
+          {confirming === "redeem" && ctx.settlement && (
+            <>
+              <ConfirmRow label={dict.designated.rows.fee}>
+                {priceFmt.format(
+                  calculateLotFee(lot.price_usdc, ctx.settlement.feeBps)
+                )}{" "}
+                dUSDC ({ctx.settlement.feeBps / 100}%)
+              </ConfirmRow>
+              <ConfirmRow label={dict.designated.rows.producerPayout}>
+                {priceFmt.format(
+                  calculateLotSettlement(lot.price_usdc, ctx.settlement.feeBps)
+                    .producerPayoutUsdc
+                )}{" "}
+                dUSDC
+              </ConfirmRow>
+            </>
+          )}
           {confirming === "fund" && (
             <ConfirmRow label={dict.designated.rows.balance}>
               {ctx.dUsdcBalance === null
