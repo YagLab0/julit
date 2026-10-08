@@ -37,7 +37,8 @@ import { useWallet } from "../lib/wallet/context";
 import { buyerLotVerdict, type BuyerLotAction } from "./lot-actions";
 import { useAccountDict } from "./i18n/context";
 import { t, type AccountDict } from "./i18n";
-import type { DesignatedLot } from "./account-client";
+import { LotGridCard } from "./lotes/lot-card";
+import type { AcquiredLot, DesignatedLot } from "./account-client";
 
 type Settlement = {
   usdcMint: Address;
@@ -117,9 +118,11 @@ type SettlementState = {
  * Fetched once per list — every designated lot shares mint and buyer.
  * `deductBalance` keeps the hint honest after a successful Funding.
  */
-function useSettlement(buyerWallet: string | null): SettlementState & {
+export type LotActionCtx = SettlementState & {
   deductBalance: (amount: number) => void;
-} {
+};
+
+function useSettlement(buyerWallet: string | null): LotActionCtx {
   const client = useSolanaClient();
   const [state, setState] = useState<SettlementState>({
     settlement: null,
@@ -226,28 +229,18 @@ function DesignatedLotList({
   );
 }
 
-function DesignatedLotRow({
-  lot,
-  companyName,
-  walletAddress,
-  settlement,
-  dUsdcBalance,
-  balanceFailed,
-  deductBalance,
-}: {
-  lot: DesignatedLot;
-  companyName: string;
-  walletAddress: string | null;
-  settlement: Settlement | null;
-  dUsdcBalance: number | null;
-  balanceFailed: boolean;
-  deductBalance: (amount: number) => void;
-}) {
+/**
+ * Sign → index → refresh engine for a designated lot's transitions
+ * (fund, redeem), shared by the overview rows and the buy
+ * action on the buyer's lot grid cards.
+ */
+function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
   const router = useRouter();
   const { wallet, signer } = useWallet();
   const { send, isSending } = useSendTransaction();
   const { getExplorerUrl } = useCluster();
   const dict = useAccountDict();
+  const { settlement, dUsdcBalance, balanceFailed, deductBalance } = ctx;
 
   const [confirming, setConfirming] = useState<BuyerLotAction | null>(null);
   const [indexing, setIndexing] = useState(false);
@@ -409,10 +402,32 @@ function DesignatedLotRow({
     });
   }
 
-  const handlers: Record<BuyerLotAction, () => void> = {
-    fund,
-    redeem,
+  return {
+    verdict,
+    busy,
+    isSending,
+    indexing,
+    confirming,
+    setConfirming,
+    handlers: { fund, redeem } as Record<BuyerLotAction, () => void>,
   };
+}
+
+type LotActionEngine = ReturnType<typeof useDesignatedLotActions>;
+
+function DesignatedLotRow({
+  lot,
+  companyName,
+  walletAddress,
+  ...ctx
+}: {
+  lot: DesignatedLot;
+  companyName: string;
+  walletAddress: string | null;
+} & LotActionCtx) {
+  const dict = useAccountDict();
+  const engine = useDesignatedLotActions(lot, ctx);
+  const { verdict, busy, setConfirming } = engine;
 
   const actionButtons = (
     <div className="flex flex-wrap items-center gap-2">
@@ -444,7 +459,7 @@ function DesignatedLotRow({
         </div>
         <Link
           href={`/batch/${lot.pda_address}`}
-          className="text-xs font-medium text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+          className="text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
         >
           {dict.common.viewPassport}
         </Link>
@@ -481,16 +496,16 @@ function DesignatedLotRow({
             actionButtons
           )}
           {verdict.fundBlocker && verdict.actions.includes("fund") && (
-            <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-400">
-              {balanceFailed
+            <p className="mt-1.5 text-[11px] text-amber-700">
+              {ctx.balanceFailed
                 ? dict.designated.fundBlocker.readError
                 : verdict.fundBlocker === "checking_balance"
                   ? dict.designated.fundBlocker.checking
                   : dict.designated.fundBlocker.insufficient}
-              {!balanceFailed &&
+              {!ctx.balanceFailed &&
                 verdict.fundBlocker === "insufficient_balance" &&
-                dUsdcBalance !== null &&
-                ` ${t(dict.designated.fundBlocker.balance, { balance: priceFmt.format(dUsdcBalance) })}`}
+                ctx.dUsdcBalance !== null &&
+                ` ${t(dict.designated.fundBlocker.balance, { balance: priceFmt.format(ctx.dUsdcBalance) })}`}
             </p>
           )}
         </div>
@@ -500,77 +515,92 @@ function DesignatedLotRow({
         </p>
       ) : null}
 
-      {confirming &&
-        (() => {
-          const content = confirmContent(dict, confirming, lot);
-          return (
-            <Modal
-              onClose={() => setConfirming(null)}
-              labelledBy={`lot-action-title-${lot.lot_id}`}
-            >
-              <div className="p-6">
-                <h3
-                  id={`lot-action-title-${lot.lot_id}`}
-                  className="text-base font-semibold text-foreground"
-                >
-                  {content.title}
-                </h3>
-
-                <dl className="mt-4 space-y-2 text-xs">
-                  <ConfirmRow label={dict.designated.rows.producer}>
-                    {lot.producer_name ?? ellipsify(lot.producer_wallet, 6)}
-                  </ConfirmRow>
-                  <ConfirmRow label={content.amountLabel}>
-                    {priceFmt.format(lot.price_usdc)} dUSDC
-                  </ConfirmRow>
-                  {confirming === "fund" && (
-                    <ConfirmRow label={dict.designated.rows.balance}>
-                      {dUsdcBalance === null
-                        ? balanceFailed
-                          ? dict.designated.rows.balanceError
-                          : dict.designated.rows.balanceLoading
-                        : `${priceFmt.format(dUsdcBalance)} dUSDC`}
-                    </ConfirmRow>
-                  )}
-                  <ConfirmRow label={dict.designated.rows.deadline}>
-                    {dateFmt.format(new Date(lot.claimable_after))}
-                  </ConfirmRow>
-                </dl>
-
-                <p className="mt-4 text-xs leading-relaxed text-muted">
-                  {content.body}
-                </p>
-
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={
-                      busy ||
-                      (confirming === "fund" && verdict.fundBlocker !== null)
-                    }
-                    onClick={handlers[confirming]}
-                    className="btn-primary text-xs px-4 py-2 cursor-pointer"
-                  >
-                    {isSending
-                      ? dict.common.signing
-                      : indexing
-                        ? dict.common.indexing
-                        : content.cta}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => setConfirming(null)}
-                    className="btn-secondary text-xs px-4 py-2 cursor-pointer"
-                  >
-                    {dict.common.back}
-                  </button>
-                </div>
-              </div>
-            </Modal>
-          );
-        })()}
+      <LotActionDialog lot={lot} engine={engine} ctx={ctx} />
     </article>
+  );
+}
+
+/** Confirmation modal for a buyer action, shared by the overview rows
+ *  and the grid card's buy action. */
+function LotActionDialog({
+  lot,
+  engine,
+  ctx,
+}: {
+  lot: DesignatedLot;
+  engine: LotActionEngine;
+  ctx: LotActionCtx;
+}) {
+  const dict = useAccountDict();
+  const { confirming, setConfirming, verdict, busy, isSending, indexing } =
+    engine;
+  if (!confirming) return null;
+  const content = confirmContent(dict, confirming, lot);
+
+  return (
+    <Modal
+      onClose={() => setConfirming(null)}
+      labelledBy={`lot-action-title-${lot.lot_id}`}
+    >
+      <div className="p-6">
+        <h3
+          id={`lot-action-title-${lot.lot_id}`}
+          className="text-base font-semibold text-foreground"
+        >
+          {content.title}
+        </h3>
+
+        <dl className="mt-4 space-y-2 text-xs">
+          <ConfirmRow label={dict.designated.rows.producer}>
+            {lot.producer_name ?? ellipsify(lot.producer_wallet, 6)}
+          </ConfirmRow>
+          <ConfirmRow label={content.amountLabel}>
+            {priceFmt.format(lot.price_usdc)} dUSDC
+          </ConfirmRow>
+          {confirming === "fund" && (
+            <ConfirmRow label={dict.designated.rows.balance}>
+              {ctx.dUsdcBalance === null
+                ? ctx.balanceFailed
+                  ? dict.designated.rows.balanceError
+                  : dict.designated.rows.balanceLoading
+                : `${priceFmt.format(ctx.dUsdcBalance)} dUSDC`}
+            </ConfirmRow>
+          )}
+          <ConfirmRow label={dict.designated.rows.deadline}>
+            {dateFmt.format(new Date(lot.claimable_after))}
+          </ConfirmRow>
+        </dl>
+
+        <p className="mt-4 text-xs leading-relaxed text-muted">
+          {content.body}
+        </p>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={
+              busy || (confirming === "fund" && verdict.fundBlocker !== null)
+            }
+            onClick={engine.handlers[confirming]}
+            className="btn-primary text-xs px-4 py-2 cursor-pointer"
+          >
+            {isSending
+              ? dict.common.signing
+              : indexing
+                ? dict.common.indexing
+                : content.cta}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirming(null)}
+            className="btn-secondary text-xs px-4 py-2 cursor-pointer"
+          >
+            {dict.common.back}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -619,5 +649,89 @@ function LotClockNote({
     <p className="mt-1 text-[11px] text-muted">
       {t(dict.designated.clock.listed, { deadline })}
     </p>
+  );
+}
+
+/**
+ * The fund ("Comprar con escrow") action rendered inside a buyer's lot
+ * grid card. The card root is a Link, so the surrounding div swallows
+ * the click's default action to keep navigation from firing.
+ */
+function LotCardFundAction({
+  lot,
+  ctx,
+}: {
+  lot: DesignatedLot;
+  ctx: LotActionCtx;
+}) {
+  const dict = useAccountDict();
+  const engine = useDesignatedLotActions(lot, ctx);
+  const { verdict, busy, setConfirming } = engine;
+
+  if (!verdict.actions.includes("fund")) return null;
+
+  return (
+    <div onClick={(e) => e.preventDefault()} className="mt-3">
+      <button
+        type="button"
+        disabled={busy || verdict.fundBlocker !== null}
+        onClick={() => setConfirming("fund")}
+        className="btn-primary w-full cursor-pointer px-4 py-2.5 text-xs"
+      >
+        {dict.designated.actions.fund} · {priceFmt.format(lot.price_usdc)} dUSDC
+      </button>
+      {verdict.fundBlocker && (
+        <p className="mt-1 text-[11px] text-amber-700">
+          {ctx.balanceFailed
+            ? dict.designated.fundBlocker.readError
+            : verdict.fundBlocker === "checking_balance"
+              ? dict.designated.fundBlocker.checking
+              : dict.designated.fundBlocker.insufficient}
+          {!ctx.balanceFailed &&
+            verdict.fundBlocker === "insufficient_balance" &&
+            ctx.dUsdcBalance !== null &&
+            ` ${t(dict.designated.fundBlocker.balance, { balance: priceFmt.format(ctx.dUsdcBalance) })}`}
+        </p>
+      )}
+      <LotActionDialog lot={lot} engine={engine} ctx={ctx} />
+    </div>
+  );
+}
+
+/**
+ * The buyer's lots grid: the same card the producer sees, with the
+ * escrow buy action on lots still listed and awaiting purchase. The
+ * settlement read (config + dUSDC balance) is shared across cards.
+ */
+export function BuyerLotGrid({
+  lots,
+  buyable,
+  walletAddress,
+}: {
+  lots: (DesignatedLot | AcquiredLot)[];
+  buyable: DesignatedLot[];
+  walletAddress: string;
+}) {
+  const ctx = useSettlement(buyable.length > 0 ? walletAddress : null);
+  const buyableByPda = new Map(buyable.map((l) => [l.pda_address, l]));
+
+  return (
+    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {lots.map((lot, i) => {
+        const buyableLot = buyableByPda.get(lot.pda_address);
+        return (
+          <LotGridCard
+            key={lot.pda_address}
+            lot={lot}
+            index={i}
+            action={
+              buyableLot ? (
+                <LotCardFundAction lot={buyableLot} ctx={ctx} />
+              ) : undefined
+            }
+          />
+        );
+      })}
+    </div>
   );
 }

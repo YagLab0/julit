@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EmptyState, WalletCard } from "../account-client";
 import { getAccountContext } from "../account-data";
+import { BuyerLotGrid } from "../designated-lots";
 import { getAccountDict } from "../i18n/server";
 import { LotGridCard } from "./lot-card";
 
@@ -26,6 +27,7 @@ export default async function LotesPage() {
 
   if (company.companyType === "buyer") {
     const buyerLots = [...designatedLots, ...lots];
+    const walletAddress = company.walletAddress;
     return (
       <div className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -49,10 +51,10 @@ export default async function LotesPage() {
           </Link>
         </div>
 
-        {!company.walletAddress ? (
+        {!walletAddress ? (
           <WalletCard
             className="animate-bento-in mt-4"
-            walletAddress={company.walletAddress}
+            walletAddress={walletAddress}
             walletVerifiedAt={company.walletVerifiedAt}
           />
         ) : buyerLots.length === 0 ? (
@@ -64,11 +66,11 @@ export default async function LotesPage() {
             />
           </div>
         ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {buyerLots.map((lot, i) => (
-              <LotGridCard key={lot.pda_address} lot={lot} index={i} />
-            ))}
-          </div>
+          <BuyerLotGrid
+            lots={buyerLots}
+            buyable={designatedLots.filter((l) => l.status === "listed")}
+            walletAddress={walletAddress}
+          />
         )}
       </div>
     );

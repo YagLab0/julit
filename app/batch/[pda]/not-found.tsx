@@ -6,7 +6,7 @@ import Link from "next/link";
  */
 export default function PassportNotFound() {
   return (
-    <div className="light min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto max-w-2xl px-6 py-4">
         <Link href="/explorer" className="text-sm font-bold tracking-tight">
           JuLit

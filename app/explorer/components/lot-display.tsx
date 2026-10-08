@@ -55,15 +55,15 @@ const STATUS_LABELS: Record<LotStatus, string> = {
 
 const STATUS_CLASSES: Record<LotStatus, { pill: string; dot: string }> = {
   listed: {
-    pill: "bg-brand-50 dark:bg-brand-950/50 text-brand-800 dark:text-brand-200 ring-brand-200 dark:ring-brand-800",
+    pill: "bg-brand-50 text-brand-800 ring-brand-200",
     dot: "bg-brand-600",
   },
   funded: {
-    pill: "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-800",
+    pill: "bg-amber-50 text-amber-800 ring-amber-200",
     dot: "bg-amber-500",
   },
   disputed: {
-    pill: "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-800",
+    pill: "bg-amber-50 text-amber-800 ring-amber-200",
     dot: "bg-amber-500",
   },
   redeemed: {
@@ -112,8 +112,8 @@ export function Skeleton({ className }: { className: string }) {
 type Tone = "good" | "warn" | "neutral";
 
 const TONE_CLASSES: Record<Tone, string> = {
-  good: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200 ring-emerald-200 dark:ring-emerald-800",
-  warn: "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-200 ring-amber-200 dark:ring-amber-800",
+  good: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+  warn: "bg-amber-50 text-amber-800 ring-amber-200",
   neutral: "bg-secondary text-foreground/75 ring-border",
 };
 

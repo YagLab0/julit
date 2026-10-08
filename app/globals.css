@@ -1,13 +1,6 @@
 @import "tailwindcss";
 
-/* Dark applies everywhere except subtrees pinned light with `.light`
-   (the public passport shares its chrome with dark-mode surfaces). */
-@custom-variant dark (
-  &:where(.dark, .dark *):not(:where(.light, .light *))
-);
-
-:root,
-.light {
+:root {
   --background: #ffffff;
   --foreground: #0a0a0a;
   /* Primary action color = brand. Change --color-brand-* below (and the
@@ -35,30 +28,6 @@
   --secondary-foreground: #171717;
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-}
-
-.dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --primary: var(--color-brand-500);
-  --primary-foreground: var(--color-brand-950);
-  --muted: #a3a3a3;
-  --muted-foreground: #737373;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --popover: #171717;
-  --popover-foreground: #fafafa;
-  --border: #262626;
-  --border-low: rgba(38, 38, 38, 0.5);
-  --input: #262626;
-  --accent: #262626;
-  --accent-foreground: #fafafa;
-  --cream: #262626;
-  --destructive: #ef4444;
-  --destructive-foreground: #ef4444;
-  --ring: #525252;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
 }
 
 @theme inline {
@@ -208,9 +177,6 @@
     letter-spacing: 0.05em;
     color: var(--color-brand-700);
   }
-  .dark .eyebrow {
-    color: var(--color-brand-400);
-  }
 }
 
 /* JuLit /explorer: origin markers over MapLibre (ported from lithium-passport) */
@@ -338,26 +304,6 @@
   border-color: var(--color-brand-600);
 }
 
-/* Dark mode markers. */
-.dark .lp-mine-card {
-  background: rgba(23, 23, 23, 0.94);
-  border-color: #404040;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-}
-.dark .lp-mine-name {
-  color: #fafafa;
-}
-.dark .lp-mine-meta {
-  color: #a3a3a3;
-}
-.dark .lp-mine-dot {
-  box-shadow: 0 0 0 3px #171717;
-}
-.dark .lp-mine-marker--selected .lp-mine-card {
-  background: color-mix(in srgb, var(--color-brand-950) 95%, transparent);
-  border-color: var(--color-brand-500);
-}
-
 /* Context salares (no batches): context only, not interactive. */
 .lp-salar-marker {
   z-index: 1;
@@ -391,19 +337,6 @@
 .lp-salar-meta {
   font-size: 10px;
   color: #78716c;
-}
-.dark .lp-salar-marker .lp-salar-card {
-  background: rgba(23, 23, 23, 0.85);
-  border-color: #57534e;
-}
-.dark .lp-salar-marker .lp-salar-dot {
-  box-shadow: 0 0 0 2px #171717;
-}
-.dark .lp-salar-name {
-  color: #d6d3d1;
-}
-.dark .lp-salar-meta {
-  color: #a8a29e;
 }
 
 /* Export ports (visible with the routes layer). */
@@ -442,18 +375,6 @@
   display: block;
   font-size: 10px;
   color: #57534e;
-}
-.dark .lp-port-card {
-  background: rgba(23, 23, 23, 0.95);
-}
-.dark .lp-port-name {
-  color: #fafafa;
-}
-.dark .lp-port-meta {
-  color: #a3a3a3;
-}
-.dark .lp-port-icon {
-  box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.9);
 }
 .lp-port-marker--west {
   flex-direction: row-reverse;
