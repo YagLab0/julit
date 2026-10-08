@@ -2,29 +2,29 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { ellipsify } from "../../lib/explorer";
 import { originName } from "../../lib/origins";
 import type { LotStatus } from "../../explorer/data/lots";
-import {
-  StatusBadge,
-  bagCount,
-  decimalFmt,
-  integerFmt,
-} from "../../explorer/components/lot-display";
+import { StatusBadge, bagCount } from "../../explorer/components/lot-display";
 import type { ProducerLot } from "../account-data";
+import type { AcquiredLot, DesignatedLot } from "../account-client";
+import { useAccountDict } from "../i18n/context";
+import { t } from "../i18n";
+
+function ModelLoading() {
+  const dict = useAccountDict();
+  return (
+    <div className="grid h-full w-full animate-pulse place-items-center text-xs text-muted">
+      {dict.lotCard.loading3d}
+    </div>
+  );
+}
 
 // R3F touches WebGL: client-only, never prerendered.
 const LotModel = dynamic(
   () => import("../../explorer/components/lot-model").then((m) => m.LotModel),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid h-full w-full animate-pulse place-items-center text-xs text-muted">
-        Cargando 3D…
-      </div>
-    ),
-  }
+  { ssr: false, loading: ModelLoading }
 );
 
 function MiniStat({ label, value }: { label: string; value: string }) {
@@ -40,16 +40,36 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Producer lot tile: 3D pallet on top (same model as the explorer mine
- *  detail), headline price, purity bar and quick stats below. */
+/** Lot tile: 3D pallet on top (same model as the explorer mine
+ *  detail), headline price, purity bar and quick stats below. The footer
+ *  names the counterparty: the buyer for producers, the producer for buyers. */
 export function LotGridCard({
   lot,
   index,
 }: {
-  lot: ProducerLot;
+  lot: ProducerLot | DesignatedLot | AcquiredLot;
   index: number;
 }) {
+  const dict = useAccountDict();
+  const [integerFmt, decimalFmt] = useMemo(
+    () => [
+      new Intl.NumberFormat(dict.numLocale, { maximumFractionDigits: 0 }),
+      new Intl.NumberFormat(dict.numLocale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    ],
+    [dict.numLocale]
+  );
   const purity = Math.min(100, Math.max(0, lot.purity_pct));
+  const counterparty =
+    "producer_wallet" in lot
+      ? t(dict.lotCard.counterpartyProducer, {
+          name: lot.producer_name ?? ellipsify(lot.producer_wallet, 4),
+        })
+      : t(dict.lotCard.counterpartyBuyer, {
+          wallet: ellipsify(lot.buyer_wallet, 4),
+        });
 
   return (
     <Link
@@ -60,11 +80,11 @@ export function LotGridCard({
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-b from-secondary via-background to-secondary">
         <LotModel lotId={lot.lot_id} volumeTonnes={lot.volume_tonnes} />
         <div className="pointer-events-none absolute top-3 left-3">
-          <StatusBadge status={lot.status as LotStatus} />
+          <StatusBadge
+            status={lot.status as LotStatus}
+            labels={dict.lotStatus}
+          />
         </div>
-        <span className="pointer-events-none absolute right-3 bottom-2.5 hidden text-[10px] text-muted sm:inline">
-          Arrastrá para rotar
-        </span>
       </div>
 
       <div className="px-2 pt-3.5 pb-1.5">
@@ -94,22 +114,23 @@ export function LotGridCard({
 
         <div className="mt-3 grid grid-cols-3 gap-2">
           <MiniStat
-            label="Volumen"
+            label={dict.lotCard.volume}
             value={`${integerFmt.format(lot.volume_tonnes)} t`}
           />
           <MiniStat
-            label="Big bags"
+            label={dict.lotCard.bigBags}
             value={integerFmt.format(bagCount(lot.volume_tonnes))}
           />
-          <MiniStat label="Pureza" value={`${decimalFmt.format(purity)}%`} />
+          <MiniStat
+            label={dict.lotCard.purity}
+            value={`${decimalFmt.format(purity)}%`}
+          />
         </div>
 
         <div className="mt-3 flex items-center justify-between border-t border-border-low pt-2.5 text-[11px]">
-          <span className="truncate text-muted">
-            Comprador {ellipsify(lot.buyer_wallet, 4)}
-          </span>
+          <span className="truncate text-muted">{counterparty}</span>
           <span className="shrink-0 font-semibold text-brand-700 dark:text-brand-400">
-            Detalle →
+            {dict.lotCard.detail}
           </span>
         </div>
       </div>

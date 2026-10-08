@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ThemeToggle } from "../../components/theme-toggle";
 
 /**
  * Unknown or malformed PDA: an explicit dead end with the way back to the
@@ -7,12 +6,11 @@ import { ThemeToggle } from "../../components/theme-toggle";
  */
 export default function PassportNotFound() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-6 py-4">
+    <div className="light min-h-screen bg-background text-foreground">
+      <header className="mx-auto max-w-2xl px-6 py-4">
         <Link href="/explorer" className="text-sm font-bold tracking-tight">
           JuLit
         </Link>
-        <ThemeToggle />
       </header>
 
       <main className="mx-auto max-w-2xl px-6 pb-16">

@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { createClient } from "../lib/supabase/client";
 import { inputClass, labelClass } from "../components/form-styles";
+import type { AccountDict } from "../account/i18n";
 
-export function SignInForm() {
+type SignInDict = AccountDict["signIn"];
+
+export function SignInForm({ dict }: { dict: SignInDict }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("");
@@ -28,10 +31,10 @@ export function SignInForm() {
     if (signInError) {
       setError(
         signInError.message === "Invalid login credentials"
-          ? "Email o contraseña incorrectos."
+          ? dict.badCredentials
           : signInError.message === "Email not confirmed"
-            ? "Confirmá tu correo electrónico antes de ingresar."
-            : "No se pudo iniciar sesión. Intentá de nuevo."
+            ? dict.confirmEmail
+            : dict.genericError
       );
       setBusy(false);
       return;
@@ -59,7 +62,7 @@ export function SignInForm() {
       </div>
       <div>
         <label htmlFor="password" className={labelClass}>
-          Contraseña
+          {dict.password}
         </label>
         <input
           id="password"
@@ -77,7 +80,7 @@ export function SignInForm() {
         </p>
       )}
       <button type="submit" disabled={busy} className="btn-primary w-full">
-        {busy ? "Ingresando…" : "Ingresar"}
+        {busy ? dict.submitting : dict.submit}
       </button>
       {/* Sign-up removed: accounts are provisioned, not self-registered.
       <p className="text-center text-xs text-muted">

@@ -80,14 +80,21 @@ const STATUS_CLASSES: Record<LotStatus, { pill: string; dot: string }> = {
   },
 };
 
-export function StatusBadge({ status }: { status: LotStatus }) {
+export function StatusBadge({
+  status,
+  labels = STATUS_LABELS,
+}: {
+  status: LotStatus;
+  /** Localized label set; the account passes its dictionary copy. */
+  labels?: Record<LotStatus, string>;
+}) {
   const classes = STATUS_CLASSES[status];
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${classes.pill}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${classes.dot}`} />
-      {STATUS_LABELS[status]}
+      {labels[status]}
     </span>
   );
 }

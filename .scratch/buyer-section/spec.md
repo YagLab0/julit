@@ -93,7 +93,7 @@ the existing verified endpoints. No program, IDL, API, or schema changes.
   `producer_wallet`; fall back to the ellipsified wallet.
 - **Action availability seam**: one new pure module maps
   `(lot status, connected wallet vs lot.buyer_wallet, dUSDC balance,
-  now vs claimable_after)` → available actions with labels, disabled
+now vs claimable_after)` → available actions with labels, disabled
   reasons, and required confirmations. UI renders its verdict; all policy
   lives there.
 - **Instruction building** via the generated Codama client:

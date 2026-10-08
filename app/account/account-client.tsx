@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { getBase58Decoder } from "@solana/kit";
 import { toast } from "sonner";
-import { COMPANY_TYPE_LABELS, type CompanyType } from "../lib/company";
+import type { CompanyType } from "../lib/company";
 import { originName } from "../lib/origins";
 import { ellipsify, getExplorerUrl } from "../lib/explorer";
 import { useWallet } from "../lib/wallet/context";
@@ -15,6 +15,8 @@ import { useCluster } from "../components/cluster-context";
 import { WalletButton } from "../components/wallet-button";
 import { StatusBadge } from "../explorer/components/lot-display";
 import { buildContractAgreementMessage } from "../lib/contracts";
+import { useAccountDict } from "./i18n/context";
+import { t } from "./i18n";
 import type { AccountContract } from "./account-data";
 
 export type AccountCompany = {
@@ -58,12 +60,6 @@ export type DesignatedLot = AccountLot & {
 /** A settled lot: redeemed by the buyer or claimed by the producer. */
 export type AcquiredLot = AccountLot & {
   status: "redeemed" | "claimed";
-};
-
-const CONTRACT_STATUS_LABELS: Record<string, string> = {
-  pending: "Pendiente",
-  accepted: "Aceptado",
-  revoked: "Rechazado",
 };
 
 const CONTRACT_STATUS_STYLES: Record<string, string> = {
@@ -151,6 +147,7 @@ export function BuyerPortfolioCard({
   className?: string;
 }) {
   const { cluster } = useCluster();
+  const dict = useAccountDict();
   const totalVolume = lots.reduce(
     (sum, b) => sum + Number(b.volume_tonnes || 0),
     0
@@ -161,44 +158,39 @@ export function BuyerPortfolioCard({
     <section className={`${CARD} ${className ?? ""}`}>
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">
-            Portafolio de Lotes Adquiridos
-          </h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Historial de lotes liquidados o cobrados por la productora en escrow
-            Devnet.
-          </p>
+          <h2 className="text-sm font-semibold">{dict.portfolio.eyebrow}</h2>
+          <p className="mt-0.5 text-xs text-muted">{dict.portfolio.sub}</p>
         </div>
         <span className="rounded-full bg-secondary px-3 py-1 font-mono text-xs text-muted">
-          {lots.length} {lots.length === 1 ? "lote" : "lotes"}
+          {lots.length} {lots.length === 1 ? dict.common.lot : dict.common.lots}
         </span>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl bg-secondary p-3">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-            Volumen total
+            {dict.portfolio.volumeLabel}
           </p>
           <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
-            {totalVolume.toLocaleString("es-AR")}{" "}
+            {totalVolume.toLocaleString(dict.numLocale)}{" "}
             <span className="text-xs font-normal text-muted">t</span>
           </p>
         </div>
         <div className="rounded-2xl bg-secondary p-3">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-            Inversión total
+            {dict.portfolio.investedLabel}
           </p>
           <p className="mt-1 font-mono text-lg font-bold tabular-nums text-foreground">
-            {totalUsdc.toLocaleString("es-AR")}{" "}
+            {totalUsdc.toLocaleString(dict.numLocale)}{" "}
             <span className="text-xs font-normal text-muted">dUSDC</span>
           </p>
         </div>
         <div className="col-span-2 rounded-2xl bg-secondary p-3 sm:col-span-1">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
-            Liquidación
+            {dict.portfolio.settlementLabel}
           </p>
           <p className="mt-1 text-xs font-semibold text-brand-700 dark:text-brand-400">
-            Escrow DvP en Devnet
+            {dict.portfolio.settlementValue}
           </p>
         </div>
       </div>
@@ -206,14 +198,14 @@ export function BuyerPortfolioCard({
       {lots.length === 0 ? (
         <EmptyState
           icon={EMPTY_ICONS.lots}
-          title="Todavía no tenés lotes adquiridos"
-          body="Navegá el catálogo: los lotes publicados que te designen compradora se fondean con escrow."
+          title={dict.portfolio.emptyTitle}
+          body={dict.portfolio.emptyBody}
           action={
             <Link
               href="/account/catalogo"
               className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition hover:opacity-90"
             >
-              Ir al catálogo
+              {dict.portfolio.emptyAction}
             </Link>
           }
         />
@@ -229,12 +221,13 @@ export function BuyerPortfolioCard({
                   <span className="font-mono text-xs font-bold text-foreground">
                     {lot.lot_id}
                   </span>
-                  <StatusBadge status={lot.status} />
+                  <StatusBadge status={lot.status} labels={dict.lotStatus} />
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
                   {lot.producer_name ?? ellipsify(lot.producer_wallet, 6)} ·{" "}
                   {lot.volume_tonnes} t · {Number(lot.purity_pct).toFixed(2)} %
-                  Li₂CO₃ · Origen: {originName(lot.origin_id)}
+                  Li₂CO₃ · {dict.portfolio.rowOrigin}:{" "}
+                  {originName(lot.origin_id)}
                 </p>
               </div>
 
@@ -243,7 +236,7 @@ export function BuyerPortfolioCard({
                   href={`/batch/${lot.pda_address || lot.lot_id}`}
                   className="btn-secondary rounded-full text-xs px-3 py-1.5"
                 >
-                  Ver Pasaporte
+                  {dict.common.viewPassport}
                 </Link>
                 {(lot.redeem_tx_signature ?? lot.claim_tx_signature) && (
                   <a
@@ -278,6 +271,7 @@ export function BuyerContractsCard({
   const { wallet, signMessage } = useWallet();
   const { send: sendTransaction } = useSendTransaction();
   const { cluster } = useCluster();
+  const dict = useAccountDict();
   const [showModal, setShowModal] = useState(false);
   const [producers, setProducers] = useState<
     Array<{
@@ -304,19 +298,19 @@ export function BuyerContractsCard({
         }
       }
     } catch {
-      toast.error("Error al cargar las productoras disponibles.");
+      toast.error(dict.buyerContracts.producersError);
     }
   }
 
   async function handleCreateContract() {
     const producer = producers.find((p) => p.id === selectedProducerId);
     if (!producer) {
-      toast.error("Seleccioná una empresa productora.");
+      toast.error(dict.buyerContracts.selectError);
       return;
     }
     if (!wallet) {
-      toast.warning("Billetera no disponible", {
-        description: "Conectá tu billetera para solicitar el contrato.",
+      toast.warning(dict.buyerContracts.walletUnavailable, {
+        description: dict.buyerContracts.walletUnavailableDesc,
       });
       return;
     }
@@ -364,22 +358,24 @@ export function BuyerContractsCard({
 
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        toast.error(err?.error ?? "No se pudo registrar la solicitud.");
+        toast.error(err?.error ?? dict.buyerContracts.requestError);
         return;
       }
 
       if (isOnChain) {
         const explorerUrl = getExplorerUrl(`/tx/${signature}`, cluster);
-        toast.success("Solicitud registrada en la blockchain de Solana", {
-          description: "La transacción fue confirmada en Solana Devnet.",
+        toast.success(dict.buyerContracts.registered, {
+          description: dict.buyerContracts.registeredDesc,
           action: {
-            label: "Ver en Explorer",
+            label: dict.common.explorerView,
             onClick: () => window.open(explorerUrl, "_blank"),
           },
         });
       } else {
-        toast.success("Solicitud enviada", {
-          description: `Acuerdo solicitado a ${producer.name}.`,
+        toast.success(dict.buyerContracts.requestSent, {
+          description: t(dict.buyerContracts.requestSentDesc, {
+            name: producer.name,
+          }),
         });
       }
 
@@ -388,9 +384,9 @@ export function BuyerContractsCard({
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/reject|cancel|denied/i.test(msg)) {
-        toast.info("Transacción cancelada");
+        toast.info(dict.buyerContracts.txCancelled);
       } else {
-        toast.error("Error al registrar la solicitud.");
+        toast.error(dict.buyerContracts.registerError);
       }
     } finally {
       setRequesting(false);
@@ -409,7 +405,7 @@ export function BuyerContractsCard({
         const err = (await res.json().catch(() => null)) as {
           error?: string;
         } | null;
-        toast.error(err?.error ?? "No se pudo responder el contrato.");
+        toast.error(err?.error ?? dict.buyerContracts.respondError);
         return;
       }
       router.refresh();
@@ -427,30 +423,26 @@ export function BuyerContractsCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">
-            Contratos comerciales de suministro
+            {dict.buyerContracts.eyebrow}
           </h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Acuerdos bilaterales con productoras mineras para reservar y
-            adquirir lotes.
-          </p>
+          <p className="mt-0.5 text-xs text-muted">{dict.buyerContracts.sub}</p>
         </div>
         <button
           type="button"
           onClick={() => void openRequestModal()}
           className="btn-secondary rounded-full text-xs px-4 py-1.5 cursor-pointer"
         >
-          + Solicitar contrato
+          {dict.buyerContracts.request}
         </button>
       </div>
 
       {showModal && (
         <div className="mt-4 rounded-2xl bg-brand-50 dark:bg-brand-950/40 p-4">
           <p className="text-xs font-semibold text-foreground">
-            Nueva solicitud de contrato de suministro
+            {dict.buyerContracts.modalTitle}
           </p>
           <p className="mt-0.5 text-[11px] text-muted">
-            Al solicitar el contrato firmarás criptográficamente con tu
-            billetera verificada.
+            {dict.buyerContracts.modalBody}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <select
@@ -472,8 +464,8 @@ export function BuyerContractsCard({
               className="btn-primary rounded-full text-xs px-4 py-2 cursor-pointer"
             >
               {requesting
-                ? "Firmando solicitud…"
-                : "Firmar y solicitar con wallet"}
+                ? dict.buyerContracts.signing
+                : dict.buyerContracts.signAndRequest}
             </button>
 
             <button
@@ -481,7 +473,7 @@ export function BuyerContractsCard({
               onClick={() => setShowModal(false)}
               className="btn-secondary rounded-full text-xs px-4 py-2 cursor-pointer"
             >
-              Cancelar
+              {dict.common.cancel}
             </button>
           </div>
         </div>
@@ -496,7 +488,9 @@ export function BuyerContractsCard({
             >
               <p className="text-xs">
                 <span className="font-medium">{c.producer?.name}</span>{" "}
-                <span className="text-muted">te ofrece un contrato</span>
+                <span className="text-muted">
+                  {dict.buyerContracts.incomingOffer}
+                </span>
               </p>
               <div className="flex gap-2">
                 <button
@@ -505,7 +499,7 @@ export function BuyerContractsCard({
                   disabled={respondingId !== null}
                   className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background"
                 >
-                  Aceptar
+                  {dict.buyerContracts.accept}
                 </button>
                 <button
                   type="button"
@@ -513,7 +507,7 @@ export function BuyerContractsCard({
                   disabled={respondingId !== null}
                   className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted"
                 >
-                  Rechazar
+                  {dict.buyerContracts.reject}
                 </button>
               </div>
             </div>
@@ -525,15 +519,15 @@ export function BuyerContractsCard({
         {contracts.length === 0 ? (
           <EmptyState
             icon={EMPTY_ICONS.contract}
-            title="Todavía no tenés contratos"
-            body="Solicitá un acuerdo de suministro a una productora para empezar a reservar lotes."
+            title={dict.buyerContracts.emptyTitle}
+            body={dict.buyerContracts.emptyBody}
             action={
               <button
                 type="button"
                 onClick={() => void openRequestModal()}
                 className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition hover:opacity-90"
               >
-                Solicitar contrato
+                {dict.buyerContracts.emptyAction}
               </button>
             }
             secondaryAction={
@@ -541,7 +535,7 @@ export function BuyerContractsCard({
                 href="/account/catalogo"
                 className="rounded-full border border-border px-4 py-2 text-xs font-medium text-foreground transition hover:bg-accent"
               >
-                Ver catálogo
+                {dict.buyerContracts.emptySecondary}
               </Link>
             }
           />
@@ -555,7 +549,7 @@ export function BuyerContractsCard({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground">
-                      {c.producer?.name ?? "Productor"}
+                      {c.producer?.name ?? dict.buyerContracts.producerFallback}
                     </span>
                     {c.producer?.origin_id && (
                       <span className="text-[11px] text-muted">
@@ -564,12 +558,12 @@ export function BuyerContractsCard({
                     )}
                   </div>
                   <p className="mt-1 font-mono text-[11px] text-muted">
-                    Wallet productora:{" "}
+                    {dict.buyerContracts.producerWallet}{" "}
                     {ellipsify(c.producer?.wallet_address ?? "", 6)}
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted font-mono">
                     <span className="flex items-center gap-1.5">
-                      Firma iniciador:{" "}
+                      {dict.buyerContracts.initiatorSig}{" "}
                       {c.initiator_signature ? (
                         <>
                           <span>{ellipsify(c.initiator_signature, 8)}</span>
@@ -591,7 +585,7 @@ export function BuyerContractsCard({
                     </span>
                     {c.counterparty_signature && (
                       <span className="flex items-center gap-1.5">
-                        Aceptación:{" "}
+                        {dict.buyerContracts.acceptance}{" "}
                         <span>{ellipsify(c.counterparty_signature, 8)}</span>
                         <a
                           href={getExplorerUrl(
@@ -612,7 +606,7 @@ export function BuyerContractsCard({
                 <span
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${CONTRACT_STATUS_STYLES[c.status]}`}
                 >
-                  {CONTRACT_STATUS_LABELS[c.status]}
+                  {dict.contractStatus[c.status]}
                 </span>
               </li>
             ))}
@@ -633,6 +627,7 @@ export function ContractsCard({
   className?: string;
 }) {
   const router = useRouter();
+  const dict = useAccountDict();
   const [counterpartyId, setCounterpartyId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -651,7 +646,7 @@ export function ContractsCard({
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
       } | null;
-      setError(payload?.error ?? "No se pudo ofrecer el contrato.");
+      setError(payload?.error ?? dict.contracts.error);
       setBusy(false);
       return;
     }
@@ -663,10 +658,9 @@ export function ContractsCard({
 
   return (
     <section className={`${CARD} ${className ?? ""}`}>
-      <h2 className="text-sm font-semibold">Contratos comerciales</h2>
+      <h2 className="text-sm font-semibold">{dict.contracts.eyebrow}</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Ofrecé un contrato a una compradora para habilitarla como cliente de tus
-        lotes.
+        {dict.contracts.sub}
       </p>
 
       <form
@@ -680,10 +674,10 @@ export function ContractsCard({
           value={counterpartyId}
           onChange={(e) => setCounterpartyId(e.target.value)}
           disabled={busy}
-          aria-label="Compradora"
+          aria-label={dict.contracts.selectAria}
           className="rounded-full border border-border bg-card px-4 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
         >
-          <option value="">Elegir compradora…</option>
+          <option value="">{dict.contracts.selectPlaceholder}</option>
           {directory.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -695,7 +689,7 @@ export function ContractsCard({
           disabled={busy || !counterpartyId}
           className="btn-primary rounded-full px-4"
         >
-          {busy ? "Enviando…" : "Ofrecer contrato"}
+          {busy ? dict.contracts.sending : dict.contracts.offer}
         </button>
       </form>
 
@@ -711,20 +705,17 @@ export function ContractsCard({
                 <p className="text-xs">
                   <span className="font-medium">{other?.name}</span>{" "}
                   <span className="text-muted">
-                    (
-                    {COMPANY_TYPE_LABELS[
-                      other?.company_type ?? "buyer"
-                    ].toLowerCase()}
+                    ({dict.roles[other?.company_type ?? "buyer"].toLowerCase()}
                     {c.posture === "responder"
-                      ? " · oferta recibida"
-                      : " · oferta enviada"}
+                      ? ` · ${dict.contracts.postureReceived}`
+                      : ` · ${dict.contracts.postureSent}`}
                     )
                   </span>
                 </p>
                 <span
                   className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${CONTRACT_STATUS_STYLES[c.status]}`}
                 >
-                  {CONTRACT_STATUS_LABELS[c.status]}
+                  {dict.contractStatus[c.status]}
                 </span>
               </li>
             );
@@ -735,8 +726,8 @@ export function ContractsCard({
       {contracts.length === 0 && (
         <EmptyState
           icon={EMPTY_ICONS.contract}
-          title="Todavía no hay contratos"
-          body="Ofrecé un contrato a una compradora desde el formulario para habilitarla como cliente de tus lotes."
+          title={dict.contracts.emptyTitle}
+          body={dict.contracts.emptyBody}
         />
       )}
 
@@ -757,6 +748,7 @@ export function BuyerOffersCard({
   className?: string;
 }) {
   const router = useRouter();
+  const dict = useAccountDict();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -773,7 +765,7 @@ export function BuyerOffersCard({
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
       } | null;
-      setError(payload?.error ?? "No se pudo responder el contrato.");
+      setError(payload?.error ?? dict.offers.error);
       setBusy(false);
       return;
     }
@@ -788,17 +780,16 @@ export function BuyerOffersCard({
 
   return (
     <section className={`${CARD} ${className ?? ""}`}>
-      <h2 className="text-sm font-semibold">Ofertas de compradoras</h2>
+      <h2 className="text-sm font-semibold">{dict.offers.eyebrow}</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Las compradoras te ofrecen contratos para reservar tus lotes. Aceptalas
-        para habilitarlas como clientes.
+        {dict.offers.sub}
       </p>
 
       {pending.length === 0 ? (
         <EmptyState
           icon={EMPTY_ICONS.offers}
-          title="Sin ofertas pendientes"
-          body="Cuando una compradora te ofrezca un contrato para reservar tus lotes, va a aparecer acá."
+          title={dict.offers.emptyTitle}
+          body={dict.offers.emptyBody}
         />
       ) : (
         <div className="mt-4 space-y-2">
@@ -809,7 +800,7 @@ export function BuyerOffersCard({
             >
               <p className="text-xs">
                 <span className="font-medium">{c.counterparty?.name}</span>{" "}
-                <span className="text-muted">quiere comprar tu producción</span>
+                <span className="text-muted">{dict.offers.wantsToBuy}</span>
               </p>
               <div className="flex gap-2">
                 <button
@@ -818,7 +809,7 @@ export function BuyerOffersCard({
                   disabled={busy}
                   className="rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background"
                 >
-                  Aceptar
+                  {dict.offers.accept}
                 </button>
                 <button
                   type="button"
@@ -826,7 +817,7 @@ export function BuyerOffersCard({
                   disabled={busy}
                   className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted"
                 >
-                  Rechazar
+                  {dict.offers.reject}
                 </button>
               </div>
             </div>
@@ -855,6 +846,7 @@ export function WalletCard({
   const { wallet, signMessage } = useWallet();
   const { cluster } = useCluster();
   const router = useRouter();
+  const dict = useAccountDict();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -877,9 +869,7 @@ export function WalletCard({
       } | null;
 
       if (!challengeResponse.ok || !challenge?.message || !challenge.nonce) {
-        throw new Error(
-          challenge?.error ?? "No se pudo iniciar la vinculación."
-        );
+        throw new Error(challenge?.error ?? dict.walletCard.startError);
       }
 
       const signature = await signMessage(
@@ -901,7 +891,7 @@ export function WalletCard({
       } | null;
 
       if (!linkResponse.ok) {
-        throw new Error(linked?.error ?? "No se pudo vincular la wallet.");
+        throw new Error(linked?.error ?? dict.walletCard.linkError);
       }
 
       router.refresh();
@@ -909,8 +899,8 @@ export function WalletCard({
       const message = err instanceof Error ? err.message : "";
       setError(
         /reject|cancel|denied/i.test(message)
-          ? "Cancelaste la firma."
-          : message || "No se pudo vincular la wallet."
+          ? dict.common.cancelled
+          : message || dict.walletCard.linkError
       );
       setBusy(false);
       return;
@@ -922,14 +912,14 @@ export function WalletCard({
   return (
     <section className={`${CARD} ${className ?? ""}`}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Wallet</h2>
+        <h2 className="text-sm font-semibold">{dict.walletCard.eyebrow}</h2>
         {walletAddress ? (
           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-            Verificada
+            {dict.walletCard.verified}
           </span>
         ) : (
           <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
-            Pendiente
+            {dict.walletCard.pending}
           </span>
         )}
       </div>
@@ -937,7 +927,7 @@ export function WalletCard({
       {walletAddress ? (
         <div className="mt-2 space-y-2">
           <p className="text-xs leading-relaxed text-muted">
-            Wallet verificada. Queda fija como la wallet de tu empresa.
+            {dict.walletCard.verifiedBody}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="rounded-full bg-secondary px-3 py-1 text-xs text-foreground">
@@ -949,35 +939,36 @@ export function WalletCard({
               rel="noreferrer"
               className="text-xs font-medium text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
             >
-              Ver en Explorer
+              {dict.walletCard.viewInExplorer}
             </a>
           </div>
           {walletVerifiedAt && (
             <p className="text-xs text-muted">
-              Verificada el{" "}
-              {new Date(walletVerifiedAt).toLocaleDateString("es-AR", {
-                dateStyle: "long",
+              {t(dict.walletCard.verifiedAt, {
+                date: new Date(walletVerifiedAt).toLocaleDateString(
+                  dict.numLocale,
+                  { dateStyle: "long" }
+                ),
               })}
             </p>
           )}
           {wallet && wallet.account.address !== walletAddress && (
             <p className="text-xs text-amber-700 dark:text-amber-400">
-              La wallet conectada ({ellipsify(wallet.account.address, 6)}) no es
-              la verificada.
+              {t(dict.walletCard.wrongWallet, {
+                connected: ellipsify(wallet.account.address, 6),
+              })}
             </p>
           )}
         </div>
       ) : (
         <div className="mt-2 space-y-3">
           <p className="text-xs leading-relaxed text-muted">
-            Firmá un mensaje con la wallet de tu empresa para probar que te
-            pertenece. La verificación es única y no se puede cambiar.
+            {dict.walletCard.linkBody}
           </p>
           {!wallet && <WalletButton />}
           {wallet && !signMessage && (
             <p className="text-xs text-amber-700 dark:text-amber-400">
-              Esta wallet no permite firmar mensajes. Probá con Phantom o
-              Solflare.
+              {dict.walletCard.unsupportedWallet}
             </p>
           )}
           {wallet && signMessage && (
@@ -987,7 +978,7 @@ export function WalletCard({
               disabled={busy}
               className="btn-primary rounded-full px-4"
             >
-              {busy ? "Esperando la firma…" : "Firmar y vincular wallet"}
+              {busy ? dict.walletCard.waiting : dict.walletCard.signAndLink}
             </button>
           )}
           {error && (

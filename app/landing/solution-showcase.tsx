@@ -12,7 +12,15 @@ type ShowcaseSlide = {
   mock: ReactNode;
 };
 
-export function SolutionShowcase({ slides }: { slides: ShowcaseSlide[] }) {
+export function SolutionShowcase({
+  slides,
+  problemLabel,
+  slidesLabel,
+}: {
+  slides: ShowcaseSlide[];
+  problemLabel: string;
+  slidesLabel: string;
+}) {
   const [active, setActive] = useState(0);
   const slide = slides[active];
 
@@ -36,7 +44,7 @@ export function SolutionShowcase({ slides }: { slides: ShowcaseSlide[] }) {
         <div
           className={styles.tabCol}
           role="tablist"
-          aria-label="Propuestas JuLit"
+          aria-label={slidesLabel}
           onKeyDown={onKeyDown}
         >
           {slides.map((item, index) => (
@@ -62,7 +70,7 @@ export function SolutionShowcase({ slides }: { slides: ShowcaseSlide[] }) {
           aria-labelledby={`solucion-tab-${active}`}
         >
           <span className={styles.captionProblem}>
-            El problema — {slide.problem}
+            {problemLabel} — {slide.problem}
           </span>
           <p>
             <strong>{slide.title}.</strong> {slide.solution}

@@ -5,6 +5,8 @@ import { useCluster } from "../components/cluster-context";
 import { useBalance } from "../lib/hooks/use-balance";
 import { lamportsToSolString } from "../lib/lamports";
 import { ellipsify, getExplorerUrl } from "../lib/explorer";
+import { useAccountDict } from "./i18n/context";
+import { t } from "./i18n";
 
 export function WalletHero({
   walletAddress,
@@ -17,11 +19,14 @@ export function WalletHero({
 }) {
   const { cluster } = useCluster();
   const balance = useBalance(address(walletAddress));
+  const dict = useAccountDict();
 
   const clusterLabel =
     cluster === "localnet"
-      ? "Localnet"
-      : `Solana ${cluster[0].toUpperCase()}${cluster.slice(1)}`;
+      ? dict.walletHero.localnet
+      : t(dict.walletHero.clusterFallback, {
+          cluster: `${cluster[0].toUpperCase()}${cluster.slice(1)}`,
+        });
 
   return (
     <section
@@ -29,13 +34,15 @@ export function WalletHero({
     >
       <div className="flex items-center justify-between">
         <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-[11px] font-semibold">
-          {walletVerifiedAt ? "Wallet verificada" : "Wallet registrada"}
+          {walletVerifiedAt
+            ? dict.walletHero.verified
+            : dict.walletHero.registered}
         </span>
         <a
           href={getExplorerUrl(`/address/${walletAddress}`, cluster)}
           target="_blank"
           rel="noreferrer"
-          aria-label="Ver la wallet en el Explorer"
+          aria-label={dict.walletHero.explorerAria}
           className="grid size-8 place-items-center rounded-full bg-primary-foreground/15 transition hover:bg-primary-foreground/25"
         >
           ↗
@@ -52,20 +59,22 @@ export function WalletHero({
 
       <div className="mt-auto grid grid-cols-3 gap-3 border-t border-primary-foreground/15 pt-4 text-[11px]">
         <div>
-          <p className="opacity-70">Red</p>
+          <p className="opacity-70">{dict.walletHero.network}</p>
           <p className="mt-0.5 font-semibold">{clusterLabel}</p>
         </div>
         <div>
-          <p className="opacity-70">Estado</p>
+          <p className="opacity-70">{dict.walletHero.state}</p>
           <p className="mt-0.5 font-semibold">
-            {walletVerifiedAt ? "Verificada" : "Registrada"}
+            {walletVerifiedAt
+              ? dict.walletHero.stateVerified
+              : dict.walletHero.stateRegistered}
           </p>
         </div>
         <div>
-          <p className="opacity-70">Desde</p>
+          <p className="opacity-70">{dict.walletHero.since}</p>
           <p className="mt-0.5 font-semibold">
             {walletVerifiedAt
-              ? new Date(walletVerifiedAt).toLocaleDateString("es-AR", {
+              ? new Date(walletVerifiedAt).toLocaleDateString(dict.numLocale, {
                   day: "numeric",
                   month: "short",
                 })

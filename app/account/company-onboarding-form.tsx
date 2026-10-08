@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { CompanyFields } from "../components/company-fields";
 import type { CompanyType } from "../lib/company";
+import { useAccountDict } from "./i18n/context";
 
 export function CompanyOnboardingForm() {
   const router = useRouter();
+  const dict = useAccountDict();
   const [name, setName] = useState("");
   const [companyType, setCompanyType] = useState<CompanyType>("buyer");
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +29,7 @@ export function CompanyOnboardingForm() {
       const payload = (await response.json().catch(() => null)) as {
         error?: string;
       } | null;
-      setError(
-        payload?.error ?? "No se pudo registrar la empresa. Intentá de nuevo."
-      );
+      setError(payload?.error ?? dict.onboarding.error);
       setBusy(false);
       return;
     }
@@ -40,11 +40,10 @@ export function CompanyOnboardingForm() {
   return (
     <section className="rounded-3xl bg-card p-8">
       <h1 className="text-lg font-semibold tracking-tight">
-        Completá el perfil de tu empresa
+        {dict.onboarding.title}
       </h1>
       <p className="mt-1 text-xs leading-relaxed text-muted">
-        Tu cuenta todavía no tiene una empresa registrada. El tipo queda fijo
-        cuando vincules la wallet.
+        {dict.onboarding.body}
       </p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <CompanyFields
@@ -63,7 +62,7 @@ export function CompanyOnboardingForm() {
           disabled={busy}
           className="btn-primary w-full rounded-full py-2.5"
         >
-          {busy ? "Registrando…" : "Registrar empresa"}
+          {busy ? dict.onboarding.submitting : dict.onboarding.submit}
         </button>
       </form>
     </section>

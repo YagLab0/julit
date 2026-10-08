@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Dark applies everywhere except subtrees pinned light with `.light`
+   (the public passport shares its chrome with dark-mode surfaces). */
+@custom-variant dark (
+  &:where(.dark, .dark *):not(:where(.light, .light *))
+);
 
-:root {
+:root,
+.light {
   --background: #ffffff;
   --foreground: #0a0a0a;
   /* Primary action color = brand. Change --color-brand-* below (and the

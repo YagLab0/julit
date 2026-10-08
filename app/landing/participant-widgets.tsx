@@ -1,4 +1,8 @@
 import styles from "./participant-widgets.module.css";
+import type { LandingDict } from "./i18n";
+
+type ProducerDict = LandingDict["participants"]["producer"]["widget"];
+type BuyerDict = LandingDict["participants"]["buyer"]["widget"];
 
 function Skeleton({ w }: { w: number }) {
   return <span className={styles.skel} style={{ width: w }} />;
@@ -32,15 +36,13 @@ function BeamSvg({ className }: { className: string }) {
   );
 }
 
-const producerSources = ["Origen", "Cert. de planta", "Lote 0042"];
-
-export function ProducerStructureWidget() {
+export function ProducerStructureWidget({ dict }: { dict: ProducerDict }) {
   return (
     <div className={styles.stage} aria-hidden="true">
       <div className={styles.grid} />
       <div className={styles.beamFlow}>
         <div className={styles.sources}>
-          {producerSources.map((label) => (
+          {dict.sources.map((label) => (
             <div className={styles.sourceCard} key={label}>
               <span className={styles.sourceLabel}>{label}</span>
               <Skeleton w={44} />
@@ -51,12 +53,12 @@ export function ProducerStructureWidget() {
         <BeamSvg className={styles.beams} />
         <div className={styles.hub}>
           <span className={styles.hubDot} />
-          Título digital
+          {dict.hub}
         </div>
         <span className={styles.flowLine} />
         <div className={styles.docCard}>
           <div className={styles.docHead}>
-            <span className={styles.docTitle}>Cobro</span>
+            <span className={styles.docTitle}>{dict.docTitle}</span>
             <span className={styles.docChip}>USDC</span>
           </div>
           <Skeleton w={86} />
@@ -68,7 +70,7 @@ export function ProducerStructureWidget() {
   );
 }
 
-export function BuyerReviewWidget() {
+export function BuyerReviewWidget({ dict }: { dict: BuyerDict }) {
   return (
     <div className={styles.stage} aria-hidden="true">
       <div className={styles.grid} />
@@ -79,7 +81,7 @@ export function BuyerReviewWidget() {
               <rect width="20" height="14" x="2" y="5" rx="2" />
               <line x1="2" x2="22" y1="10" y2="10" />
             </svg>
-            <span>Pago</span>
+            <span>{dict.payment}</span>
             <span className={styles.stackMeta}>USDC</span>
           </div>
           <Skeleton w={120} />
@@ -91,8 +93,8 @@ export function BuyerReviewWidget() {
             <path d="m9 12 2 2 4-4" fill="none" />
           </svg>
           <div>
-            <span className={styles.confirmedTitle}>Liquidación</span>
-            <span className={styles.confirmedSub}>confirmada al instante</span>
+            <span className={styles.confirmedTitle}>{dict.confirmedTitle}</span>
+            <span className={styles.confirmedSub}>{dict.confirmedSub}</span>
           </div>
         </div>
         <span className={styles.flowLine} />
@@ -101,8 +103,8 @@ export function BuyerReviewWidget() {
             <svg viewBox="0 0 24 24" className={styles.stackIcon}>
               <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
             </svg>
-            <span>Título</span>
-            <span className={styles.stackMeta}>único</span>
+            <span>{dict.title}</span>
+            <span className={styles.stackMeta}>{dict.titleMeta}</span>
           </div>
           <Skeleton w={110} />
           <Skeleton w={80} />

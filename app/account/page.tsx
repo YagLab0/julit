@@ -9,10 +9,12 @@ import {
 import { DesignatedLotsCard } from "./designated-lots";
 import { WalletHero } from "./wallet-hero";
 import { getAccountContext, type ProducerLot } from "./account-data";
+import { getAccountDict } from "./i18n/server";
+import type { AccountDict } from "./i18n";
 
 export default async function AccountPage() {
-  const { company, lots, designatedLots, producerLots } =
-    await getAccountContext();
+  const [{ company, lots, designatedLots, producerLots }, dict] =
+    await Promise.all([getAccountContext(), getAccountDict()]);
 
   // Layout renders the onboarding form when there is no company yet.
   if (!company) return null;
@@ -23,7 +25,9 @@ export default async function AccountPage() {
     ...designatedLots,
     ...lots,
   ];
-  const stats = isBuyer ? buyerStats(buyerLots) : producerStats(producerLots);
+  const stats = isBuyer
+    ? buyerStats(buyerLots, dict)
+    : producerStats(producerLots, dict);
 
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-6">
@@ -72,23 +76,23 @@ export default async function AccountPage() {
         <>
           <NavCard
             href="/account/lotes"
-            title="Mis lotes"
-            body="Todos los lotes que registraste, con su estado on-chain y comprador designado."
-            linkLabel="Ver lotes"
+            title={dict.summary.nav.lots.title}
+            body={dict.summary.nav.lots.body}
+            linkLabel={dict.summary.nav.lots.linkLabel}
             className="animate-bento-in [--bento-i:5] sm:col-span-2"
           />
           <NavCard
             href="/account/contratos"
-            title="Contratos comerciales"
-            body="Ofrecé un contrato a una compradora para habilitarla como cliente de tus lotes."
-            linkLabel="Ver contratos"
+            title={dict.summary.nav.contracts.title}
+            body={dict.summary.nav.contracts.body}
+            linkLabel={dict.summary.nav.contracts.linkLabel}
             className="animate-bento-in [--bento-i:6] sm:col-span-2"
           />
           <NavCard
             href="/account/ofertas"
-            title="Ofertas de compras"
-            body="Las compradoras te ofrecen contratos para reservar tus lotes."
-            linkLabel="Ver ofertas"
+            title={dict.summary.nav.offers.title}
+            body={dict.summary.nav.offers.body}
+            linkLabel={dict.summary.nav.offers.linkLabel}
             className="animate-bento-in [--bento-i:7] sm:col-span-2"
           />
         </>
@@ -156,9 +160,13 @@ const ICONS = {
   ),
 };
 
-function buyerStats(lots: (DesignatedLot | AcquiredLot)[]): Stat[] {
-  const volume = lots.reduce((s, l) => s + Number(l.volume_tonnes || 0), 0);
-  const usdc = lots.reduce((s, l) => s + Number(l.price_usdc || 0), 0);
+function buyerStats(
+  lots: (DesignatedLot | AcquiredLot)[],
+  dict: AccountDict
+): Stat[] {
+  const s = dict.summary.buyerStats;
+  const volume = lots.reduce((acc, l) => acc + Number(l.volume_tonnes || 0), 0);
+  const usdc = lots.reduce((acc, l) => acc + Number(l.price_usdc || 0), 0);
   const inEscrow = lots.filter(
     (l) => l.status === "funded" || l.status === "disputed"
   ).length;
@@ -166,36 +174,37 @@ function buyerStats(lots: (DesignatedLot | AcquiredLot)[]): Stat[] {
   return [
     {
       icon: ICONS.lots,
-      label: "Lotes",
+      label: s.lotsLabel,
       value: String(lots.length),
-      hint: "designados o adquiridos",
+      hint: s.lotsHint,
     },
     {
       icon: ICONS.volume,
-      label: "Volumen total",
-      value: volume.toLocaleString("es-AR"),
-      unit: "t",
-      hint: "de Li₂CO₃",
+      label: s.volumeLabel,
+      value: volume.toLocaleString(dict.numLocale),
+      unit: s.tonnesUnit,
+      hint: s.volumeHint,
     },
     {
       icon: ICONS.usdc,
-      label: "Inversión",
-      value: usdc.toLocaleString("es-AR"),
-      unit: "USDC",
-      hint: "depositado en escrow",
+      label: s.investedLabel,
+      value: usdc.toLocaleString(dict.numLocale),
+      unit: s.usdcUnit,
+      hint: s.investedHint,
     },
     {
       icon: ICONS.escrow,
-      label: "En escrow",
+      label: s.escrowLabel,
       value: String(inEscrow),
-      hint: "a la espera de entrega",
+      hint: s.escrowHint,
     },
   ];
 }
 
-function producerStats(lots: ProducerLot[]): Stat[] {
-  const volume = lots.reduce((s, l) => s + Number(l.volume_tonnes || 0), 0);
-  const usdc = lots.reduce((s, l) => s + Number(l.price_usdc || 0), 0);
+function producerStats(lots: ProducerLot[], dict: AccountDict): Stat[] {
+  const s = dict.summary.producerStats;
+  const volume = lots.reduce((acc, l) => acc + Number(l.volume_tonnes || 0), 0);
+  const usdc = lots.reduce((acc, l) => acc + Number(l.price_usdc || 0), 0);
   const settled = lots.filter(
     (l) => l.status === "redeemed" || l.status === "claimed"
   ).length;
@@ -203,29 +212,29 @@ function producerStats(lots: ProducerLot[]): Stat[] {
   return [
     {
       icon: ICONS.lots,
-      label: "Lotes registrados",
+      label: s.lotsLabel,
       value: String(lots.length),
-      hint: "en el índice on-chain",
+      hint: s.lotsHint,
     },
     {
       icon: ICONS.volume,
-      label: "Volumen declarado",
-      value: volume.toLocaleString("es-AR"),
-      unit: "t",
-      hint: "de Li₂CO₃",
+      label: s.volumeLabel,
+      value: volume.toLocaleString(dict.numLocale),
+      unit: s.tonnesUnit,
+      hint: s.volumeHint,
     },
     {
       icon: ICONS.usdc,
-      label: "Valor total",
-      value: usdc.toLocaleString("es-AR"),
-      unit: "USDC",
-      hint: "cotización de lotes",
+      label: s.valueLabel,
+      value: usdc.toLocaleString(dict.numLocale),
+      unit: s.usdcUnit,
+      hint: s.valueHint,
     },
     {
       icon: ICONS.escrow,
-      label: "Liquidados",
+      label: s.redeemedLabel,
       value: String(settled),
-      hint: "liquidación confirmada",
+      hint: s.redeemedHint,
     },
   ];
 }

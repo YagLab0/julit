@@ -2,12 +2,12 @@ import Link from "next/link";
 
 export function GateCard({
   body,
+  linkLabel,
   href = "/account",
-  linkLabel = "Ir a mi cuenta",
 }: {
   body: string;
+  linkLabel: string;
   href?: string;
-  linkLabel?: string;
 }) {
   return (
     <div className="mt-8 rounded-3xl bg-card p-8 text-center">

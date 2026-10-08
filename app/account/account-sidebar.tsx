@@ -4,12 +4,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState, type CSSProperties } from "react";
 import { createClient } from "../lib/supabase/client";
-import { COMPANY_TYPE_LABELS, type CompanyType } from "../lib/company";
+import type { CompanyType } from "../lib/company";
+import type { Locale } from "../lib/locale";
 import { JuLitMark } from "../components/julit-logo";
+import { useAccountDict } from "./i18n/context";
+import { LocaleSwitch } from "./i18n/locale-switch";
 
 export function SignOutButton({ className }: { className?: string }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const dict = useAccountDict();
   const [busy, setBusy] = useState(false);
 
   async function signOut() {
@@ -29,7 +33,7 @@ export function SignOutButton({ className }: { className?: string }) {
         "w-full cursor-pointer rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-medium text-muted transition hover:text-foreground disabled:opacity-50"
       }
     >
-      {busy ? "Saliendo…" : "Salir"}
+      {busy ? dict.sidebar.signingOut : dict.sidebar.signOut}
     </button>
   );
 }
@@ -38,23 +42,24 @@ export function AccountSidebar({
   companyName,
   companyType,
   email,
+  locale,
 }: {
   companyName: string;
   companyType: CompanyType;
   email: string;
+  locale: Locale;
 }) {
   const pathname = usePathname();
+  const dict = useAccountDict();
 
   const navItems = [
-    { label: "Resumen", href: "/account" },
-    { label: "Contratos comerciales", href: "/account/contratos" },
+    { label: dict.sidebar.nav.summary, href: "/account" },
+    { label: dict.sidebar.nav.contracts, href: "/account/contratos" },
     ...(companyType === "producer"
-      ? [
-          { label: "Ofertas de compras", href: "/account/ofertas" },
-          { label: "Lotes", href: "/account/lotes" },
-        ]
+      ? [{ label: dict.sidebar.nav.offers, href: "/account/ofertas" }]
       : []),
-    { label: "Catálogo", href: "/account/catalogo" },
+    { label: dict.sidebar.nav.lots, href: "/account/lotes" },
+    { label: dict.sidebar.nav.catalog, href: "/account/catalogo" },
   ];
 
   const initials = companyName
@@ -74,7 +79,7 @@ export function AccountSidebar({
           </span>
         </Link>
 
-        <p className="eyebrow mt-8">Cuenta</p>
+        <p className="eyebrow mt-8">{dict.sidebar.eyebrow}</p>
         <nav className="mt-2 space-y-1">
           {navItems.map((item, i) => {
             const active =
@@ -98,9 +103,13 @@ export function AccountSidebar({
           })}
         </nav>
 
+        <div className="mt-auto">
+          <LocaleSwitch locale={locale} />
+        </div>
+
         <div
           style={{ "--bento-i": navItems.length + 1 } as CSSProperties}
-          className="animate-bento-in mt-auto rounded-2xl bg-secondary p-3"
+          className="animate-bento-in mt-3 rounded-2xl bg-secondary p-3"
         >
           <div className="flex items-center gap-2.5">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-bold text-background">
@@ -111,7 +120,7 @@ export function AccountSidebar({
                 {companyName}
               </p>
               <p className="truncate text-[10px] text-muted">
-                {COMPANY_TYPE_LABELS[companyType]} · {email}
+                {dict.roles[companyType]} · {email}
               </p>
             </div>
           </div>

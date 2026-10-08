@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { AuthCard } from "../components/auth-card";
 import { createClient } from "../lib/supabase/server";
+import { getLocale } from "../lib/locale-server";
+import { getAccountDict } from "../account/i18n/server";
+import { LocaleSwitch } from "../account/i18n/locale-switch";
 import { SignInForm } from "./sign-in-form";
 
 export default async function SignInPage() {
@@ -13,12 +16,15 @@ export default async function SignInPage() {
     redirect("/account");
   }
 
+  const [dict, locale] = await Promise.all([getAccountDict(), getLocale()]);
+
   return (
     <AuthCard
-      title="Ingresá a JuLit"
-      subtitle="Accedé con la cuenta de tu empresa para ver sus lotes y operaciones."
+      title={dict.signIn.title}
+      subtitle={dict.signIn.subtitle}
+      headerAction={<LocaleSwitch locale={locale} />}
     >
-      <SignInForm />
+      <SignInForm dict={dict.signIn} />
     </AuthCard>
   );
 }

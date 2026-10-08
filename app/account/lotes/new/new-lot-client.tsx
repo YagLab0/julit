@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { VerifiedWalletGate } from "../../../components/verified-wallet-gate";
+import { useAccountDict } from "../../i18n/context";
 import { RegisterLotForm, type Counterparty } from "./register-lot-form";
 import type { ProducerSpecs } from "./validation";
 
@@ -15,6 +16,7 @@ export type ProducerInfo = {
 };
 
 export function NewLotClient({ producer }: { producer: ProducerInfo }) {
+  const dict = useAccountDict();
   const [buyers, setBuyers] = useState<Counterparty[] | null>(null);
   const [loadError, setLoadError] = useState(false);
 
@@ -39,30 +41,26 @@ export function NewLotClient({ producer }: { producer: ProducerInfo }) {
   if (loadError) {
     content = (
       <div className="mt-8 rounded-3xl bg-card p-8 text-center">
-        <p className="text-sm text-destructive">
-          No se pudieron cargar tus compradores contratados. Recargá la página.
-        </p>
+        <p className="text-sm text-destructive">{dict.newLot.loadError}</p>
       </div>
     );
   } else if (!buyers) {
     content = (
       <div className="mt-8 rounded-3xl bg-card p-8 text-center">
-        <p className="text-sm text-muted">Cargando compradores contratados…</p>
+        <p className="text-sm text-muted">{dict.newLot.loading}</p>
       </div>
     );
   } else if (buyers.length === 0) {
     content = (
       <div className="mt-8 rounded-3xl border border-amber-300 bg-amber-50/60 p-8 text-center dark:border-amber-800 dark:bg-amber-950/40">
         <p className="text-sm text-amber-900 dark:text-amber-200">
-          Necesitás un contrato aceptado con una compradora para registrar un
-          lote: todo lote nace con comprador designado. Gestioná el acuerdo
-          desde tu cuenta.
+          {dict.newLot.noBuyers}
         </p>
         <Link
           href="/account/contratos"
           className="btn-secondary mt-4 inline-block rounded-full px-4"
         >
-          Gestionar contratos
+          {dict.newLot.manageContracts}
         </Link>
       </div>
     );
@@ -74,8 +72,8 @@ export function NewLotClient({ producer }: { producer: ProducerInfo }) {
     <VerifiedWalletGate
       name={producer.name}
       walletAddress={producer.walletAddress}
-      action="registrar un lote"
-      signAs="firmar como productora"
+      action={dict.newLot.gate.action}
+      signAs={dict.newLot.gate.signAs}
     >
       {content}
     </VerifiedWalletGate>

@@ -1,21 +1,30 @@
 import Link from "next/link";
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 
 type AuthCardProps = PropsWithChildren<{
   title: string;
   subtitle?: string;
+  headerAction?: ReactNode;
 }>;
 
-export function AuthCard({ title, subtitle, children }: AuthCardProps) {
+export function AuthCard({
+  title,
+  subtitle,
+  headerAction,
+  children,
+}: AuthCardProps) {
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background px-6 py-12 text-foreground">
       <div className="w-full max-w-md">
-        <Link
-          href="/"
-          className="text-sm font-bold tracking-tight text-foreground"
-        >
-          JuLit
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-sm font-bold tracking-tight text-foreground"
+          >
+            JuLit
+          </Link>
+          {headerAction}
+        </div>
         <div className="mt-4 rounded-2xl border border-border-low bg-card p-6 shadow-sm">
           <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
           {subtitle && (

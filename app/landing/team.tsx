@@ -2,6 +2,7 @@ import Image from "next/image";
 import { randomInt } from "node:crypto";
 import { connection } from "next/server";
 import styles from "./team.module.css";
+import type { LandingDict } from "./i18n";
 
 type TeamMember = {
   firstName: string;
@@ -99,7 +100,13 @@ function LinkedinIcon() {
   );
 }
 
-export async function TeamSection() {
+export async function TeamSection({
+  dict,
+  a11y,
+}: {
+  dict: LandingDict["team"];
+  a11y: LandingDict["a11y"];
+}) {
   await connection();
   const members = [...TEAM_MEMBERS];
   for (let index = members.length - 1; index > 0; index--) {
@@ -115,48 +122,45 @@ export async function TeamSection() {
       <div className={styles.container}>
         <div className={styles.intro} data-landing-reveal>
           <div>
-            <p className="eyebrow">Las personas detrás del proyecto</p>
+            <p className="eyebrow">{dict.eyebrow}</p>
             <h2 id="team-heading" className={styles.heading}>
-              Nuestro equipo.
+              {dict.heading}
             </h2>
           </div>
           <div className={styles.lead}>
-            <p className={styles.description}>
-              Desde Jujuy, construimos JuLit para la hackathon de Superteam /
-              Solana.
-            </p>
+            <p className={styles.description}>{dict.description}</p>
           </div>
         </div>
 
-        <ul className={styles.grid} aria-label="Integrantes del equipo">
+        <ul className={styles.grid} aria-label={a11y.teamList}>
           {members.map((member) => {
             const fullName = `${member.firstName} ${member.lastName}`;
             return (
               <li key={member.email} className={styles.card}>
                 <Image
                   src={member.avatar}
-                  alt={`Foto de ${fullName}`}
+                  alt={a11y.photoAlt(fullName)}
                   width={80}
                   height={80}
                   className={styles.avatar}
                 />
-                <p className={styles.memberLabel}>Equipo JuLit</p>
+                <p className={styles.memberLabel}>{dict.memberLabel}</p>
                 <h3 className={styles.name}>{fullName}</h3>
                 <div className={styles.links}>
                   <a
                     href={`mailto:${member.email}`}
                     className={styles.link}
-                    aria-label={`Enviar correo a ${fullName}`}
+                    aria-label={a11y.emailTo(fullName)}
                   >
                     <MailIcon />
-                    Correo
+                    {dict.emailLink}
                   </a>
                   <a
                     href={member.linkedin}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.link}
-                    aria-label={`Perfil de LinkedIn de ${fullName}`}
+                    aria-label={a11y.linkedinOf(fullName)}
                   >
                     <LinkedinIcon />
                     LinkedIn

@@ -1,10 +1,14 @@
 import { GateCard } from "../../../components/gate-card";
 import { originName } from "../../../lib/origins";
 import { getAccountContext } from "../../account-data";
+import { getAccountDict } from "../../i18n/server";
 import { NewLotClient } from "./new-lot-client";
 
 export default async function RegistrarLotePage() {
-  const { company } = await getAccountContext();
+  const [{ company }, dict] = await Promise.all([
+    getAccountContext(),
+    getAccountDict(),
+  ]);
 
   // Layout renders the onboarding form when there is no company yet.
   if (!company) return null;
@@ -16,20 +20,28 @@ export default async function RegistrarLotePage() {
 
   return (
     <div className="animate-bento-in mt-6 max-w-3xl">
-      <p className="text-sm leading-relaxed text-muted">
-        Dá de alta un lote de carbonato de litio grado batería en Solana Devnet,
-        con comprador designado y certificado de planta. La wallet verificada de
-        tu empresa firma como productora.
-      </p>
+      <p className="text-sm leading-relaxed text-muted">{dict.newLot.intro}</p>
 
       {company.companyType !== "producer" ? (
-        <GateCard body="El alta de lotes es exclusiva de empresas productoras." />
+        <GateCard
+          body={dict.newLot.gates.producerOnly}
+          linkLabel={dict.common.accountLink}
+        />
       ) : !company.walletVerifiedAt ? (
-        <GateCard body="Vinculá la wallet verificada de tu empresa para poder firmar lotes." />
+        <GateCard
+          body={dict.newLot.gates.wallet}
+          linkLabel={dict.common.accountLink}
+        />
       ) : !company.originId ? (
-        <GateCard body="El origen de producción de tu empresa se provisiona desde el servidor. Contactá al operador de la demo." />
+        <GateCard
+          body={dict.newLot.gates.origin}
+          linkLabel={dict.common.accountLink}
+        />
       ) : !specsComplete ? (
-        <GateCard body="Las especificaciones de producción de tu empresa se provisionan desde el servidor. Contactá al operador de la demo." />
+        <GateCard
+          body={dict.newLot.gates.specs}
+          linkLabel={dict.common.accountLink}
+        />
       ) : (
         <NewLotClient
           producer={{

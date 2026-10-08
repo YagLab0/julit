@@ -1,12 +1,8 @@
 "use client";
 
-import {
-  COMPANY_TYPE_DESCRIPTIONS,
-  COMPANY_TYPE_LABELS,
-  SELF_SERVICE_COMPANY_TYPES,
-  type CompanyType,
-} from "../lib/company";
+import { SELF_SERVICE_COMPANY_TYPES, type CompanyType } from "../lib/company";
 import { inputClass, labelClass } from "./form-styles";
+import { useAccountDict } from "../account/i18n/context";
 
 type CompanyFieldsProps = {
   name: string;
@@ -21,11 +17,13 @@ export function CompanyFields({
   companyType,
   onCompanyTypeChange,
 }: CompanyFieldsProps) {
+  const dict = useAccountDict();
+
   return (
     <div className="space-y-4">
       <div>
         <label htmlFor="company-name" className={labelClass}>
-          Nombre de la empresa
+          {dict.companyFields.nameLabel}
         </label>
         <input
           id="company-name"
@@ -38,7 +36,7 @@ export function CompanyFields({
       </div>
 
       <fieldset>
-        <legend className={labelClass}>Tipo de empresa</legend>
+        <legend className={labelClass}>{dict.companyFields.typeLabel}</legend>
         <div className="mt-2 grid gap-2">
           {SELF_SERVICE_COMPANY_TYPES.map((type) => (
             <label
@@ -59,10 +57,10 @@ export function CompanyFields({
               />
               <span>
                 <span className="block text-sm font-semibold text-foreground">
-                  {COMPANY_TYPE_LABELS[type]}
+                  {dict.roles[type]}
                 </span>
                 <span className="block text-xs leading-relaxed text-muted">
-                  {COMPANY_TYPE_DESCRIPTIONS[type]}
+                  {dict.roleDescriptions[type]}
                 </span>
               </span>
             </label>
