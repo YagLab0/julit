@@ -5,9 +5,8 @@ import { useMemo, useState, useEffect, type CSSProperties, type ReactNode } from
 import { toast } from "sonner";
 import type { AccountCompany } from "../account-client";
 import type { AdminCompany, AdminLot, ProtocolStats } from "../account-data";
-import type { CompanyType } from "../../lib/company";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
-import { originName, ORIGINS } from "../../lib/origins";
+import { originName } from "../../lib/origins";
 import { useOptionalCluster } from "../../components/cluster-context";
 import { StatusBadge } from "../../explorer/components/lot-display";
 import type { LotStatus } from "../../explorer/data/lots";
@@ -223,43 +222,6 @@ export function AdminDashboard({
     inEscrowLots.reduce((acc, l) => acc + Number(l.price_usdc || 0), 0);
 
   const disputedLots = lots.filter((l) => l.status === "disputed");
-  const disputedCount =
-    stats?.lots?.byStatus?.disputed ?? disputedLots.length;
-
-  // Alerts summary: disputed lots + whether admin wallet is unverified
-  const alertsCount = disputedCount + (company.walletVerifiedAt ? 0 : 1);
-
-  // ESG averages calculated across protocol lots with environmental figures
-  const lotsWithWater = lots.filter(
-    (l) => l.water_footprint_m3_per_tonne !== null && l.water_footprint_m3_per_tonne > 0
-  );
-  const avgWaterM3PerTonne =
-    lotsWithWater.length > 0
-      ? lotsWithWater.reduce(
-          (acc, l) => acc + Number(l.water_footprint_m3_per_tonne),
-          0
-        ) / lotsWithWater.length
-      : 57.5; // Standard JuLit baseline
-
-  const lotsWithCarbon = lots.filter(
-    (l) =>
-      l.carbon_footprint_kg_co2e_per_tonne !== null &&
-      l.carbon_footprint_kg_co2e_per_tonne > 0
-  );
-  const avgCarbonKgPerTonne =
-    lotsWithCarbon.length > 0
-      ? lotsWithCarbon.reduce(
-          (acc, l) => acc + Number(l.carbon_footprint_kg_co2e_per_tonne),
-          0
-        ) / lotsWithCarbon.length
-      : 8650;
-
-  const lotsWithPurity = lots.filter((l) => l.purity_pct && l.purity_pct > 0);
-  const avgPurityPct =
-    lotsWithPurity.length > 0
-      ? lotsWithPurity.reduce((acc, l) => acc + Number(l.purity_pct), 0) /
-        lotsWithPurity.length
-      : 99.58;
 
   // Task Center filtered lots
   const filteredLots = useMemo(() => {
@@ -315,7 +277,7 @@ export function AdminDashboard({
   return (
     <div className="mt-6 flex flex-col gap-6">
       {/* 1. HERO DE KPIS FINANCIEROS */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* KPI 1: Comisiones USDC */}
         <BentoKpiCard
           index={1}
@@ -349,39 +311,15 @@ export function AdminDashboard({
           hint={tAdmin.kpis.escrowHint}
         />
 
-        {/* KPI 4: Alertas Operativas */}
-        <BentoKpiCard
-          index={4}
-          icon={ICON_ALERT}
-          label={tAdmin.kpis.alertsLabel}
-          value={String(alertsCount)}
-          unit={alertsCount === 1 ? tAdmin.kpis.alertsUnitOne : tAdmin.kpis.alertsUnitOther}
-          badge={
-            disputedCount > 0 ? tAdmin.kpis.alertsDisputes : tAdmin.kpis.alertsNormal
-          }
-          badgeVariant={disputedCount > 0 ? "warning" : "success"}
-          hint={
-            disputedCount > 0
-              ? tAdmin.kpis.alertsDisputesHint
-              : tAdmin.kpis.alertsNormalHint
-          }
-          onClick={() => {
-            if (disputedCount > 0) {
-              setActiveTab("disputed");
-              const el = document.getElementById("task-center");
-              if (el) el.scrollIntoView({ behavior: "smooth" });
-            }
-          }}
-        />
       </section>
 
       {/* 2. FILA BENTO: TARJETA DE TESORERÍA & MONITOREO ESG */}
-      <section className="grid gap-4 lg:grid-cols-12">
+      <section>
         {/* Tarjeta de Tesorería */}
         <div
           id="treasury-card"
           style={{ "--bento-i": 5 } as CSSProperties}
-          className="animate-bento-in flex flex-col rounded-3xl bg-card border border-border p-6 shadow-xs lg:col-span-6"
+          className="animate-bento-in flex flex-col rounded-3xl bg-card border border-border p-6 shadow-xs"
         >
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -457,7 +395,7 @@ export function AdminDashboard({
           </div>
 
           {/* Treasury Metrics Grid */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="rounded-2xl border border-border-low bg-card p-3.5">
               <p className="text-[11px] text-muted">{tAdmin.treasury.solLabel}</p>
               <p className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
@@ -521,127 +459,6 @@ export function AdminDashboard({
           </div>
         </div>
 
-        {/* Monitoreo ESG */}
-        <div
-          style={{ "--bento-i": 6 } as CSSProperties}
-          className="animate-bento-in flex flex-col rounded-3xl bg-card border border-border p-6 shadow-xs lg:col-span-6"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="eyebrow">{tAdmin.esg.eyebrow}</p>
-              <h2 className="mt-1 text-base font-semibold tracking-tight text-foreground">
-                {tAdmin.esg.title}
-              </h2>
-            </div>
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700">
-              {ICON_LEAF}
-            </span>
-          </div>
-
-          <p className="mt-2 text-xs text-muted leading-relaxed">
-            {tAdmin.esg.desc}
-          </p>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {/* Huella Hídrica */}
-            <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-muted">{tAdmin.esg.waterLabel}</p>
-                <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">
-                  {tAdmin.esg.waterBadge}
-                </span>
-              </div>
-              <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
-                {numFmt.format(avgWaterM3PerTonne)}
-                <span className="ml-1 text-xs font-normal text-muted">
-                  {tAdmin.esg.waterUnit}
-                </span>
-              </p>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-brand-600 transition-all duration-300"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      Math.max(10, (avgWaterM3PerTonne / 100) * 100)
-                    )}%`,
-                  }}
-                />
-              </div>
-              <p className="mt-1.5 text-[10px] text-muted">
-                {tAdmin.esg.waterBenchmark}
-              </p>
-            </div>
-
-            {/* Huella de Carbono */}
-            <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-muted">{tAdmin.esg.carbonLabel}</p>
-                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted">
-                  {tAdmin.esg.carbonBadge}
-                </span>
-              </div>
-              <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
-                {numFmt.format(avgCarbonKgPerTonne)}
-                <span className="ml-1 text-xs font-normal text-muted">
-                  {tAdmin.esg.carbonUnit}
-                </span>
-              </p>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-600 transition-all duration-300"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      Math.max(10, (avgCarbonKgPerTonne / 12000) * 100)
-                    )}%`,
-                  }}
-                />
-              </div>
-              <p className="mt-1.5 text-[10px] text-muted">
-                {tAdmin.esg.carbonBenchmark}
-              </p>
-            </div>
-
-            {/* Pureza Química */}
-            <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <p className="text-[11px] text-muted">{tAdmin.esg.purityLabel}</p>
-              <p className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
-                {numFmt.format(avgPurityPct)}%
-              </p>
-              <p className="mt-1 text-[10px] font-medium text-brand-700">
-                {tAdmin.esg.purityBadge}
-              </p>
-            </div>
-
-            {/* Salares Monitoreados */}
-            <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <p className="text-[11px] text-muted">{tAdmin.esg.originsLabel}</p>
-              <p className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
-                {origins.length}
-                <span className="ml-1 text-xs font-normal text-muted">
-                  {tAdmin.esg.originsUnit}
-                </span>
-              </p>
-              <p className="mt-1 text-[10px] text-muted truncate">
-                {origins.map((o) => o.name.replace("Salar de ", "").replace("Salar del ", "")).slice(0, 3).join(" · ")}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-auto pt-4 flex items-center justify-between text-xs text-muted border-t border-border-low">
-            <span className="flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-brand-600" />
-              {tAdmin.esg.certifiedFooter}
-            </span>
-            <Link
-              href="/account/catalogo"
-              className="font-semibold text-brand-700 hover:underline"
-            >
-              {tAdmin.esg.exploreMapLink}
-            </Link>
-          </div>
-        </div>
       </section>
 
       {/* 3. CENTRO DE GESTIÓN DE TAREAS Y LOTES */}
@@ -1231,7 +1048,6 @@ export function AdminDashboard({
       {/* 7. MODAL PARA CARGAR COMPAÑÍA */}
       {isRegisterCompanyOpen && (
         <CreateCompanyDialog
-          origins={origins}
           onClose={() => setIsRegisterCompanyOpen(false)}
           onSuccess={(newComp) => {
             setCompanies((prev) => [newComp, ...prev]);
@@ -1240,12 +1056,13 @@ export function AdminDashboard({
         />
       )}
 
-      {/* 8. MODAL PARA CARGAR SALAR U ORIGEN */}
+      {/* 8. MODAL PARA CARGAR MINERA (CUENTA + SALAR) */}
       {isRegisterOriginOpen && (
         <CreateOriginDialog
           onClose={() => setIsRegisterOriginOpen(false)}
-          onSuccess={(newOrigin) => {
+          onSuccess={(newOrigin, newCompany) => {
             setOrigins((prev) => [newOrigin, ...prev]);
+            if (newCompany) setCompanies((prev) => [newCompany, ...prev]);
             setIsRegisterOriginOpen(false);
           }}
         />
@@ -1683,31 +1500,6 @@ const ICON_ESCROW = (
   </svg>
 );
 
-const ICON_ALERT = (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    className="size-4"
-  >
-    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-    <path d="M12 9v4M12 17h.01" />
-  </svg>
-);
-
-const ICON_LEAF = (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    className="size-4"
-  >
-    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-  </svg>
-);
 
 const ICON_SEARCH = (
   <svg
@@ -1723,11 +1515,9 @@ const ICON_SEARCH = (
 );
 
 function CreateCompanyDialog({
-  origins = [],
   onClose,
   onSuccess,
 }: {
-  origins?: Origin[];
   onClose: () => void;
   onSuccess: (company: AdminCompany) => void;
 }) {
@@ -1735,16 +1525,9 @@ function CreateCompanyDialog({
   const tComp = dict.adminDashboard.createCompanyModal;
 
   const [name, setName] = useState("");
-  const [companyType, setCompanyType] = useState<CompanyType>("producer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("julit-demo-2026");
   const [walletAddress, setWalletAddress] = useState("");
-  const [originId, setOriginId] = useState<string>(
-    origins[0]?.id || ORIGINS[0]?.id || "pena_blanca"
-  );
-  const [purityPct, setPurityPct] = useState("99.60");
-  const [waterFootprint, setWaterFootprint] = useState("52.00");
-  const [carbonFootprint, setCarbonFootprint] = useState("8900");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1754,25 +1537,16 @@ function CreateCompanyDialog({
     setIsSubmitting(true);
 
     try {
-      const payload: Record<string, unknown> = {
-        name,
-        company_type: companyType,
-        email,
-        password,
-        wallet_address: walletAddress.trim() || undefined,
-      };
-
-      if (companyType === "producer") {
-        payload.origin_id = originId;
-        if (purityPct) payload.purity_pct = Number(purityPct);
-        if (waterFootprint) payload.water_footprint_m3_per_tonne = Number(waterFootprint);
-        if (carbonFootprint) payload.carbon_footprint_kg_co2e_per_tonne = Number(carbonFootprint);
-      }
-
       const res = await fetch("/api/admin/companies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name,
+          company_type: "buyer",
+          email,
+          password,
+          wallet_address: walletAddress.trim() || undefined,
+        }),
       });
 
       const data = await res.json();
@@ -1789,8 +1563,6 @@ function CreateCompanyDialog({
       setIsSubmitting(false);
     }
   }
-
-  const originsList = origins.length > 0 ? origins : ORIGINS;
 
   return (
     <div
@@ -1818,43 +1590,6 @@ function CreateCompanyDialog({
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
-          {/* Selector de Tipo de Empresa */}
-          <div>
-            <label className="text-xs font-semibold text-foreground">
-              {tComp.typeLabel}
-            </label>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setCompanyType("producer")}
-                className={`cursor-pointer rounded-2xl border p-3 text-left transition ${
-                  companyType === "producer"
-                    ? "border-brand-600 bg-brand-50/50 dark:bg-brand-950/30 text-foreground"
-                    : "border-border-low bg-secondary/50 text-muted hover:bg-secondary"
-                }`}
-              >
-                <p className="text-xs font-bold">{tComp.producerTitle}</p>
-                <p className="text-[10px] text-muted leading-tight mt-0.5">
-                  {tComp.producerDesc}
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setCompanyType("buyer")}
-                className={`cursor-pointer rounded-2xl border p-3 text-left transition ${
-                  companyType === "buyer"
-                    ? "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 text-foreground"
-                    : "border-border-low bg-secondary/50 text-muted hover:bg-secondary"
-                }`}
-              >
-                <p className="text-xs font-bold">{tComp.buyerTitle}</p>
-                <p className="text-[10px] text-muted leading-tight mt-0.5">
-                  {tComp.buyerDesc}
-                </p>
-              </button>
-            </div>
-          </div>
-
           {/* Nombre de la Empresa */}
           <div>
             <label htmlFor="comp-name" className="text-xs font-semibold text-foreground">
@@ -1917,78 +1652,6 @@ function CreateCompanyDialog({
             />
           </div>
 
-          {/* Campos específicos de Productor */}
-          {companyType === "producer" && (
-            <div className="rounded-2xl border border-border-low bg-secondary/30 p-3 space-y-3">
-              <p className="text-[11px] font-bold text-foreground">
-                {tComp.producerParamsTitle}
-              </p>
-
-              <div>
-                <label htmlFor="comp-origin" className="text-xs font-semibold text-foreground">
-                  {tComp.originLabel}
-                </label>
-                <select
-                  id="comp-origin"
-                  value={originId}
-                  onChange={(e) => setOriginId(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
-                >
-                  {originsList.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name} ({o.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label htmlFor="comp-purity" className="text-[10px] font-semibold text-muted">
-                    {tComp.purityLabel}
-                  </label>
-                  <input
-                    id="comp-purity"
-                    type="number"
-                    step="0.01"
-                    min="99.50"
-                    max="100.00"
-                    value={purityPct}
-                    onChange={(e) => setPurityPct(e.target.value)}
-                    className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="comp-water" className="text-[10px] font-semibold text-muted">
-                    {tComp.waterLabel}
-                  </label>
-                  <input
-                    id="comp-water"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={waterFootprint}
-                    onChange={(e) => setWaterFootprint(e.target.value)}
-                    className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="comp-carbon" className="text-[10px] font-semibold text-muted">
-                    {tComp.carbonLabel}
-                  </label>
-                  <input
-                    id="comp-carbon"
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={carbonFootprint}
-                    onChange={(e) => setCarbonFootprint(e.target.value)}
-                    className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
 
           {error && (
             <p role="alert" className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-2.5">
@@ -2024,11 +1687,20 @@ function CreateOriginDialog({
   onSuccess,
 }: {
   onClose: () => void;
-  onSuccess: (origin: Origin) => void;
+  onSuccess: (origin: Origin, company: AdminCompany | null) => void;
 }) {
   const dict = useAccountDict();
   const tModal = dict.adminDashboard.createOriginModal;
 
+  // Company account (one mining company = one account = one origin)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("julit-demo-2026");
+  const [walletAddress, setWalletAddress] = useState("");
+  // Production specs (ADR-0020: all three together or none)
+  const [purityPct, setPurityPct] = useState("99.60");
+  const [waterFootprint, setWaterFootprint] = useState("48.50");
+  const [carbonFootprint, setCarbonFootprint] = useState("8900");
+  // Salar / origin
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [producer, setProducer] = useState("");
@@ -2037,7 +1709,6 @@ function CreateOriginDialog({
   const [longitude, setLongitude] = useState("-66.70248");
   const [capacityTpa, setCapacityTpa] = useState("35000");
   const [altitudeM, setAltitudeM] = useState("3900");
-  const [waterFootprint, setWaterFootprint] = useState("48.50");
   const [note, setNote] = useState("");
   const [sourceLabel, setSourceLabel] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -2066,6 +1737,18 @@ function CreateOriginDialog({
           note: note.trim(),
           source_label: sourceLabel.trim(),
           source_url: sourceUrl.trim(),
+          company: {
+            email,
+            password,
+            wallet_address: walletAddress.trim() || undefined,
+            purity_pct: purityPct ? Number(purityPct) : undefined,
+            water_footprint_m3_per_tonne: waterFootprint
+              ? Number(waterFootprint)
+              : undefined,
+            carbon_footprint_kg_co2e_per_tonne: carbonFootprint
+              ? Number(carbonFootprint)
+              : undefined,
+          },
         }),
       });
 
@@ -2075,7 +1758,7 @@ function CreateOriginDialog({
       }
 
       toast.success(tModal.successToast);
-      onSuccess(data.origin);
+      onSuccess(data.origin, data.company ?? null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : tModal.errorToast;
       setError(msg);
@@ -2110,41 +1793,12 @@ function CreateOriginDialog({
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
-          {/* Nombre y Código */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2">
-              <label htmlFor="orig-name" className="text-xs font-semibold text-foreground">
-                {tModal.nameLabel}
-              </label>
-              <input
-                id="orig-name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={tModal.namePlaceholder}
-                className="mt-1 w-full rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
-              />
-            </div>
-            <div>
-              <label htmlFor="orig-code" className="text-xs font-semibold text-foreground">
-                {tModal.codeLabel}
-              </label>
-              <input
-                id="orig-code"
-                type="text"
-                required
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder={tModal.codePlaceholder}
-                maxLength={10}
-                className="mt-1 w-full font-mono uppercase rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
-              />
-            </div>
-          </div>
+          {/* Cuenta de la empresa minera */}
+          <div className="rounded-2xl border border-border-low bg-secondary/30 p-3 space-y-3">
+            <p className="text-[11px] font-bold text-foreground">
+              {tModal.companySectionTitle}
+            </p>
 
-          {/* Productor y Accionistas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor="orig-prod" className="text-xs font-semibold text-foreground">
                 {tModal.producerLabel}
@@ -2156,9 +1810,54 @@ function CreateOriginDialog({
                 value={producer}
                 onChange={(e) => setProducer(e.target.value)}
                 placeholder={tModal.producerPlaceholder}
-                className="mt-1 w-full rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
+                className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
               />
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="orig-email" className="text-xs font-semibold text-foreground">
+                  {tModal.emailLabel}
+                </label>
+                <input
+                  id="orig-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={tModal.emailPlaceholder}
+                  className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label htmlFor="orig-pass" className="text-xs font-semibold text-foreground">
+                  {tModal.passwordLabel}
+                </label>
+                <input
+                  id="orig-pass"
+                  type="text"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="julit-demo-2026"
+                  className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="orig-wallet" className="text-xs font-semibold text-foreground">
+                {tModal.walletLabel}
+              </label>
+              <input
+                id="orig-wallet"
+                type="text"
+                value={walletAddress}
+                onChange={(e) => setWalletAddress(e.target.value)}
+                placeholder={tModal.walletPlaceholder}
+                className="mt-1 w-full font-mono rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
+              />
+            </div>
+
             <div>
               <label htmlFor="orig-share" className="text-xs font-semibold text-foreground">
                 {tModal.shareholdersLabel}
@@ -2169,16 +1868,100 @@ function CreateOriginDialog({
                 value={shareholders}
                 onChange={(e) => setShareholders(e.target.value)}
                 placeholder={tModal.shareholdersPlaceholder}
-                className="mt-1 w-full rounded-xl border border-border bg-secondary px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
+                className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
               />
             </div>
           </div>
 
-          {/* Coordenadas de Planta */}
-          <div className="rounded-2xl border border-border-low bg-secondary/30 p-3 space-y-2">
+          {/* Especificaciones de producción */}
+          <div className="rounded-2xl border border-border-low bg-secondary/30 p-3 space-y-3">
             <p className="text-[11px] font-bold text-foreground">
-              {tModal.coordsTitle}
+              {tModal.specsSectionTitle}
             </p>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label htmlFor="orig-purity" className="text-[10px] font-semibold text-muted">
+                  {tModal.purityLabel}
+                </label>
+                <input
+                  id="orig-purity"
+                  type="number"
+                  step="0.01"
+                  min="99.50"
+                  max="100.00"
+                  value={purityPct}
+                  onChange={(e) => setPurityPct(e.target.value)}
+                  className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label htmlFor="orig-water" className="text-[10px] font-semibold text-muted">
+                  {tModal.specWaterLabel}
+                </label>
+                <input
+                  id="orig-water"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={waterFootprint}
+                  onChange={(e) => setWaterFootprint(e.target.value)}
+                  className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label htmlFor="orig-carbon" className="text-[10px] font-semibold text-muted">
+                  {tModal.carbonLabel}
+                </label>
+                <input
+                  id="orig-carbon"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={carbonFootprint}
+                  onChange={(e) => setCarbonFootprint(e.target.value)}
+                  className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Salar / yacimiento */}
+          <div className="rounded-2xl border border-border-low bg-secondary/30 p-3 space-y-3">
+            <p className="text-[11px] font-bold text-foreground">
+              {tModal.salarSectionTitle}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label htmlFor="orig-name" className="text-xs font-semibold text-foreground">
+                  {tModal.nameLabel}
+                </label>
+                <input
+                  id="orig-name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={tModal.namePlaceholder}
+                  className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label htmlFor="orig-code" className="text-xs font-semibold text-foreground">
+                  {tModal.codeLabel}
+                </label>
+                <input
+                  id="orig-code"
+                  type="text"
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  placeholder={tModal.codePlaceholder}
+                  maxLength={10}
+                  className="mt-1 w-full font-mono uppercase rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="orig-lat" className="text-[10px] font-semibold text-muted">
@@ -2213,52 +1996,37 @@ function CreateOriginDialog({
                 />
               </div>
             </div>
-          </div>
 
-          {/* Capacidad, Altitud, Agua */}
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label htmlFor="orig-cap" className="text-[10px] font-semibold text-muted">
-                {tModal.capacityLabel}
-              </label>
-              <input
-                id="orig-cap"
-                type="number"
-                required
-                min="1"
-                step="1"
-                value={capacityTpa}
-                onChange={(e) => setCapacityTpa(e.target.value)}
-                className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
-              />
-            </div>
-            <div>
-              <label htmlFor="orig-alt" className="text-[10px] font-semibold text-muted">
-                {tModal.altitudeLabel}
-              </label>
-              <input
-                id="orig-alt"
-                type="number"
-                min="0"
-                step="1"
-                value={altitudeM}
-                onChange={(e) => setAltitudeM(e.target.value)}
-                className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
-              />
-            </div>
-            <div>
-              <label htmlFor="orig-water" className="text-[10px] font-semibold text-muted">
-                {tModal.waterLabel}
-              </label>
-              <input
-                id="orig-water"
-                type="number"
-                step="0.01"
-                min="0"
-                value={waterFootprint}
-                onChange={(e) => setWaterFootprint(e.target.value)}
-                className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="orig-cap" className="text-[10px] font-semibold text-muted">
+                  {tModal.capacityLabel}
+                </label>
+                <input
+                  id="orig-cap"
+                  type="number"
+                  required
+                  min="1"
+                  step="1"
+                  value={capacityTpa}
+                  onChange={(e) => setCapacityTpa(e.target.value)}
+                  className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
+              <div>
+                <label htmlFor="orig-alt" className="text-[10px] font-semibold text-muted">
+                  {tModal.altitudeLabel}
+                </label>
+                <input
+                  id="orig-alt"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={altitudeM}
+                  onChange={(e) => setAltitudeM(e.target.value)}
+                  className="mt-1 w-full font-mono rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-brand-600 focus:outline-hidden"
+                />
+              </div>
             </div>
           </div>
 

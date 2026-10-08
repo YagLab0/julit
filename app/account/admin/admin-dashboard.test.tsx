@@ -163,10 +163,6 @@ describe("AdminDashboard Component", () => {
 
     // Hero KPI 3: Lotes en Escrow
     expect(html).toContain("En Custodia Escrow");
-
-    // Hero KPI 4: Alertas operativas
-    expect(html).toContain("Alertas Operativas");
-    expect(html).toContain("Disputas activas");
   });
 
   it("renders Treasury card with correct parameters and devnet references", () => {
@@ -185,7 +181,7 @@ describe("AdminDashboard Component", () => {
     expect(html).toContain("Saldo USDC");
   });
 
-  it("renders ESG monitoring card with sustainability indicators", () => {
+  it("does not render operational alerts KPI or ESG monitoring card", () => {
     const html = renderToString(
       <AdminDashboard
         company={mockCompany}
@@ -194,12 +190,10 @@ describe("AdminDashboard Component", () => {
       />
     );
 
-    expect(html).toContain("Monitoreo ESG &amp; Sustentabilidad");
-    expect(html).toContain("Huella Hídrica Media");
-    expect(html).toContain("-85% vs trad.");
-    expect(html).toContain("Huella de Carbono");
-    expect(html).toContain("Pureza Química Li₂CO₃");
-    expect(html).toContain("Grado Batería");
+    expect(html).not.toContain("Alertas Operativas");
+    expect(html).not.toContain("Monitoreo ESG");
+    expect(html).not.toContain("Huella Hídrica Media");
+    expect(html).not.toContain("Huella de Carbono");
   });
 
   it("renders Task Management Center with all tabs and lot records", () => {
@@ -234,7 +228,6 @@ describe("AdminDashboard Component", () => {
 
     expect(html).toContain("Comisiones del Protocolo");
     expect(html).toContain("Centro de Gestión de Tareas y Lotes");
-    expect(html).toContain("Operación normal");
     expect(html).toContain("No se encontraron lotes");
   });
 
@@ -248,7 +241,7 @@ describe("AdminDashboard Component", () => {
     );
 
     expect(html).toContain("Salares y Orígenes del Catálogo");
-    expect(html).toContain("Cargar Salar u Origen");
+    expect(html).toContain("Cargar Minera");
     expect(html).toContain("Capacidad Agregada");
     expect(html).toContain("Salar de Peña Blanca");
     expect(html).toContain("PBL");
@@ -269,16 +262,10 @@ describe("AdminDashboard Component", () => {
     expect(html).toContain("Protocol Fees");
     expect(html).toContain("Total Li₂CO₃ Volume");
     expect(html).toContain("In Escrow Custody");
-    expect(html).toContain("Operational Alerts");
-    expect(html).toContain("Active disputes");
 
     // Treasury in English
     expect(html).toContain("On-Chain Treasury");
     expect(html).toContain("Protocol Vault &amp; Parameters");
-
-    // ESG Monitoring in English
-    expect(html).toContain("ESG &amp; Sustainability Monitoring");
-    expect(html).toContain("Water &amp; Emissions Traceability");
 
     // Task Center in English
     expect(html).toContain("Task &amp; Lot Management Center");
@@ -290,8 +277,8 @@ describe("AdminDashboard Component", () => {
 
     // Companies & Origins Directories in English
     expect(html).toContain("Protocol Companies Directory");
-    expect(html).toContain("Load Company");
+    expect(html).toContain("Load Buyer");
     expect(html).toContain("Salares &amp; Catalogue Origins");
-    expect(html).toContain("Load Salar / Origin");
+    expect(html).toContain("Load Producer");
   });
 });

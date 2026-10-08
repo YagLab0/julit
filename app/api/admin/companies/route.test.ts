@@ -177,7 +177,7 @@ describe("POST /api/admin/companies", () => {
     expect(body.error).toBe("Ingresá un correo electrónico válido.");
   });
 
-  it("returns 400 when producer misses valid origin_id", async () => {
+  it("returns 400 when company_type is not buyer", async () => {
     vi.mocked(createClient).mockResolvedValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: mockAdminUser } }),
@@ -201,49 +201,13 @@ describe("POST /api/admin/companies", () => {
         name: "Minera Test",
         company_type: "producer",
         email: "producer@test.com",
-        origin_id: "salar_inexistente",
       }),
     });
 
     const res = await POST(req);
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe("Seleccioná un origen o salar válido del catálogo para el productor.");
-  });
-
-  it("returns 400 when producer specs are incomplete (only purity provided)", async () => {
-    vi.mocked(createClient).mockResolvedValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({ data: { user: mockAdminUser } }),
-      },
-    } as unknown as Awaited<ReturnType<typeof createClient>>);
-
-    vi.mocked(createServiceClient).mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: { company_type: "admin" } }),
-          }),
-        }),
-      }),
-    } as unknown as ReturnType<typeof createServiceClient>);
-
-    const req = new Request("http://localhost/api/admin/companies", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Minera Test",
-        company_type: "producer",
-        email: "producer@test.com",
-        origin_id: "pena_blanca",
-        purity_pct: 99.6,
-      }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toContain("deben enviarse juntas");
+    expect(body.error).toContain("solo se cargan compradoras");
   });
 
   it("creates a buyer company successfully with 201", async () => {
