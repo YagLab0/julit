@@ -368,7 +368,40 @@
         background: #efe7e3;
         color: #8a4b32;
       }
+      .lang-toggle {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 1;
+        display: inline-flex;
+        gap: 2px;
+        padding: 2px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #ffffff;
+      }
+      .lang-option {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        padding: 4px 9px;
+        border-radius: 4px;
+        line-height: 1;
+        text-decoration: none;
+        color: var(--muted);
+      }
+      .lang-option:hover:not(.is-active) {
+        color: var(--green);
+        background: #e7edde;
+      }
+      .lang-option.is-active {
+        background: var(--green);
+        color: #ffffff;
+      }
       @media print {
+        .lang-toggle {
+          display: none;
+        }
         @page {
           size: A4 landscape;
           margin: 0;
@@ -386,6 +419,11 @@
     </style>
   </head>
   <body>
+    <nav class="lang-toggle" aria-label="Pitch language">
+      <a href="/pitch.html" class="lang-option" hreflang="es">ES</a>
+      <span class="lang-option is-active" aria-current="page">EN</span>
+    </nav>
+
     <!-- Slide 1 — Cover -->
     <section class="slide cover">
       <div class="cover-top">
@@ -544,13 +582,6 @@
           </p>
         </div>
       </div>
-      <div class="strip">
-        <strong>IF THE BUYER DOES NOT ANSWER</strong>
-        <span>
-          The producer can collect the money after a set date, agreed in the
-          contract.
-        </span>
-      </div>
     </section>
 
     <!-- Slide 5 — Why Solana -->
@@ -559,42 +590,11 @@
         <span class="eyebrow">04 / Why Solana</span>
         <span class="pagenum">5 / 9</span>
       </div>
-      <h2>The rules run by themselves.</h2>
-      <div class="cards two" style="gap: 6mm 10mm; margin-top: 7mm">
-        <div class="card">
-          <span class="kicker">One</span>
-          <h3>A program, not a person</h3>
-          <p>
-            The box is a program on Solana. It follows the rules by itself. No
-            bank or company holds the money.
-          </p>
-        </div>
-        <div class="card">
-          <span class="kicker">Two</span>
-          <h3>All in one step</h3>
-          <p>
-            The buyer&rsquo;s confirmation and the payment to the producer
-            happen together, in one transaction. All or nothing.
-          </p>
-        </div>
-        <div class="card">
-          <span class="kicker">Three</span>
-          <h3>Proof of History</h3>
-          <p>
-            It works like a shared clock: a proof of the order of events and
-            the time between them.<sup>7</sup> Everyone sees the same order —
-            first the deposit, then the payment.
-          </p>
-        </div>
-        <div class="card">
-          <span class="kicker">Four</span>
-          <h3>Cheap fees</h3>
-          <p>
-            Each transaction costs less than one cent<sup>8</sup>, so it works
-            for every lot, even small ones.
-          </p>
-        </div>
-      </div>
+      <h2>Fast, and less than one cent.</h2>
+      <p class="lead">
+        We use Solana because it is fast, and each transaction costs less than
+        one cent.<sup>7</sup>
+      </p>
     </section>
 
     <!-- Slide 6 — Business Model -->
@@ -607,9 +607,9 @@
       <div class="cards two">
         <div class="card">
           <span class="kicker">Take rate</span>
-          <span class="big">&lt; 1%</span>
+          <span class="big">1%</span>
           <p>
-            A fee under 1 percent, charged only when the box releases the money
+            A 1 percent fee, charged only when the box releases the money
             to the producer. Creating a lot and depositing are free.
           </p>
         </div>
@@ -748,12 +748,6 @@
           activities, including stablecoins, are illegal financial activities
           in mainland China.
           <a href="https://www.pbc.gov.cn/tiaofasi/144941/3581332/2026020619591971323/index.html">pbc.gov.cn/tiaofasi/144941/3581332/2026020619591971323/index.html</a>
-        </li>
-        <li>
-          A. Yakovenko, <em>Solana: A new architecture for a high performance
-          blockchain</em> (whitepaper) — Proof of History is "a proof for
-          verifying order and passage of time between events".
-          <a href="https://solana.com/solana-whitepaper.pdf">solana.com/solana-whitepaper.pdf</a>
         </li>
         <li>
           Solana Docs, <em>Fees</em> — base fee of 5,000 lamports (0.000005

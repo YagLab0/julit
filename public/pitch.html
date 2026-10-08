@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#123b32" />
-    <title>JuLit — Pitch en 4 voces</title>
+    <title>JuLit — Pitch</title>
     <style>
       :root {
         color-scheme: light;
@@ -15,6 +15,7 @@
         --muted: #596b64;
         --line: #d5ddd4;
         --accent: #d5ef86;
+        --olive: #50742c;
       }
       * {
         box-sizing: border-box;
@@ -22,148 +23,110 @@
       body {
         margin: 0;
       }
-      button {
-        font: inherit;
-      }
-      [hidden] {
-        display: none !important;
-      }
-      .presentation {
-        min-height: 100svh;
+      .slide {
+        width: 297mm;
+        height: 210mm;
+        padding: 14mm 16mm 12mm;
         display: flex;
         flex-direction: column;
+        page-break-after: always;
+        position: relative;
+        overflow: hidden;
       }
-      .masthead,
-      .controls {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 24px clamp(24px, 5vw, 88px);
-      }
-      .masthead {
-        border-bottom: 1px solid var(--line);
-      }
-      .brand {
-        font-size: 28px;
-        font-weight: 800;
-        letter-spacing: -1.5px;
-      }
-      .brand span {
-        color: #648335;
-      }
-      .masthead-label,
-      .eyebrow,
-      .time,
-      .counter,
-      .hint {
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-      }
-      .masthead-label,
-      .time,
-      .hint {
-        color: var(--muted);
-      }
-      .lang-toggle {
-        display: inline-flex;
-        align-items: center;
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        background: #ffffff;
-        padding: 2px;
-        gap: 2px;
-      }
-      .lang-option {
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.8px;
-        text-transform: uppercase;
-        padding: 4px 9px;
-        border-radius: 4px;
-        text-decoration: none;
-        color: var(--muted);
-        transition: all 0.15s ease;
-        line-height: 1;
-        display: inline-flex;
-        align-items: center;
-      }
-      .lang-option:hover:not(.is-active) {
-        color: var(--green);
-        background: #e7edde;
-      }
-      .lang-option.is-active {
-        background: var(--green);
-        color: #ffffff;
-        cursor: default;
-      }
-      main {
-        flex: 1;
-        display: grid;
-      }
-      .slide {
-        width: 100%;
-        max-width: 1560px;
-        margin: auto;
-        padding: clamp(32px, 5vh, 68px) clamp(24px, 7vw, 112px);
-        overflow-y: auto;
-        max-height: 100%;
+      .slide:last-child {
+        page-break-after: auto;
       }
       .slide-meta {
         display: flex;
         justify-content: space-between;
+        align-items: baseline;
         gap: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 10mm;
       }
       .eyebrow {
-        color: #50742c;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: var(--olive);
+      }
+      .pagenum {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        color: var(--muted);
       }
       h1,
       h2,
+      h3,
       p {
         margin: 0;
       }
       h1,
       h2 {
         font-weight: 600;
-        letter-spacing: -0.055em;
-        line-height: 1.04;
+        letter-spacing: -0.045em;
+        line-height: 1.03;
         text-wrap: balance;
       }
       h1 {
-        font-size: clamp(48px, 6.3vw, 96px);
+        font-size: 74px;
       }
       h2 {
-        font-size: clamp(38px, 4.8vw, 72px);
-        max-width: 1100px;
+        font-size: 54px;
+        max-width: 240mm;
       }
       .lead {
         color: var(--muted);
-        font-size: clamp(18px, 1.8vw, 26px);
-        line-height: 1.5;
-        max-width: 890px;
-        margin-top: 24px;
-        text-wrap: pretty;
+        font-size: 21px;
+        line-height: 1.45;
+        max-width: 225mm;
+        margin-top: 7mm;
+      }
+      .brand {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+      }
+      .brand span {
+        color: #648335;
+      }
+      .foot {
+        margin-top: auto;
+        padding-top: 5mm;
+        border-top: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 10mm;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* Cover */
+      .cover {
+        justify-content: space-between;
+      }
+      .cover-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .cover-tag {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
       }
       .cover-grid {
         display: grid;
-        grid-template-columns: 1.7fr 1fr;
-        gap: 64px;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 18mm;
         align-items: center;
-      }
-      .team {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px 24px;
-        margin-top: 28px;
-        font-size: 18px;
-        line-height: 1.5;
       }
       .cover-mark {
         aspect-ratio: 1;
-        width: min(100%, 340px);
+        width: 62mm;
         justify-self: end;
         border: 1px solid var(--line);
         border-radius: 50%;
@@ -173,877 +136,628 @@
         background: #e9eee2;
       }
       .cover-mark svg {
-        width: clamp(72px, 10vw, 152px);
+        width: 26mm;
         height: auto;
         display: block;
         margin: 0 auto;
         color: var(--green);
       }
       .cover-mark span {
-        margin-top: 14px;
+        margin-top: 4mm;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 10px;
         letter-spacing: 2px;
         text-transform: uppercase;
       }
-      .cover-bottom {
-        margin-top: 48px;
-        padding-top: 24px;
-        border-top: 1px solid var(--line);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px 32px;
-        font-size: 14px;
-        color: var(--muted);
-      }
+
+      /* Metric blocks */
       .metrics {
         display: grid;
-        grid-template-columns: 1fr 1fr 1.1fr;
-        margin-top: 38px;
+        grid-template-columns: repeat(3, 1fr);
+        margin-top: 10mm;
         border-top: 1px solid var(--line);
       }
       .metric {
-        padding: 28px 24px 0 0;
+        padding: 7mm 7mm 0 0;
       }
       .metric + .metric {
         border-left: 1px solid var(--line);
-        padding-left: 28px;
+        padding-left: 7mm;
       }
       .metric-value {
         display: block;
-        font-size: clamp(40px, 5vw, 72px);
-        line-height: 1.1;
-        letter-spacing: -3px;
-        margin-bottom: 12px;
+        font-size: 52px;
+        line-height: 1.05;
+        letter-spacing: -2.5px;
+        margin-bottom: 4mm;
       }
       .metric-value small {
         font-size: 0.45em;
         letter-spacing: -1px;
       }
+      .metric h3 {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: var(--olive);
+        margin-bottom: 3mm;
+      }
       .metric p {
-        font-size: 17px;
+        font-size: 16px;
         color: var(--muted);
         line-height: 1.5;
       }
-      .metric-title {
-        font-size: clamp(28px, 3vw, 42px);
+
+      /* Card rows */
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8mm;
+        margin-top: 10mm;
+      }
+      .cards.two {
+        grid-template-columns: 1fr 1fr;
+      }
+      .card {
+        border-top: 2px solid var(--green);
+        padding-top: 5mm;
+      }
+      .card .kicker {
+        font-size: 12px;
+        color: var(--olive);
+        letter-spacing: 2px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .card h3 {
+        margin: 4mm 0 3mm;
+        font-size: 25px;
+        font-weight: 600;
+        letter-spacing: -0.8px;
         line-height: 1.15;
-        letter-spacing: -1.5px;
       }
-      .takeaway {
-        margin-top: 32px;
-        border-left: 3px solid #729440;
-        padding-left: 20px;
-        font-size: clamp(18px, 1.6vw, 24px);
-        line-height: 1.4;
+      .card p {
+        color: var(--muted);
+        font-size: 15.5px;
+        line-height: 1.5;
       }
+      .card .big {
+        display: block;
+        font-size: 46px;
+        font-weight: 600;
+        letter-spacing: -2px;
+        color: var(--green);
+        margin-bottom: 3mm;
+      }
+
+      /* Flow steps */
       .flow {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 32px;
-        margin-top: 40px;
+        gap: 8mm;
+        margin-top: 9mm;
       }
       .step {
         border-top: 1px solid var(--line);
-        padding-top: 22px;
+        padding-top: 5mm;
+        position: relative;
       }
       .step-number {
-        font-size: 13px;
-        color: #50742c;
+        font-size: 12px;
+        color: var(--olive);
         letter-spacing: 2px;
+        font-weight: 700;
       }
       .step h3 {
-        margin: 16px 0 12px;
-        font-size: clamp(23px, 2.2vw, 32px);
-        font-weight: 500;
-        letter-spacing: -1px;
+        margin: 3.5mm 0 2.5mm;
+        font-size: 25px;
+        font-weight: 600;
+        letter-spacing: -0.8px;
       }
       .step p {
         color: var(--muted);
-        font-size: 17px;
+        font-size: 15.5px;
         line-height: 1.5;
       }
-      .hash-strip {
-        margin-top: 32px;
-        padding: 18px 24px;
+      .step code {
+        font-family: "Courier New", monospace;
+        font-size: 0.85em;
         background: #e7edde;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 12px 24px;
-        font-size: 17px;
-        line-height: 1.4;
-      }
-      .hash-strip strong {
-        font-size: 13px;
-        letter-spacing: 1px;
-      }
-      .closing-grid {
-        margin-top: 36px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 40px;
-      }
-      .closing-panel {
-        padding-top: 20px;
-        border-top: 1px solid var(--line);
-      }
-      .closing-panel h3 {
-        font-size: 24px;
-        font-weight: 500;
-        margin: 0 0 14px;
-      }
-      .closing-panel .big {
-        display: block;
-        font-size: clamp(36px, 4.2vw, 64px);
-        font-weight: 500;
-        letter-spacing: -2px;
-        margin-bottom: 12px;
-      }
-      .closing-panel p {
-        color: var(--muted);
-        font-size: 17px;
-        line-height: 1.5;
-      }
-      .closing-line {
-        margin-top: 32px;
-        font-size: clamp(22px, 2.3vw, 34px);
-        font-weight: 500;
-        letter-spacing: -1px;
-      }
-      .note {
-        margin-top: 18px;
-        font-size: 12px;
-        line-height: 1.5;
-        color: var(--muted);
-        max-width: 960px;
-      }
-      .metric-source,
-      .panel-source {
-        display: block;
-        margin-top: 8px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        color: #436324;
-      }
-      .citation-list {
-        margin-top: 20px;
-        padding-top: 14px;
-        border-top: 1px dashed var(--line);
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .citation-item {
-        font-size: 12px;
-        line-height: 1.45;
-        color: var(--muted);
-      }
-      .citation-tag {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        padding: 1px 6px;
-        background: #e7edde;
-        border-radius: 3px;
-        color: var(--green);
-        margin-right: 6px;
-        display: inline-block;
-      }
-      .controls {
-        border-top: 1px solid var(--line);
-      }
-      .navigation,
-      .page-dots {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      button {
-        cursor: pointer;
-        border: 1px solid var(--line);
-        background: transparent;
-        color: var(--green);
-        border-radius: 6px;
-        min-height: 44px;
-      }
-      button:focus-visible {
-        outline: 3px solid #729440;
-        outline-offset: 4px;
-      }
-      button:active:not(:disabled) {
-        transform: scale(0.97);
-      }
-      button:disabled {
-        opacity: 0.3;
-        cursor: default;
-      }
-      .arrow {
-        width: 48px;
-        font-size: 24px;
-      }
-      .fullscreen {
-        padding: 0 16px;
-        font-size: 13px;
-      }
-      .dot {
-        width: 32px;
-        border: 0;
-        position: relative;
-      }
-      .dot::after {
-        content: "";
-        display: block;
-        width: 7px;
-        height: 7px;
-        background: #bcc8b9;
-        border-radius: 50%;
-        margin: auto;
-      }
-      .dot[aria-current="step"]::after {
-        background: var(--green);
-        width: 22px;
+        padding: 1px 5px;
         border-radius: 4px;
       }
-      .counter {
-        min-width: 48px;
+      .strip {
+        margin-top: 8mm;
+        padding: 4.5mm 6mm;
+        background: #e7edde;
+        display: flex;
+        align-items: center;
+        gap: 6mm;
+        font-size: 15px;
+        line-height: 1.45;
       }
-      @media (hover: hover) and (pointer: fine) {
-        button:hover:not(:disabled) {
-          background: #e7edde;
-        }
+      .strip strong {
+        font-size: 12px;
+        letter-spacing: 1.5px;
+        white-space: nowrap;
       }
-      @media (max-width: 760px) {
-        .masthead,
-        .controls {
-          padding: 16px 24px;
-        }
-        .masthead-label {
-          font-size: 10px;
-          letter-spacing: 1px;
-        }
-        .slide {
-          padding: 32px 24px;
-        }
-        .cover-grid {
-          grid-template-columns: 1fr;
-          gap: 32px;
-        }
-        .cover-mark {
-          width: 140px;
-          justify-self: start;
-        }
-        .cover-mark svg {
-          width: 64px;
-        }
-        .cover-mark span {
-          font-size: 9px;
-          letter-spacing: 1px;
-          margin-top: 8px;
-        }
-        .cover-bottom {
-          margin-top: 32px;
-        }
-        .metrics,
-        .flow,
-        .closing-grid {
-          grid-template-columns: 1fr;
-          gap: 24px;
-          margin-top: 28px;
-        }
-        .metric {
-          padding: 20px 0 0;
-        }
-        .metric + .metric {
-          padding: 20px 0 0;
-          border-left: 0;
-          border-top: 1px solid var(--line);
-        }
-        .metric-value {
-          font-size: 48px;
-        }
-        .hint {
-          display: none;
-        }
-        .controls {
-          flex-wrap: wrap;
-          gap: 12px;
-        }
-        .page-dots {
-          gap: 0;
-        }
-        .fullscreen {
-          padding: 0 10px;
-        }
-        .slide-meta {
-          flex-wrap: wrap;
-        }
+
+      .takeaway {
+        margin-top: auto;
+        border-left: 3px solid #729440;
+        padding-left: 5mm;
+        font-size: 20px;
+        line-height: 1.4;
+        max-width: 240mm;
       }
-      @media screen and (min-width: 761px) and (max-height: 800px) {
-        .masthead,
-        .controls {
-          padding-top: 16px;
-          padding-bottom: 16px;
-        }
-        .slide {
-          padding-top: 24px;
-          padding-bottom: 24px;
-        }
-        .slide-meta {
-          margin-bottom: 18px;
-        }
-        h2 {
-          font-size: clamp(38px, 4.3vw, 60px);
-        }
-        .lead {
-          font-size: 20px;
-          margin-top: 18px;
-        }
-        .metrics,
-        .flow,
-        .closing-grid {
-          margin-top: 26px;
-        }
-        .step,
-        .closing-panel {
-          padding-top: 16px;
-        }
-        .step h3 {
-          margin-top: 12px;
-          font-size: 26px;
-        }
-        .metric {
-          padding-top: 22px;
-        }
-        .metric-value {
-          font-size: 56px;
-        }
-        .metric-title {
-          font-size: 36px;
-        }
-        .hash-strip {
-          margin-top: 24px;
-          padding: 14px 20px;
-        }
-        .takeaway,
-        .closing-line {
-          margin-top: 24px;
-        }
-        .note {
-          margin-top: 14px;
-        }
-        .citation-list {
-          margin-top: 14px;
-          padding-top: 10px;
-          gap: 4px;
-        }
-        .citation-item {
-          font-size: 11px;
-        }
+
+      .chip {
+        display: inline-block;
+        font-family: "Courier New", monospace;
+        font-size: 12.5px;
+        background: var(--green);
+        color: #eaf3d8;
+        padding: 2mm 4mm;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
       }
-      @media (prefers-reduced-motion: reduce) {
-        button:active:not(:disabled) {
-          transform: none;
-        }
+
+      /* Team */
+      .team-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6mm;
+        margin-top: 8mm;
+      }
+      .member {
+        border-top: 1px solid var(--line);
+        padding-top: 4mm;
+      }
+      .member h3 {
+        font-size: 19px;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+        margin-bottom: 1.5mm;
+      }
+      .member p {
+        font-size: 13.5px;
+        color: var(--muted);
+        letter-spacing: 0.5px;
+      }
+
+      .closing-line {
+        margin-top: 8mm;
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: -1px;
+      }
+
+      sup {
+        font-size: 0.55em;
+        color: var(--olive);
+        font-weight: 700;
+        margin-left: 1px;
+      }
+      .sources-list {
+        margin: 6mm 0 0;
+        padding-left: 6mm;
+      }
+      .sources-list li {
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--muted);
+        margin-bottom: 3mm;
+      }
+      .sources-list a {
+        color: var(--green);
+        word-break: break-all;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding: 1mm 2.5mm;
+        border-radius: 3px;
+        background: #e7edde;
+        color: var(--olive);
+      }
+      .tag.no {
+        background: #efe7e3;
+        color: #8a4b32;
+      }
+      .lang-toggle {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 1;
+        display: inline-flex;
+        gap: 2px;
+        padding: 2px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #ffffff;
+      }
+      .lang-option {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        padding: 4px 9px;
+        border-radius: 4px;
+        line-height: 1;
+        text-decoration: none;
+        color: var(--muted);
+      }
+      .lang-option:hover:not(.is-active) {
+        color: var(--green);
+        background: #e7edde;
+      }
+      .lang-option.is-active {
+        background: var(--green);
+        color: #ffffff;
       }
       @media print {
-        .masthead,
-        .controls {
+        .lang-toggle {
           display: none;
-        }
-        .presentation,
-        main {
-          display: block;
-        }
-        .slide,
-        .slide[hidden] {
-          display: block !important;
-          break-after: page;
-          min-height: 170mm;
-          padding: 12mm;
-          margin: 0;
-        }
-        .slide:last-child {
-          break-after: auto;
-        }
-        h1 {
-          font-size: 58px;
-        }
-        h2 {
-          font-size: 46px;
-        }
-        .lead {
-          font-size: 20px;
-        }
-        .metric-value {
-          font-size: 52px;
         }
         @page {
           size: A4 landscape;
-          margin: 10mm;
+          margin: 0;
+        }
+        body {
+          background: #f4f5ef;
+        }
+      }
+      @media screen {
+        .slide {
+          margin: 24px auto;
+          box-shadow: 0 2px 18px rgba(18, 59, 50, 0.15);
         }
       }
     </style>
   </head>
   <body>
-    <div class="presentation">
-      <header class="masthead">
+    <nav class="lang-toggle" aria-label="Idioma del pitch">
+      <span class="lang-option is-active" aria-current="page">ES</span>
+      <a href="/pitch-en.html" class="lang-option" hreflang="en">EN</a>
+    </nav>
+
+    <!-- Slide 1 — Portada -->
+    <section class="slide cover">
+      <div class="cover-top">
         <div class="brand" aria-label="JuLit">Ju<span>Lit</span></div>
-        <div style="display: flex; align-items: center; gap: 16px">
-          <div class="lang-toggle" role="group" aria-label="Idioma del pitch">
-            <span
-              class="lang-option is-active"
-              aria-current="page"
-              title="Español (activo)"
-              >ES</span
-            >
-            <a
-              href="/pitch-en.html"
-              class="lang-option"
-              title="Ver presentación en inglés"
-              >EN</a
-            >
-          </div>
-          <span class="masthead-label">Jujuy · Litio · Solana</span>
-        </div>
-      </header>
-
-      <main id="slides" aria-label="Diapositivas del pitch">
-        <section class="slide cover" aria-labelledby="cover-title">
-          <div class="cover-grid">
-            <div>
-              <div class="eyebrow" style="margin-bottom: 12px">
-                Litio de Jujuy · Proyección global
-              </div>
-              <h1 id="cover-title">
-                Del salar al mercado,<br />con el pago garantizado.
-              </h1>
-              <p class="lead">
-                Directorio B2B y protocolo de entrega contra pago (DvP) sobre
-                Solana: ni pago sin recibir, ni entrega sin cobrar.
-              </p>
-              <div class="team" aria-label="Integrantes del equipo">
-                <span>Mauro Benjamin Mamani (Frontend &amp; UX)</span
-                ><span>Mayko Fernandez (Protocolo &amp; QA)</span
-                ><span>Samuel Paredes (Full-Stack &amp; APIs)</span
-                ><span>Mauricio Rios (Team Lead &amp; Smart Contracts)</span>
-              </div>
-            </div>
-            <div class="cover-mark" aria-hidden="true">
-              <svg viewBox="0 0 32 36" fill="none">
-                <path
-                  d="M16 1 31 9.5v17L16 35 1 26.5v-17Z"
-                  fill="currentColor"
-                />
-                <path
-                  d="M21 10v10a5 5 0 0 1-10 0"
-                  stroke="white"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <span>Jujuy, Argentina</span>
-            </div>
-          </div>
-          <div class="cover-bottom">
-            <span>Directorio B2B</span><span>Certificado de planta SHA-256</span
-            ><span>Escrow DvP en Solana Devnet</span>
-          </div>
-        </section>
-
-        <section class="slide" hidden aria-labelledby="finance-title">
-          <div class="slide-meta">
-            <span class="eyebrow">01 / El problema de mercado</span
-            ><span class="time">Mauro Benjamin Mamani · 0:00–0:30</span>
-          </div>
-          <h2 id="finance-title">El lote se entrega.<br />El dinero espera.</h2>
+        <span class="cover-tag">Jujuy · Litio · Solana</span>
+      </div>
+      <div class="cover-grid">
+        <div>
+          <h1>Pagos seguros para nuevas empresas de litio.</h1>
           <p class="lead">
-            En el comercio B2B de litio, pagar antes de recibir o entregar antes
-            de cobrar deja a una de las partes expuesta. Las cartas de crédito
-            tradicionales suman demoras que inmovilizan capital.
+            Un directorio B2B y una caja de pago en Solana. El comprador paga
+            solo cuando llega el litio, y el productor sabe que el dinero ya
+            está depositado.
           </p>
-          <div class="metrics">
-            <div class="metric">
-              <strong class="metric-value">1.5%–3.5%</strong>
-              <p>de comisión bancaria que encarece cada embarque</p>
-              <span class="metric-source"
-                >Fuente: ICC Trade Register &amp; Banco Mundial</span
-              >
-            </div>
-            <div class="metric">
-              <strong class="metric-value">15–45 <small>días</small></strong>
-              <p>de trámites burocráticos y capital congelado</p>
-              <span class="metric-source"
-                >Fuente: ICC UCP 600 &amp; Trade Finance Global</span
-              >
-            </div>
-            <div class="metric">
-              <strong class="metric-value metric-title"
-                >Ventana de<br />riesgo.</strong
-              >
-              <p>
-                Alguien siempre asume el riesgo de que la otra parte no cumpla.
-              </p>
-              <span class="metric-source"
-                >Contexto: Tránsito marítimo transoceánico</span
-              >
-            </div>
-          </div>
-          <p class="takeaway">
-            En una operación común, el pago y la entrega física no ocurren al
-            mismo tiempo. El problema no es vender el litio: es la ventana de
-            riesgo para cobrarlo.
-          </p>
-          <div class="citation-list">
-            <div class="citation-item">
-              <span class="citation-tag">Mercado</span>
-              <strong>McKinsey &amp; Company</strong> (<em
-                >Lithium mining: How new supply is answering battery demand</em
-              >) y <strong>Benchmark Mineral Intelligence</strong>: cadena de
-              baterías proyectada en &gt;$150B–$400B para 2030, requiriendo más
-              de $50B en inversión minera.
-            </div>
-            <div class="citation-item">
-              <span class="citation-tag">Trade Finance</span>
-              <strong>ICC Global Trade Finance Survey</strong> y
-              <strong>Banco Mundial / IFC</strong>: cartas de crédito en
-              mercados emergentes suman 1.5%–3.5% por emisión (0.5%–1.5%) y
-              confirmación internacional por riesgo país (1.0%–2.5%).
-            </div>
-            <div class="citation-item">
-              <span class="citation-tag">Discrepancias</span>
-              <strong>ICC &amp; TFG</strong>: el 60%–70% de las presentaciones
-              de cartas de crédito son rechazadas por discrepancias documentales
-              en primera revisión, extendiendo el ciclo de cobro a 15–45 días.
-            </div>
-          </div>
-        </section>
-
-        <section class="slide" hidden aria-labelledby="risk-title">
-          <div class="slide-meta">
-            <span class="eyebrow">02 / La evidencia documental</span
-            ><span class="time">Mayko Fernandez · 0:30–1:00</span>
-          </div>
-          <h2 id="risk-title">Muchos PDFs.<br />Poca certeza.</h2>
-          <p class="lead">
-            Auditar cada lote por separado en PDFs enviados por correo no
-            refleja cómo certifica la industria real y multiplica la fricción
-            documental.
-          </p>
-          <div class="flow">
-            <div class="step">
-              <span class="step-number">01 / UN SOLO REGISTRO</span>
-              <h3>Sin datos dispersos</h3>
-              <p>
-                Cada parte guarda sus propios datos del lote y reconciliarlos
-                cuesta tiempo y genera disputas.
-              </p>
-            </div>
-            <div class="step">
-              <span class="step-number">02 / NIVEL PLANTA</span>
-              <h3>Certificado único</h3>
-              <p>
-                La productora declara el certificado de su planta una sola vez;
-                cada lote registra su referencia SHA-256.
-              </p>
-            </div>
-            <div class="step">
-              <span class="step-number">03 / PASAPORTE DEL LOTE</span>
-              <h3>Historial unificado</h3>
-              <p>
-                El ciclo de vida del lote queda consultable públicamente, listo
-                para el Reglamento UE 2023/1542.
-              </p>
-            </div>
-          </div>
-          <div class="hash-strip">
-            <strong>CERTIFICADO DE PLANTA → SHA-256 → ANCHOR PDA</strong
-            ><span
-              >Se compara la huella digital del PDF con la referencia declarada
-              en el lote: prueba que el documento coincide con la versión
-              registrada.</span
-            >
-          </div>
-          <div class="citation-list">
-            <div class="citation-item">
-              <span class="citation-tag">Regulación UE</span>
-              <strong>Reglamento (UE) 2023/1542</strong> del Parlamento Europeo
-              y del Consejo (DOUE), Arts. 65 y 77: exige Pasaporte Digital de
-              Batería con diligencia debida en cadena de suministro y huella de
-              carbono obligatoria desde febrero de 2027.
-            </div>
-            <div class="citation-item">
-              <span class="citation-tag">Criptografía</span>
-              <strong>NIST FIPS 180-4</strong> (Secure Hash Standard SHA-256):
-              prueba la integridad matemática del documento registrado, no la
-              verdad física de su contenido ni el muestreo en mina.
-            </div>
-          </div>
-        </section>
-
-        <section class="slide" hidden aria-labelledby="solution-title">
-          <div class="slide-meta">
-            <span class="eyebrow">03 / La solución JuLit</span
-            ><span class="time">Samuel Paredes · 1:00–1:30</span>
-          </div>
-          <h2 id="solution-title">
-            El pago y el lote,<br />en la misma transacción.
-          </h2>
-          <p class="lead">
-            JuLit propone cerrar la ventana de riesgo con un título digital por
-            lote y un protocolo de entrega contra pago (DvP) sobre Solana.
-          </p>
-          <div class="flow">
-            <div class="step">
-              <span class="step-number">01 / TOKENIZACIÓN</span>
-              <h3>Título en custodia</h3>
-              <p>
-                El lote nace reservado al comprador: se acuña el Título Digital
-                (NFT) que queda en custodia del protocolo.
-              </p>
-            </div>
-            <div class="step">
-              <span class="step-number">02 / DEPÓSITO</span>
-              <h3>Pago en garantía</h3>
-              <p>
-                El comprador deposita su pago en USDC en la cuenta de custodia
-                del contrato (fund_lot).
-              </p>
-            </div>
-            <div class="step">
-              <span class="step-number">03 / REDENCIÓN</span>
-              <h3>Liquidación atómica</h3>
-              <p>
-                Al confirmar la recepción física, el comprador firma redeem_lot:
-                en ese mismo instante la productora cobra y el título se da de
-                baja.
-              </p>
-            </div>
-          </div>
-          <div class="hash-strip">
-            <strong>OPERACIONES RESERVADAS Y SALVAGUARDAS</strong
-            ><span
-              >No hay compra abierta: solo el comprador designado puede
-              liquidar. Si no responde, la minera cobra por timeout
-              (claim_timeout); ante disconformidad, se congela el escrow
-              (raise_dispute).</span
-            >
-          </div>
-          <div class="citation-list">
-            <div class="citation-item">
-              <span class="citation-tag">Liquidación DvP</span>
-              <strong>Entrega contra Pago (DvP)</strong> ejecutada en un bloque
-              de Solana (~400 ms) sin riesgo de liquidación bancaria ni demoras
-              por compensación internacional SWIFT.
-            </div>
-            <div class="citation-item">
-              <span class="citation-tag">Custodia y Título</span>
-              El transporte y recepción física ocurren fuera del protocolo. El
-              Título Digital nunca sale a una billetera externa: vive y se quema
-              dentro de la PDA del contrato.
-            </div>
-          </div>
-        </section>
-
-        <section class="slide" hidden aria-labelledby="closing-title">
-          <div class="slide-meta">
-            <span class="eyebrow">04 / Modelo y tracción</span
-            ><span class="time">Mauricio Rios · 1:30–2:00</span>
-          </div>
-          <h2 id="closing-title">
-            Del salar al mercado,<br />con liquidación atómica.
-          </h2>
-          <div class="closing-grid">
-            <div class="closing-panel">
-              <h3>Modelo de negocio: Take Rate</h3>
-              <strong class="big">&lt; 1% vs 3.5%</strong>
-              <span class="panel-source"
-                >Benchmark: ICC Banking Commission vs. JuLit Escrow</span
-              >
-              <p>
-                Comisión de protocolo sobre la liberación del escrow. En un lote
-                de $1.000.000 USD (aprox. 50–70 t de LCE), la banca tradicional
-                retiene entre $15.000 y $35.000 USD; JuLit reduce el costo a
-                menos de $10.000 USD con pago instantáneo contra entrega.
-              </p>
-            </div>
-            <div class="closing-panel">
-              <h3>Tracción técnica en Devnet</h3>
-              <strong class="big">100% on-chain</strong>
-              <span class="panel-source"
-                >Solana Devnet: Program
-                BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky</span
-              >
-              <p>
-                Programa Anchor con 100% de tests unitarios (LiteSVM y Vitest).
-                Catálogo B2B, registro de plantas y mapa interactivo activo en
-                /explorer.
-              </p>
-            </div>
-          </div>
-          <p class="closing-line">
-            JuLit conecta productores y compradores: ni pago sin recibir, ni
-            entrega sin cobrar.
-          </p>
-          <div class="citation-list">
-            <div class="citation-item">
-              <span class="citation-tag">Triángulo del Litio</span>
-              <strong>USGS Mineral Commodity Summaries</strong>: Argentina,
-              Bolivia y Chile concentran más del 53% de las reservas mundiales
-              de litio. Equipo radicado en San Salvador de Jujuy.
-            </div>
-            <div class="citation-item">
-              <span class="citation-tag">Validación Técnica</span>
-              Contrato desplegado en Solana Devnet con fondos de prueba (dUSDC):
-              transacciones reales en red pública. Test suite completa ejecutada
-              con Anchor y LiteSVM.
-            </div>
-          </div>
-          <p class="takeaway">Muchas gracias.</p>
-        </section>
-      </main>
-
-      <footer class="controls">
-        <div class="navigation">
-          <button
-            class="arrow"
-            id="previous"
-            type="button"
-            aria-label="Diapositiva anterior"
-            disabled
-          >
-            ←</button
-          ><button
-            class="arrow"
-            id="next"
-            type="button"
-            aria-label="Diapositiva siguiente"
-          >
-            →</button
-          ><span
-            class="counter"
-            id="counter"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            >1 / 5</span
-          >
         </div>
-        <nav class="page-dots" aria-label="Elegir diapositiva">
-          <button
-            class="dot"
-            type="button"
-            aria-label="1. Inicio"
-            aria-current="step"
-          ></button>
-          <button
-            class="dot"
-            type="button"
-            aria-label="2. El dolor financiero"
-          ></button>
-          <button
-            class="dot"
-            type="button"
-            aria-label="3. El riesgo documental"
-          ></button>
-          <button
-            class="dot"
-            type="button"
-            aria-label="4. Escrow DvP y Título Digital"
-          ></button>
-          <button
-            class="dot"
-            type="button"
-            aria-label="5. Modelo de negocio y cierre"
-          ></button>
-        </nav>
-        <div class="navigation">
-          <span class="hint">← → para navegar</span
-          ><button class="fullscreen" id="fullscreen" type="button">
-            Pantalla completa
-          </button>
+        <div class="cover-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 36" fill="none">
+            <path d="M16 1 31 9.5v17L16 35 1 26.5v-17Z" fill="currentColor" />
+            <path
+              d="M21 10v10a5 5 0 0 1-10 0"
+              stroke="white"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span>Jujuy, Argentina</span>
         </div>
-      </footer>
-    </div>
-    <script>
-      const slides = [...document.querySelectorAll(".slide")];
-      const dots = [...document.querySelectorAll(".dot")];
-      const previous = document.getElementById("previous");
-      const next = document.getElementById("next");
-      const counter = document.getElementById("counter");
-      const fullscreen = document.getElementById("fullscreen");
-      let current = 0;
+      </div>
+      <div class="foot">
+        <span>Presentación para Colosseum</span>
+        <span>Escrow activo en Solana Devnet (dinero de prueba)</span>
+        <span>Hecho en el Triángulo del Litio</span>
+      </div>
+    </section>
 
-      function showSlide(index) {
-        const target = Math.max(0, Math.min(index, slides.length - 1));
-        if (target === current) return;
-        const focused = document.activeElement;
-        const focusWillHide = slides[current].contains(focused);
-        slides[current].hidden = true;
-        current = target;
-        slides[current].hidden = false;
-        dots.forEach((dot, i) => {
-          if (i === current) dot.setAttribute("aria-current", "step");
-          else dot.removeAttribute("aria-current");
-        });
-        previous.disabled = current === 0;
-        next.disabled = current === slides.length - 1;
-        counter.textContent = `${current + 1} / ${slides.length}`;
-        if (
-          focusWillHide ||
-          (focused === previous && previous.disabled) ||
-          (focused === next && next.disabled)
-        ) {
-          dots[current].focus({ preventScroll: true });
-        }
-        window.scrollTo(0, 0);
-      }
+    <!-- Slide 2 — El problema -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">01 / El problema</span>
+        <span class="pagenum">2 / 9</span>
+      </div>
+      <h2>Los productores nuevos le venden a compradores que no conocen.</h2>
+      <p class="lead">
+        Las grandes empresas de litio le venden a sus propios socios. Las
+        empresas nuevas y chicas no tienen socio, ni una forma segura de cobrar.
+      </p>
+      <div class="metrics">
+        <div class="metric">
+          <h3>Los grandes</h3>
+          <strong class="metric-value" style="font-size: 40px">Socios</strong>
+          <p>
+            Cauchari-Olaroz (Jujuy): sus dueños se llevan el litio en proporción
+            a sus acciones.<sup>1</sup> No hay desconfianza que resolver.
+          </p>
+        </div>
+        <div class="metric">
+          <h3>Los nuevos</h3>
+          <strong class="metric-value">100<small>%</small></strong>
+          <p>
+            Argosy Minerals (Salta) vendió 20 t a un comprador de Hong Kong, que
+            pagó todo antes de cargar el barco.<sup>2</sup>
+          </p>
+        </div>
+        <div class="metric">
+          <h3>Los bancos</h3>
+          <strong class="metric-value">45<small>%</small></strong>
+          <p>
+            de los rechazos de financiamiento comercial son para PyMEs, que
+            presentan solo el 38% de los pedidos.<sup>3</sup>
+          </p>
+        </div>
+      </div>
+      <p class="takeaway">
+        Una carta de crédito es cara y lleva mucho papeleo.<sup>4</sup> De las
+        PyMEs rechazadas que buscaron otro financiamiento, el 40% usó fondos
+        propios<sup>5</sup>, sin ninguna protección.
+      </p>
+    </section>
 
-      previous.addEventListener("click", () => showSlide(current - 1));
-      next.addEventListener("click", () => showSlide(current + 1));
-      dots.forEach((dot, i) =>
-        dot.addEventListener("click", () => showSlide(i))
-      );
-      document.addEventListener("keydown", (event) => {
-        if (
-          event.altKey ||
-          event.ctrlKey ||
-          event.metaKey ||
-          event.target.closest("input, textarea, select, [contenteditable]")
-        )
-          return;
-        if (event.key === "ArrowRight" || event.key === "PageDown") {
-          event.preventDefault();
-          showSlide(current + 1);
-        } else if (event.key === "ArrowLeft" || event.key === "PageUp") {
-          event.preventDefault();
-          showSlide(current - 1);
-        } else if (event.key === "Home") {
-          event.preventDefault();
-          showSlide(0);
-        } else if (event.key === "End") {
-          event.preventDefault();
-          showSlide(slides.length - 1);
-        }
-      });
+    <!-- Slide 3 — A quién servimos -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">02 / A quién servimos</span>
+        <span class="pagenum">3 / 9</span>
+      </div>
+      <h2>Hecho para las empresas que los bancos dejan afuera.</h2>
+      <div class="cards">
+        <div class="card">
+          <span class="tag">Sí</span>
+          <h3>Productores nuevos</h3>
+          <p>
+            Proyectos que venden sus primeros lotes a compradores que no son
+            socios ni accionistas.
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag">Sí</span>
+          <h3>Compradores y traders chicos</h3>
+          <p>
+            Empresas sin línea de crédito bancaria, que hoy tienen que pagar por
+            adelantado para recibir el litio.
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag no">Por ahora no</span>
+          <h3>Grandes grupos integrados</h3>
+          <p>
+            Los productores que le venden a sus propios accionistas ya confían
+            en su comprador. No nos necesitan.
+          </p>
+        </div>
+      </div>
+      <p class="takeaway">
+        Los compradores tienen que operar donde los pagos con stablecoins son
+        legales. China continental los prohíbe<sup>6</sup>, así que esos
+        compradores quedan fuera de alcance.
+      </p>
+    </section>
 
-      if (!document.fullscreenEnabled) fullscreen.hidden = true;
-      fullscreen.addEventListener("click", async () => {
-        try {
-          if (document.fullscreenElement) await document.exitFullscreen();
-          else await document.documentElement.requestFullscreen();
-        } catch {
-          counter.textContent = "Pantalla completa no disponible";
-        }
-      });
-      document.addEventListener("fullscreenchange", () => {
-        fullscreen.textContent = document.fullscreenElement
-          ? "Salir de pantalla completa"
-          : "Pantalla completa";
-      });
-    </script>
+    <!-- Slide 4 — La solución -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">03 / La solución</span>
+        <span class="pagenum">4 / 9</span>
+      </div>
+      <h2>Una caja de pago que solo se abre con la entrega.</h2>
+      <div class="flow" style="grid-template-columns: repeat(4, 1fr); gap: 6mm">
+        <div class="step">
+          <span class="step-number">01 / ALTA</span>
+          <h3>Perfil del productor</h3>
+          <p>
+            Damos de alta a cada productor con sus datos de producción, como la
+            pureza del litio. Todos sus lotes usan esos datos.
+          </p>
+        </div>
+        <div class="step">
+          <span class="step-number">02 / CONTRATO</span>
+          <h3>Un lote por comprador</h3>
+          <p>
+            Productor y comprador firman un contrato en JuLit. El productor crea
+            un lote para ese comprador.
+          </p>
+        </div>
+        <div class="step">
+          <span class="step-number">03 / DEPÓSITO</span>
+          <h3>Dinero bloqueado</h3>
+          <p>
+            El comprador pone el dinero, en USDC, en la caja. Nadie puede
+            tocarlo, ni siquiera nosotros.
+          </p>
+        </div>
+        <div class="step">
+          <span class="step-number">04 / ENTREGA</span>
+          <h3>Cobro al confirmar</h3>
+          <p>
+            Llega el litio, el comprador lo revisa y confirma. En ese momento,
+            el productor cobra.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5 — Por qué Solana -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">04 / Por qué Solana</span>
+        <span class="pagenum">5 / 9</span>
+      </div>
+      <h2>Rápido, y menos de un centavo.</h2>
+      <p class="lead">
+        Usamos Solana porque es rápida, y cada transacción cuesta menos de un
+        centavo de dólar.<sup>7</sup>
+      </p>
+    </section>
+
+    <!-- Slide 6 — Modelo de negocio -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">05 / Modelo de negocio</span>
+        <span class="pagenum">6 / 9</span>
+      </div>
+      <h2>Ganamos solo cuando se libera el pago.</h2>
+      <div class="cards two">
+        <div class="card">
+          <span class="kicker">Comisión</span>
+          <span class="big">1%</span>
+          <p>
+            Una comisión del 1%, que se cobra solo cuando la caja le libera el
+            dinero al productor. Crear el lote y depositar es gratis.
+          </p>
+        </div>
+        <div class="card">
+          <span class="kicker">Por qué pagan</span>
+          <span class="big">Seguridad</span>
+          <p>
+            El productor envía sabiendo que el dinero ya está bloqueado. El
+            comprador paga primero, como ya hacen los compradores chicos sin
+            banco, pero ahora el dinero queda protegido hasta la entrega.
+          </p>
+        </div>
+      </div>
+      <p class="takeaway">
+        No reemplazamos el crédito bancario. Le damos una opción segura a las
+        empresas que no lo consiguen.
+      </p>
+    </section>
+
+    <!-- Slide 7 — Estado y límites -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">06 / Estado y límites</span>
+        <span class="pagenum">7 / 9</span>
+      </div>
+      <h2>Funciona hoy, en Solana Devnet.</h2>
+      <div class="cards">
+        <div class="card">
+          <span class="tag">Hoy</span>
+          <h3>Activo en Devnet</h3>
+          <p>
+            El flujo completo (contrato, lote, depósito, confirmación y pago)
+            funciona en Solana Devnet con dinero de prueba.
+          </p>
+          <p style="margin-top: 3mm">
+            <span class="chip">BntbtLZd…Xtky · devnet</span>
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag">Testeado</span>
+          <h3>Suite de tests del programa</h3>
+          <p>
+            El programa Anchor está testeado con LiteSVM, y la app con Vitest.
+          </p>
+        </div>
+        <div class="card">
+          <span class="tag no">Límite</span>
+          <h3>La blockchain no ve el litio</h3>
+          <p>
+            La blockchain prueba que los registros no cambiaron. No puede
+            revisar la carga. Hoy el comprador la revisa antes de confirmar.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 8 — El equipo -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">07 / El equipo</span>
+        <span class="pagenum">8 / 9</span>
+      </div>
+      <h2>Hecho en Jujuy, dentro del Triángulo del Litio.</h2>
+      <p class="lead">
+        Vivimos cerca de los productores nuevos a los que queremos ayudar.
+      </p>
+      <div class="team-grid">
+        <div class="member">
+          <h3>Mauricio Rios</h3>
+          <p>Team Lead · Solana</p>
+        </div>
+        <div class="member">
+          <h3>Mauro Benjamin Mamani</h3>
+          <p>Frontend</p>
+        </div>
+        <div class="member">
+          <h3>Mayko Fernandez</h3>
+          <p>Protocolo · QA</p>
+        </div>
+        <div class="member">
+          <h3>Samuel Paredes</h3>
+          <p>Full-Stack</p>
+        </div>
+      </div>
+      <p class="closing-line">
+        Con JuLit, las empresas nuevas pueden comerciar seguras. Somos JuLit.
+      </p>
+      <div class="foot">
+        <span>San Salvador de Jujuy, Argentina</span>
+        <span>Programa: BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky</span>
+      </div>
+    </section>
+
+    <!-- Slide 9 — Fuentes -->
+    <section class="slide">
+      <div class="slide-meta">
+        <span class="eyebrow">Fuentes</span>
+        <span class="pagenum">9 / 9</span>
+      </div>
+      <ol class="sources-list">
+        <li>
+          Lithium Argentina AG, Exhibit 99.1 presentado ante la SEC (2026) —
+          Cauchari-Olaroz: 44,8% Lithium Argentina, 46,7% Ganfeng, 8,5% JEMSE;
+          "Both parties are entitled to offtake in proportion to their
+          ownership interests."
+          <a href="https://www.sec.gov/Archives/edgar/data/1440972/000106299326004563/exhibit99-1.htm">sec.gov/Archives/edgar/data/1440972/000106299326004563/exhibit99-1.htm</a>
+        </li>
+        <li>
+          Argosy Minerals (ASX: AGY), <em>Lithium Carbonate Spot Sales
+          Contract</em>, marzo 2025 — 20 t a una química con sede en Hong Kong,
+          FOB Buenos Aires, "requiring a 30% deposit and the 70% balance
+          required prior to ship loading".
+          <a href="https://www.argosyminerals.com.au/wp-content/uploads/2025/03/2861224.pdf">argosyminerals.com.au/wp-content/uploads/2025/03/2861224.pdf</a>
+        </li>
+        <li>
+          Asian Development Bank, <em>2023 Trade Finance Gaps, Growth, and Jobs
+          Survey</em> (Brief 256) — en 2022, las PyMEs presentaron el 38% de los
+          pedidos y recibieron el 45% de los rechazos.
+          <a href="https://www.adb.org/sites/default/files/publication/906596/adb-brief-256-2023-trade-finance-gaps-growth-jobs-survey.pdf">adb.org/sites/default/files/publication/906596/adb-brief-256-2023-trade-finance-gaps-growth-jobs-survey.pdf</a>
+        </li>
+        <li>
+          U.S. International Trade Administration, <em>Letter of Credit</em> —
+          "labor-intensive and relatively expensive due to bank fees"; sus
+          documentos son "prone to errors and discrepancies".
+          <a href="https://www.trade.gov/letter-credit">trade.gov/letter-credit</a>
+        </li>
+        <li>
+          Asian Development Bank, <em>2021 Trade Finance Gaps, Growth, and Jobs
+          Survey</em> (Brief 192) — "Among SMEs who were initially rejected and
+          sought alternative financing, 40% used their own funds."
+          <a href="https://www.adb.org/sites/default/files/publication/739286/adb-brief-192-trade-finance-gaps-jobs-survey.pdf">adb.org/sites/default/files/publication/739286/adb-brief-192-trade-finance-gaps-jobs-survey.pdf</a>
+        </li>
+        <li>
+          Banco Popular de China y otros siete organismos, Notice Yin Fa [2026]
+          No. 42 (6 de febrero de 2026) — las actividades con monedas virtuales,
+          incluidas las stablecoins, son actividades financieras ilegales en
+          China continental.
+          <a href="https://www.pbc.gov.cn/tiaofasi/144941/3581332/2026020619591971323/index.html">pbc.gov.cn/tiaofasi/144941/3581332/2026020619591971323/index.html</a>
+        </li>
+        <li>
+          Solana Docs, <em>Fees</em> — tarifa base de 5.000 lamports (0,000005
+          SOL) por firma; menos de un centavo de dólar mientras SOL valga menos
+          de US$2.000.
+          <a href="https://solana.com/docs/core/fees">solana.com/docs/core/fees</a>
+        </li>
+      </ol>
+    </section>
   </body>
 </html>

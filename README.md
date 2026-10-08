@@ -185,8 +185,9 @@ Our regional presence provides direct access to regional mining facilities, loca
 │   ├── adr/                         # Architectural Decision Records (ADR-0019 Escrow DvP)
 │   └── features/                    # Feature specifications
 ├── public/
-│   ├── pitch.html                   # Interactive Spanish pitch deck
-│   ├── pitch-en.html                # Interactive English pitch deck
+│   ├── pitch.html                   # Spanish pitch deck (print-ready)
+│   ├── pitch-en.html                # English pitch deck (print-ready, source of pitch-en.pdf)
+│   ├── pitch-script-en.html         # English pitch script (source of pitch-script-en.pdf)
 │   └── landing/                     # Optimized visual assets and photography
 └── supabase/
     └── migrations/                  # PostgreSQL schemas, RLS policies, and lot indexing
