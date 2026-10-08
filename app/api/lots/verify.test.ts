@@ -3,7 +3,6 @@ import {
   verifyLotCancellation,
   verifyLotClaim,
   verifyLotCreation,
-  verifyLotDispute,
   verifyLotFunding,
   verifyLotRedemption,
   type VerifyLotCreationInput,
@@ -469,67 +468,6 @@ describe("verifyLotClaim", () => {
         lotAccount: {
           programOwned: true,
           producer: PRODUCER,
-          buyer: BUYER,
-          status: "funded",
-        },
-      })
-    );
-    expect(r.ok).toBe(false);
-  });
-});
-
-function disputeBase(
-  overrides: Partial<VerifyLotTransitionInput> = {}
-): VerifyLotTransitionInput {
-  return fundBase({
-    indexedStatus: "funded",
-    lotAccount: {
-      programOwned: true,
-      producer: WALLET,
-      buyer: BUYER,
-      status: "disputed",
-    },
-    ...overrides,
-  });
-}
-
-describe("verifyLotDispute", () => {
-  it("accepts a confirmed raise_dispute by the designated buyer", () => {
-    expect(verifyLotDispute(disputeBase())).toEqual({ ok: true });
-  });
-
-  it("rejects a dispute signed by a different wallet", () => {
-    const r = verifyLotDispute(
-      disputeBase({
-        transaction: {
-          signature: "sig",
-          slot: 100,
-          failed: false,
-          lifecycleInstruction: {
-            lot: LOT_PDA,
-            signer: "Impostor1111111111111111111111111",
-          },
-        },
-      })
-    );
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.rejection.status).toBe(403);
-  });
-
-  it("rejects a listed or already-disputed index row", () => {
-    for (const indexedStatus of ["listed", "disputed"] as const) {
-      const r = verifyLotDispute(disputeBase({ indexedStatus }));
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.rejection.status).toBe(409);
-    }
-  });
-
-  it("rejects when the on-chain status is not disputed", () => {
-    const r = verifyLotDispute(
-      disputeBase({
-        lotAccount: {
-          programOwned: true,
-          producer: WALLET,
           buyer: BUYER,
           status: "funded",
         },

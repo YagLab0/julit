@@ -57,7 +57,7 @@ The protocol fee in basis points deducted from the escrow release on Redemption 
 _Avoid_: Commission on deposit, listing fee
 
 **Claimable After**:
-The per-lot timestamp declared at creation, bounded by the Config's claim window, after which the producer may claim the escrowed funds if the buyer has neither redeemed nor disputed.
+The per-lot timestamp declared at creation, bounded by the Config's claim window, after which the producer may claim the escrowed funds if the buyer has not redeemed.
 _Avoid_: Expiry, global timeout
 
 **Timeout Claim**:
@@ -65,7 +65,7 @@ The producer's unilateral claim of the escrowed USDC via `claim_timeout` once Cl
 _Avoid_: Refund, expiry cancel
 
 **Dispute**:
-A flag raised by the buyer via `raise_dispute` on a funded lot, freezing the Timeout Claim. Resolution happens off-chain under the commercial contract; on-chain, the buyer's only path is Redemption (releasing funds to the producer). There is no on-chain refund path in v1.
+A flag a buyer could once raise on a funded lot via `raise_dispute`, freezing the Timeout Claim. The instruction is removed — no new disputes can open — but lots already `disputed` keep their freeze and resolve only through Redemption (release to the producer). Resolution of those happens off-chain under the commercial contract; there is no on-chain refund path.
 _Avoid_: Arbitration, chargeback, refund
 
 **Cancellation**:
@@ -73,7 +73,7 @@ The producer's unilateral cancellation of a lot in `listed` state via `cancel_lo
 _Avoid_: Expiry, dispute
 
 **Lot Status**:
-The lifecycle state of a lot: `listed` → `funded` → `redeemed`, with branches `disputed` (from funded), `claimed` (timeout), and `cancelled` (pre-funding).
+The lifecycle state of a lot: `listed` → `funded` → `redeemed`, with branches `disputed` (legacy, no longer reachable), `claimed` (timeout), and `cancelled` (pre-funding).
 _Avoid_: Settled, paid, completed
 
 **Plant Certificate**:

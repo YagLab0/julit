@@ -37,7 +37,6 @@ type TransitionOptions = {
     | "fund_tx_signature"
     | "redeem_tx_signature"
     | "claim_tx_signature"
-    | "dispute_tx_signature"
     | "cancel_tx_signature";
   /** Status written on success. */
   nextStatus: string;
@@ -50,7 +49,7 @@ type TransitionOptions = {
 
 /**
  * Shared POST handler for lifecycle transitions (fund, redeem, claim,
- * dispute). Authenticates the calling company, decodes the submitted
+ * cancel). Authenticates the calling company, decodes the submitted
  * transaction, runs the pure verification seam, then CAS-updates the
  * index row.
  */

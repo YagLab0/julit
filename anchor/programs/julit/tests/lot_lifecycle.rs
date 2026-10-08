@@ -1,4 +1,4 @@
-use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
+use anchor_lang::{AnchorDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
 use julit::{accounts, instruction, Config, Lot, LotStatus};
 use litesvm::LiteSVM;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
@@ -316,16 +316,17 @@ fn cancel_lot_ix(producer: &Pubkey, lot: &Pubkey) -> Instruction {
     }
 }
 
-fn raise_dispute_ix(buyer: &Pubkey, lot: &Pubkey) -> Instruction {
-    Instruction {
-        program_id: julit::ID,
-        accounts: accounts::RaiseDispute {
-            lot: *lot,
-            buyer: *buyer,
-        }
-        .to_account_metas(None),
-        data: instruction::RaiseDispute {}.data(),
-    }
+/// Writes `Disputed` straight into the lot account: no instruction can reach
+/// that state anymore, but legacy disputed lots still exercise the redeem and
+/// claim_timeout guards.
+fn mark_disputed(svm: &mut LiteSVM, lot: &Pubkey) {
+    let mut account = svm.get_account(lot).unwrap();
+    let mut decoded = Lot::deserialize(&mut &account.data[8..]).unwrap();
+    decoded.status = LotStatus::Disputed;
+    let mut bytes = account.data[..8].to_vec();
+    decoded.serialize(&mut bytes).unwrap();
+    account.data = bytes;
+    svm.set_account(*lot, account).unwrap();
 }
 
 /// Moves the Clock sysvar past `lot.claimable_after`.
@@ -508,12 +509,7 @@ fn redeem_lot_works_from_disputed() {
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
     let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
 
-    send(
-        &mut svm,
-        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
-        &[&payer, &buyer],
-    );
-    svm.expire_blockhash();
+    mark_disputed(&mut svm, &lot);
     send(
         &mut svm,
         vec![redeem_lot_ix(
@@ -661,14 +657,9 @@ fn claim_timeout_rejects_before_deadline() {
 fn claim_timeout_rejects_disputed_lot() {
     let (mut svm, payer) = svm();
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
 
-    send(
-        &mut svm,
-        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
-        &[&payer, &buyer],
-    );
-    svm.expire_blockhash();
+    mark_disputed(&mut svm, &lot);
     warp_past_claim_deadline(&mut svm, &lot);
 
     let err = send_err(
@@ -703,53 +694,6 @@ fn claim_timeout_rejects_wrong_signer() {
         &[&payer, &buyer],
     );
     assert!(err.contains("WrongProducer") || err.contains("601"), "{err}");
-}
-
-#[test]
-fn raise_dispute_marks_lot_disputed() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (_treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
-
-    send(
-        &mut svm,
-        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
-        &[&payer, &buyer],
-    );
-
-    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
-    assert!(decoded.status == LotStatus::Disputed);
-    // The escrow stays untouched — the dispute only freezes the clock.
-    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 400_000_000);
-}
-
-#[test]
-fn raise_dispute_rejects_wrong_signer() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (_treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
-
-    let err = send_err(
-        &mut svm,
-        vec![raise_dispute_ix(&payer.pubkey(), &lot)],
-        &[&payer],
-    );
-    assert!(err.contains("WrongBuyer") || err.contains("601"), "{err}");
-}
-
-#[test]
-fn raise_dispute_rejects_unfunded_lot() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
-    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
-
-    let err = send_err(
-        &mut svm,
-        vec![raise_dispute_ix(&buyer.pubkey(), &lot)],
-        &[&payer, &buyer],
-    );
-    assert!(err.contains("LotNotFunded") || err.contains("601"), "{err}");
 }
 
 #[test]
@@ -923,4 +867,43 @@ fn cancel_lot_rejects_funded_lot() {
 
     // Escrowed funds untouched — the funded lot is still intact.
     assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 400_000_000);
+}
+
+#[test]
+fn set_fee_bps_updates_fee_for_admin_only() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (config, _) = config_pda();
+
+    let ix = Instruction {
+        program_id: julit::ID,
+        accounts: accounts::UpdateConfig {
+            config,
+            admin: payer.pubkey(),
+        }
+        .to_account_metas(None),
+        data: instruction::SetFeeBps { fee_bps: 100 }.data(),
+    };
+    send(&mut svm, vec![ix], &[&payer]);
+
+    let updated = Config::deserialize(&mut &svm.get_account(&config).unwrap().data[8..]).unwrap();
+    assert_eq!(updated.fee_bps, 100);
+
+    let stranger = Keypair::new();
+    svm.airdrop(&stranger.pubkey(), LAMPORTS_PER_SOL).unwrap();
+    let ix = Instruction {
+        program_id: julit::ID,
+        accounts: accounts::UpdateConfig {
+            config,
+            admin: stranger.pubkey(),
+        }
+        .to_account_metas(None),
+        data: instruction::SetFeeBps { fee_bps: 250 }.data(),
+    };
+    let err = send_err(&mut svm, vec![ix], &[&stranger]);
+    assert!(err.contains("WrongAdmin"), "{err}");
+
+    let updated = Config::deserialize(&mut &svm.get_account(&config).unwrap().data[8..]).unwrap();
+    assert_eq!(updated.fee_bps, 100);
 }

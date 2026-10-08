@@ -15,7 +15,6 @@ import {
   findConfigPda,
   findMintPda,
   getFundLotInstructionAsync,
-  getRaiseDisputeInstruction,
   getRedeemLotInstructionAsync,
 } from "../generated/julit";
 import { useCluster } from "../components/cluster-context";
@@ -70,9 +69,8 @@ function confirmContent(
 
 /**
  * The buyer's inbox: lots designated to the company that still await a
- * buyer decision (listed → fund, funded → redeem/dispute, disputed →
- * redeem). The list is always readable; only the action area requires
- * the verified wallet.
+ * buyer decision (listed → fund, funded/disputed → redeem). The list is
+ * always readable; only the action area requires the verified wallet.
  */
 export function DesignatedLotsCard({
   lots,
@@ -411,24 +409,9 @@ function DesignatedLotRow({
     });
   }
 
-  function dispute() {
-    void runTransition({
-      build: (buyer) =>
-        getRaiseDisputeInstruction({
-          lot: address(lot.pda_address),
-          buyer,
-        }),
-      endpoint: "/api/lots/dispute",
-      successTitle: t(dict.designated.toasts.disputed, { lot: lot.lot_id }),
-      successDescription: dict.designated.toasts.disputedDesc,
-      failureTitle: dict.designated.toasts.disputeError,
-    });
-  }
-
   const handlers: Record<BuyerLotAction, () => void> = {
     fund,
     redeem,
-    dispute,
   };
 
   const actionButtons = (
@@ -439,9 +422,7 @@ function DesignatedLotRow({
           type="button"
           disabled={busy || (action === "fund" && verdict.fundBlocker !== null)}
           onClick={() => setConfirming(action)}
-          className={`text-xs px-3 py-1.5 cursor-pointer ${
-            action === "dispute" ? "btn-secondary" : "btn-primary"
-          }`}
+          className="btn-primary text-xs px-3 py-1.5 cursor-pointer"
         >
           {dict.designated.actions[action]}
         </button>

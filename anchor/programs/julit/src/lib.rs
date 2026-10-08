@@ -46,6 +46,15 @@ pub mod julit {
         Ok(())
     }
 
+    /// Updates the protocol take rate. Only the Config admin may call it; the
+    /// fee is read at settlement, so it applies to every future Redemption and
+    /// Timeout Claim regardless of when the lot was created or funded.
+    pub fn set_fee_bps(ctx: Context<UpdateConfig>, fee_bps: u16) -> Result<()> {
+        require!(fee_bps <= 10_000, LotError::InvalidFeeBps);
+        ctx.accounts.config.fee_bps = fee_bps;
+        Ok(())
+    }
+
     /// Registers a lot and mints its Digital Title into escrow. The title is a
     /// Metaplex NonFungible whose update authority is the Lot PDA; it never
     /// leaves the escrow — it is burned there by `redeem_lot` or
@@ -318,17 +327,6 @@ pub mod julit {
         Ok(())
     }
 
-    /// The buyer freezes a funded lot: `Funded → Disputed`. Disputing
-    /// blocks `claim_timeout` — the only exits are the buyer signing
-    /// `redeem_lot` (resolution in the producer's favor) or an indefinite
-    /// freeze, since v1 ships no refund or arbiter path.
-    pub fn raise_dispute(ctx: Context<RaiseDispute>) -> Result<()> {
-        let lot = &mut ctx.accounts.lot;
-        require!(lot.status == LotStatus::Funded, LotError::LotNotFunded);
-        lot.status = LotStatus::Disputed;
-        Ok(())
-    }
-
     /// The producer cancels a reservation the buyer never funded:
     /// `Listed → Cancelled`. The Digital Title is burned inside its
     /// escrow — a cancelled reservation can never settle. Once `Funded`
@@ -428,6 +426,21 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateConfig<'info> {
+    /// The singleton Config PDA being updated.
+    #[account(
+        mut,
+        seeds = [b"config"],
+        bump = config.bump,
+    )]
+    pub config: Account<'info, Config>,
+
+    /// Only the configured admin may update the protocol fee.
+    #[account(constraint = admin.key() == config.admin @ LotError::WrongAdmin)]
+    pub admin: Signer<'info>,
 }
 
 #[derive(Accounts)]
@@ -751,23 +764,6 @@ pub struct CancelLot<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-#[derive(Accounts)]
-pub struct RaiseDispute<'info> {
-    /// The lot being frozen; the PDA seeds prove the account is the real one.
-    #[account(
-        mut,
-        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
-        bump = lot.bump,
-    )]
-    pub lot: Account<'info, Lot>,
-
-    /// Only the designated buyer may freeze the lot.
-    #[account(
-        constraint = buyer.key() == lot.buyer @ LotError::WrongBuyer
-    )]
-    pub buyer: Signer<'info>,
-}
-
 #[account]
 pub struct Config {
     pub admin: Pubkey,
@@ -869,4 +865,6 @@ pub enum LotError {
     ClaimTooEarly,
     #[msg("Arithmetic overflow")]
     MathOverflow,
+    #[msg("Account is not the configured admin")]
+    WrongAdmin,
 }

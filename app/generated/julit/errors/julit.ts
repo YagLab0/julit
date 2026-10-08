@@ -56,6 +56,8 @@ export const JULIT_ERROR__WRONG_TREASURY = 0x1782; // 6018
 export const JULIT_ERROR__CLAIM_TOO_EARLY = 0x1783; // 6019
 /** MathOverflow: Arithmetic overflow */
 export const JULIT_ERROR__MATH_OVERFLOW = 0x1784; // 6020
+/** WrongAdmin: Account is not the configured admin */
+export const JULIT_ERROR__WRONG_ADMIN = 0x1785; // 6021
 
 export type JulitError =
   | typeof JULIT_ERROR__BUYER_IS_PRODUCER
@@ -73,6 +75,7 @@ export type JulitError =
   | typeof JULIT_ERROR__MATH_OVERFLOW
   | typeof JULIT_ERROR__METADATA_URI_TOO_LONG
   | typeof JULIT_ERROR__NOT_BATTERY_GRADE
+  | typeof JULIT_ERROR__WRONG_ADMIN
   | typeof JULIT_ERROR__WRONG_BUYER
   | typeof JULIT_ERROR__WRONG_METADATA_PROGRAM
   | typeof JULIT_ERROR__WRONG_PRODUCER
@@ -98,6 +101,7 @@ if (process.env.NODE_ENV !== "production") {
     [JULIT_ERROR__MATH_OVERFLOW]: `Arithmetic overflow`,
     [JULIT_ERROR__METADATA_URI_TOO_LONG]: `Metadata URI exceeds 200 bytes`,
     [JULIT_ERROR__NOT_BATTERY_GRADE]: `Only battery grade (99.50-100.00%) is accepted`,
+    [JULIT_ERROR__WRONG_ADMIN]: `Account is not the configured admin`,
     [JULIT_ERROR__WRONG_BUYER]: `Only the designated buyer may fund this lot`,
     [JULIT_ERROR__WRONG_METADATA_PROGRAM]: `Not the Metaplex Token Metadata program`,
     [JULIT_ERROR__WRONG_PRODUCER]: `Account is not the lot's producer`,

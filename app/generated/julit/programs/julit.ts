@@ -22,15 +22,15 @@ import {
   parseCreateLotInstruction,
   parseFundLotInstruction,
   parseInitializeInstruction,
-  parseRaiseDisputeInstruction,
   parseRedeemLotInstruction,
+  parseSetFeeBpsInstruction,
   type ParsedCancelLotInstruction,
   type ParsedClaimTimeoutInstruction,
   type ParsedCreateLotInstruction,
   type ParsedFundLotInstruction,
   type ParsedInitializeInstruction,
-  type ParsedRaiseDisputeInstruction,
   type ParsedRedeemLotInstruction,
+  type ParsedSetFeeBpsInstruction,
 } from "../instructions";
 
 export const JULIT_PROGRAM_ADDRESS =
@@ -78,8 +78,8 @@ export enum JulitInstruction {
   CreateLot,
   FundLot,
   Initialize,
-  RaiseDispute,
   RedeemLot,
+  SetFeeBps,
 }
 
 export function identifyJulitInstruction(
@@ -145,23 +145,23 @@ export function identifyJulitInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([41, 243, 1, 51, 150, 95, 246, 73]),
-      ),
-      0,
-    )
-  ) {
-    return JulitInstruction.RaiseDispute;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([123, 49, 49, 64, 118, 149, 146, 79]),
       ),
       0,
     )
   ) {
     return JulitInstruction.RedeemLot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([2, 161, 245, 141, 111, 32, 39, 198]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.SetFeeBps;
   }
   throw new Error(
     "The provided instruction could not be identified as a julit instruction.",
@@ -187,11 +187,11 @@ export type ParsedJulitInstruction<
       instructionType: JulitInstruction.Initialize;
     } & ParsedInitializeInstruction<TProgram>)
   | ({
-      instructionType: JulitInstruction.RaiseDispute;
-    } & ParsedRaiseDisputeInstruction<TProgram>)
-  | ({
       instructionType: JulitInstruction.RedeemLot;
-    } & ParsedRedeemLotInstruction<TProgram>);
+    } & ParsedRedeemLotInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.SetFeeBps;
+    } & ParsedSetFeeBpsInstruction<TProgram>);
 
 export function parseJulitInstruction<TProgram extends string>(
   instruction: Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array>,
@@ -233,18 +233,18 @@ export function parseJulitInstruction<TProgram extends string>(
         ...parseInitializeInstruction(instruction),
       };
     }
-    case JulitInstruction.RaiseDispute: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: JulitInstruction.RaiseDispute,
-        ...parseRaiseDisputeInstruction(instruction),
-      };
-    }
     case JulitInstruction.RedeemLot: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: JulitInstruction.RedeemLot,
         ...parseRedeemLotInstruction(instruction),
+      };
+    }
+    case JulitInstruction.SetFeeBps: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.SetFeeBps,
+        ...parseSetFeeBpsInstruction(instruction),
       };
     }
     default:

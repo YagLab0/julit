@@ -6,7 +6,7 @@ import type { LotStatus } from "../explorer/data/lots";
  * may offer. All policy lives here — the card renders the verdict.
  */
 
-export type BuyerLotAction = "fund" | "redeem" | "dispute";
+export type BuyerLotAction = "fund" | "redeem";
 
 /** Why "Comprar con escrow" is offered but cannot run. */
 export type FundBlocker = "checking_balance" | "insufficient_balance";
@@ -76,7 +76,7 @@ export function buyerLotVerdict(input: {
     }
     case "funded":
       return {
-        actions: ["redeem", "dispute"],
+        actions: ["redeem"],
         fundBlocker: null,
         timeoutClaimLive,
         walletBlocked: false,

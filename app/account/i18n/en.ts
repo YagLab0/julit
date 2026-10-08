@@ -132,13 +132,12 @@ export const en: AccountDict = {
     actions: {
       fund: "Buy with escrow",
       redeem: "Confirm receipt",
-      dispute: "Dispute",
     },
     confirm: {
       fund: {
         title: "Buy {lot} with escrow",
         amountLabel: "Lot price",
-        body: "You deposit the full price into the lot's escrow. It is released to the producer when you confirm receipt; if you neither confirm nor dispute before the deadline, the producer may claim it.",
+        body: "You deposit the full price into the lot's escrow. It is released to the producer when you confirm receipt; if you do not confirm before the deadline, the producer may claim it.",
         cta: "Sign and deposit",
       },
       redeem: {
@@ -149,12 +148,6 @@ export const en: AccountDict = {
         bodyDisputed:
           "The lot is under dispute: releasing the custodied payment is the on-chain resolution in the producer's favour. The Digital Title is retired.",
         cta: "Sign and release payment",
-      },
-      dispute: {
-        title: "Dispute {lot}",
-        amountLabel: "Escrow amount",
-        body: "The dispute freezes the producer's timeout claim while you resolve the issue off-chain. The only on-chain exit is confirming receipt — there is no refund.",
-        cta: "Sign dispute",
       },
     },
     rows: {
@@ -176,7 +169,7 @@ export const en: AccountDict = {
     clock: {
       disputed: "Open dispute: the producer's timeout claim is frozen.",
       funded:
-        "If you neither confirm nor dispute before {deadline}, the producer may claim the escrow.",
+        "If you do not confirm before {deadline}, the producer may claim the escrow.",
       listed: "You must confirm receipt before {deadline}.",
     },
     toasts: {
@@ -193,9 +186,6 @@ export const en: AccountDict = {
       redeemedDesc:
         "The escrow was released to the producer and the Digital Title was retired.",
       redeemError: "Could not confirm receipt.",
-      disputed: "Lot {lot} under dispute",
-      disputedDesc: "The producer's timeout claim is frozen.",
-      disputeError: "Could not open the dispute.",
     },
     gate: {
       action: "operate {lot}",

@@ -57,8 +57,6 @@ sequenceDiagram
   alt Compradora confirma recepción
     BUY->>SC: tx redeem_lot (Funded o Disputed)
     SC->>SC: quema título + escrow → productora menos fee → tesorería
-  else Compradora disputa
-    BUY->>SC: tx raise_dispute (Funded → Disputed, congela claim)
   else Productora reclama por timeout
     PROD->>SC: tx claim_timeout (Funded, now ≥ claimable_after)
     SC->>SC: quema título + escrow → productora menos fee → tesorería
@@ -66,7 +64,7 @@ sequenceDiagram
     PROD->>SC: tx cancel_lot (Listed → Cancelled, quema título)
   end
   SC-->>FE: confirmada + tx_signature
-  FE->>API: POST /api/lots/{redeem,dispute,claim,cancel}
+  FE->>API: POST /api/lots/{redeem,claim,cancel}
   API->>SB: CAS update del estado indexado
 
   Note over VIS,SC: 6 · Pasaporte público batch/PDA, sin cuenta

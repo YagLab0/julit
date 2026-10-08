@@ -108,18 +108,16 @@ match):
 ## 5. Settlement — exactly one terminal path
 
 All lifecycle calls follow the same pattern: sign the instruction, then
-`POST /api/lots/{redeem,claim,dispute,cancel}` verifies on-chain facts
+`POST /api/lots/{redeem,claim,cancel}` verifies on-chain facts
 (instruction kind, signer position, party role, resulting status, current
 index status) and CAS-updates the index row.
 
 - **`redeem_lot`** (buyer, `Funded` or `Disputed`): burns the Digital
   Title inside escrow and releases the escrowed USDC — `price − fee` to
   the producer's ATA, `fee` to the treasury's ATA (both
-  `init_if_needed`). `→ Redeemed`.
-- **`raise_dispute`** (buyer, `Funded`): freezes the lot.
-  `→ Disputed`. Blocks `claim_timeout`; the only exit is the buyer
-  signing `redeem_lot` — a dispute with a vanished buyer locks funds
-  indefinitely (documented v1 limitation).
+  `init_if_needed`). `→ Redeemed`. `Disputed` is a legacy state: the
+  dispute instruction was removed, and lots already disputed keep their
+  frozen `claim_timeout` until the buyer redeems.
 - **`claim_timeout`** (producer, `Funded`, `now ≥ claimable_after`):
   same burn + release as redeem, with the clock signing instead of the
   buyer. `→ Claimed`.
