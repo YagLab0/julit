@@ -18,8 +18,8 @@ export type LotFormValues = {
   buyerWallet: string;
   /** `datetime-local` value; producer may claim escrowed funds after it. */
   claimableAfter: string;
-  /** SHA-256 hex of the plant certificate uploaded to the API. */
-  plantCertSha256: string;
+  /** SHA-256 hex of the lot spec sheet uploaded to the API. */
+  specSheetSha256: string;
 };
 
 /** The producer's Production Specification, provisioned on its company
@@ -67,7 +67,7 @@ export type CreateLotPayload = {
   buyerWallet: string;
   /** Unix seconds (i64 decimal string). */
   claimableAfterUnix: string;
-  plantCertSha256: string;
+  specSheetSha256: string;
 };
 
 /** Parses a non-negative decimal string into a scaled integer, or null. */
@@ -150,9 +150,9 @@ export function validateLotForm(
     errors.claimableAfter = messages.claimableFuture;
   }
 
-  const certHash = values.plantCertSha256.trim().toLowerCase();
-  if (!HEX_64_RE.test(certHash)) {
-    errors.plantCertSha256 = messages.certRequired;
+  const specHash = values.specSheetSha256.trim().toLowerCase();
+  if (!HEX_64_RE.test(specHash)) {
+    errors.specSheetSha256 = messages.specRequired;
   }
 
   const payload =
@@ -168,7 +168,7 @@ export function validateLotForm(
           producerWallet: ctx.producerWallet,
           buyerWallet,
           claimableAfterUnix: Math.floor(claimableMs / 1000).toString(),
-          plantCertSha256: certHash,
+          specSheetSha256: specHash,
         }
       : null;
 

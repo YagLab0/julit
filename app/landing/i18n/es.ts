@@ -76,12 +76,12 @@ export const es = {
           "Cada lote tiene un título digital único que concentra su información, y todo su historial queda a la vista en el Pasaporte.",
       },
       {
-        tab: "Certificado de planta",
-        title: "Un certificado para toda la planta",
+        tab: "Ficha técnica",
+        title: "Una ficha técnica por lote",
         problem:
-          "Auditar cada lote por separado no refleja cómo certifica la industria real y multiplica la fricción documental.",
+          "Las especificaciones del cargamento viajan en documentos que nadie puede contrastar con el lote.",
         solution:
-          "El productor declara el certificado de su planta una sola vez; cada lote registra su referencia y cualquiera puede comprobar que el documento coincide.",
+          "Cada lote declara su ficha técnica: el SHA-256 del PDF queda registrado y cualquiera puede comprobar que el documento coincide.",
       },
       {
         tab: "Compra reservada",
@@ -113,13 +113,13 @@ export const es = {
         { label: "Historial", value: "registro · depósito · liquidación" },
       ],
     },
-    certificateMock: {
-      fileName: "certificado-planta.pdf",
-      caption: "Declarado una sola vez por el productor",
+    specSheetMock: {
+      fileName: "ficha-tecnica-del-lote.pdf",
+      caption: "Declarada por la productora al registrar el lote",
       hashLabel: "Huella digital",
       hashCheck: "coincide",
-      refLabel: "Referenciado por",
-      refValue: "3 lotes",
+      refLabel: "Vinculada al",
+      refValue: "lote 0042",
     },
     reservedMock: {
       title: "Lote 0042",
@@ -167,7 +167,7 @@ export const es = {
     ],
     scenes: {
       directoryTitle: "Directorio de orígenes",
-      certPill: "Cert. de planta",
+      certPill: "Ficha técnica",
       privatePill: "Acuerdo privado",
       titleBadge: "Título",
       titleFile: "titulo-lote-0042",
@@ -190,9 +190,9 @@ export const es = {
     eyebrow: "El Pasaporte del lote",
     heading: "El historial de cada lote, en un solo lugar.",
     description:
-      "El Pasaporte es la vista pública de todo el recorrido del lote: su título, sus operaciones y su certificado de planta, verificables por cualquiera.",
+      "El Pasaporte es la vista pública de todo el recorrido del lote: su título, sus operaciones y su ficha técnica, consultables por cualquiera.",
     integrityNote:
-      "El título digital representa un derecho contractual sobre el lote; no es un título legal automático. Comprobar el certificado prueba que el documento coincide con la versión registrada, no la verdad de su contenido.",
+      "El título digital representa un derecho contractual sobre el lote; no es un título legal automático. Comprobar la ficha técnica prueba que el documento coincide con la versión registrada, no la verdad de su contenido.",
     doc: {
       edition: "Registro del lote",
       titleTop: "Pasaporte",
@@ -209,9 +209,9 @@ export const es = {
             "Volumen declarado, composición del carbonato y condiciones del lote.",
         },
         {
-          title: "Certificado de planta",
+          title: "Ficha técnica del lote",
           description:
-            "Documento de la planta y su referencia de integridad registrada.",
+            "El documento técnico del lote y su referencia de integridad registrada.",
         },
         {
           title: "Título digital",
@@ -244,11 +244,11 @@ export const es = {
       items: [
         "El pago del comprador se libera en el mismo instante en que se confirma la entrega.",
         "Si el comprador no confirma, cobrás el depósito vencido el plazo pactado.",
-        "Declarás el certificado de planta una sola vez y cada lote lo referencia.",
+        "Declarás la ficha técnica del lote y su huella queda registrada en la cadena.",
         "El historial del lote queda verificable por cualquiera.",
       ],
       widget: {
-        sources: ["Origen", "Cert. de planta", "Lote 0042"],
+        sources: ["Origen", "Ficha técnica", "Lote 0042"],
         hub: "Título digital",
         docTitle: "Cobro",
       },
@@ -258,7 +258,7 @@ export const es = {
       title: "El pago no se mueve hasta que confirmás la entrega.",
       items: [
         "Depositás el precio del lote en garantía y solo se libera a la productora cuando confirmás la recepción: no hay ventana de riesgo.",
-        "Verificás el certificado de planta y el historial del lote antes y después de liquidar.",
+        "Consultás la ficha técnica del lote y su historial antes y después de liquidar.",
         "Tu confirmación cierra la operación y deja evidencia permanente para ambas partes.",
       ],
       widget: {
@@ -282,8 +282,8 @@ export const es = {
         a: "Un certificado digital único que representa el derecho contractual sobre el lote. Queda resguardado por JuLit y se da de baja cuando el comprador confirma la recepción: nunca cambia de manos. Es la representación digital de ese derecho, no un título legal automático.",
       },
       {
-        q: "¿Qué verifica el certificado de planta?",
-        a: "Que el documento coincide con la versión registrada: se compara la huella digital del PDF con la referencia declarada en el lote. Prueba la integridad del documento, no la verdad de su contenido.",
+        q: "¿Qué prueba la ficha técnica del lote?",
+        a: "Que el documento coincide con la versión registrada: la huella digital del PDF quedó declarada en la cuenta del lote. Prueba la integridad del documento, no la verdad de su contenido.",
       },
       {
         q: "¿La entrega física pasa por JuLit?",

@@ -76,16 +76,12 @@ _Avoid_: Expiry, dispute
 The lifecycle state of a lot: `listed` → `funded` → `redeemed`, with branches `disputed` (legacy, no longer reachable), `claimed` (timeout), and `cancelled` (pre-funding).
 _Avoid_: Settled, paid, completed
 
-**Plant Certificate**:
-The producer-declared certification document (PDF) for a production plant, whose SHA-256 is recorded on each lot from that plant.
-_Avoid_: Audit certificate, per-lot certificate
-
-**Plant Certificate Verification**:
-The public check that a plant certificate PDF's bytes hash to the digest recorded on the lot. It proves the document matches the recorded digest, not the truth of its contents.
-_Avoid_: Certification validation, compliance check
+**Lot Spec Sheet**:
+The producer-declared technical document (PDF) for a lot, whose SHA-256 is recorded on the lot at creation. Anyone can hash the public file and compare it with the declared digest.
+_Avoid_: Plant certificate, audit certificate
 
 **Passport**:
-The public record of a lot's lifecycle: its digital title, funding, redemption or claim transactions, declared metrics, and plant certificate reference. It is not an official EU battery passport or a guarantee of regulatory compliance.
+The public record of a lot's lifecycle: its digital title, funding, redemption or claim transactions, declared metrics, and spec sheet reference. It is not an official EU battery passport or a guarantee of regulatory compliance.
 _Avoid_: Audit certificate, QR code, official EU certification
 
 **Lot Price**:

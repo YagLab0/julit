@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LotStatus, JULIT_PROGRAM_ADDRESS } from "../generated/julit";
 import {
-  certificateVerdict,
   contrastLotRecord,
   passportPath,
   scaledDecimal,
@@ -10,7 +9,7 @@ import {
   type OnChainLot,
 } from "./verification";
 
-const PLANT_CERT = "a".repeat(64);
+const SPEC_SHEET = "a".repeat(64);
 const CLAIMABLE_ISO = "2026-11-15T00:00:00.000Z";
 const CLAIMABLE_SECS = BigInt(Math.trunc(Date.parse(CLAIMABLE_ISO) / 1000));
 
@@ -23,7 +22,7 @@ const INDEXED: IndexedLot = {
   origin_id: "condor",
   status: "listed",
   claimable_after: CLAIMABLE_ISO,
-  plant_cert_sha256: PLANT_CERT,
+  spec_sheet_sha256: SPEC_SHEET,
   volume_tonnes: "120",
   purity_pct: "99.52",
   water_footprint_m3_per_tonne: "38.75",
@@ -47,7 +46,7 @@ function account(
       waterM3PerTonneScaled: 3875n,
       carbonKgCo2ePerTonneScaled: 412050n,
       claimableAfter: CLAIMABLE_SECS,
-      plantCertHash: new Uint8Array(32).fill(0xaa),
+      specSheetHash: new Uint8Array(32).fill(0xaa),
       status: LotStatus.Listed,
       ...data,
     },
@@ -164,12 +163,12 @@ describe("contrastLotRecord", () => {
     ).toEqual(mismatch(["claimableAfter"]));
   });
 
-  it("names plantCertHash when the certificate digest differs", () => {
+  it("names specSheetHash when the spec sheet digest differs", () => {
     expect(
       contrast({
-        account: account({ plantCertHash: new Uint8Array(32).fill(0xbb) }),
+        account: account({ specSheetHash: new Uint8Array(32).fill(0xbb) }),
       })
-    ).toEqual(mismatch(["plantCertHash"]));
+    ).toEqual(mismatch(["specSheetHash"]));
   });
 
   it("names status when the on-chain status differs", () => {
@@ -257,32 +256,6 @@ describe("decimal exactness", () => {
     expect(scaledDecimal("abc", 2)).toBeNull();
     expect(scaledDecimal("-1", 2)).toBeNull();
     expect(scaledDecimal("1e3", 2)).toBeNull();
-  });
-});
-
-describe("certificateVerdict", () => {
-  const hexA = "a".repeat(64);
-  const hexB = "b".repeat(64);
-
-  it("returns match for equal hex", () => {
-    expect(certificateVerdict(hexA, hexA)).toBe("match");
-  });
-
-  it("returns match for equal hex in either case", () => {
-    expect(certificateVerdict(hexA, hexA.toUpperCase())).toBe("match");
-    expect(certificateVerdict(hexA.toUpperCase(), hexA)).toBe("match");
-  });
-
-  it("returns mismatch for any difference", () => {
-    expect(certificateVerdict(hexA, hexB)).toBe("mismatch");
-    expect(certificateVerdict(hexA, `${hexA.slice(0, 63)}b`)).toBe("mismatch");
-  });
-
-  it("returns mismatch for malformed computed hex", () => {
-    expect(certificateVerdict(hexA, "not-hex")).toBe("mismatch");
-    expect(certificateVerdict(hexA, hexA.slice(0, 63))).toBe("mismatch");
-    expect(certificateVerdict(hexA, `${hexA}ff`)).toBe("mismatch");
-    expect(certificateVerdict(hexA, "")).toBe("mismatch");
   });
 });
 

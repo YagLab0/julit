@@ -88,7 +88,7 @@ select throws_ok($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
     carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-    plant_cert_sha256, creation_tx_signature, observed_slot
+    spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('6', 44), 'LIT-T1', repeat('2', 31) || '2', repeat('4', 31) || '6',
     'pena_blanca', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
@@ -100,7 +100,7 @@ select throws_ok($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
     carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-    plant_cert_sha256, creation_tx_signature, observed_slot
+    spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('6', 44), 'LIT-T2', repeat('2', 31) || '2', repeat('4', 31) || '4',
     'condor', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
@@ -112,7 +112,7 @@ select lives_ok($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
     carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-    plant_cert_sha256, creation_tx_signature, observed_slot
+    spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('6', 44), 'LIT-T3', repeat('2', 31) || '2', repeat('4', 31) || '4',
     'pena_blanca', repeat('7', 44), 10, 99.5, 50, 8000, 1000,

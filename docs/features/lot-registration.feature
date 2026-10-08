@@ -23,7 +23,7 @@ Feature: Lot registration and public indexing
       | price_usdc        | 12000.123456         |
     And the transaction designates the contracted Buyer
     And the transaction sets claimable_after inside the configured window
-    And the transaction carries the plant certificate SHA-256
+    And the transaction carries the lot spec sheet SHA-256
     When the Producer signs and submits the transaction to Devnet
     Then the Lot account is created with status "listed"
     And exactly one Digital Title token is minted into the lot-owned escrow ATA
@@ -33,11 +33,11 @@ Feature: Lot registration and public indexing
     Then the Lot is indexed with status "listed"
 
   @api
-  Scenario: Upload the plant certificate before registering
-    Given the Producer holds a plant certificate PDF
+  Scenario: Upload the lot spec sheet before registering
+    Given the Producer holds a lot spec sheet PDF
     When the Producer uploads it through the authenticated API
     Then the API recomputes the SHA-256 of the stored bytes
-    And the certificate is stored at "<producer_wallet>/<lowercase digest>.pdf"
+    And the spec sheet is stored at "<producer_wallet>/<lowercase digest>.pdf"
     And the returned digest is the value create_lot must carry on-chain
 
   @program @db

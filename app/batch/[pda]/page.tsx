@@ -7,10 +7,9 @@ import {
   dateFmt,
 } from "../../explorer/components/lot-display";
 import { PassportQr } from "../../components/passport-qr";
-import { plantCertificateUrl } from "../../explorer/data/lots";
+import { specSheetUrl } from "../../explorer/data/lots";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
 import { getPassportRecord, type PassportLot } from "../data/passport";
-import { CertificateVerification } from "./certificate-verification";
 import { RecordContrast } from "./record-contrast";
 
 type PassportParams = { pda: string };
@@ -25,7 +24,7 @@ export async function generateMetadata({
   if (!record) notFound();
   return {
     title: `Lote ${record.lot.lot_id} · Pasaporte JuLit`,
-    description: `Registro público del lote ${record.lot.lot_id} de Li₂CO₃: origen, métricas declaradas y certificación de planta.`,
+    description: `Registro público del lote ${record.lot.lot_id} de Li₂CO₃: origen, métricas declaradas y ficha técnica.`,
   };
 }
 
@@ -118,7 +117,7 @@ export default async function LotPassportPage({
   if (!record) notFound();
   const { lot, origin } = record;
 
-  const certificate = plantCertificateUrl(lot);
+  const specSheet = specSheetUrl(lot);
   const addressUrl = getExplorerUrl(`/address/${lot.pda_address}`, "devnet");
   const mintUrl = getExplorerUrl(`/address/${lot.mint_address}`, "devnet");
 
@@ -152,38 +151,34 @@ export default async function LotPassportPage({
             </div>
           </section>
 
-          <section aria-labelledby="passport-certification">
-            <h2 id="passport-certification" className="eyebrow">
-              Certificación de planta
+          <section aria-labelledby="passport-spec-sheet">
+            <h2 id="passport-spec-sheet" className="eyebrow">
+              Ficha técnica del lote
             </h2>
             <div className="mt-2 space-y-3">
               <p className="rounded-xl border border-border bg-card px-3.5 py-3 text-[11px] leading-snug text-muted">
-                La productora declaró el certificado de su planta al crear el
-                lote. El SHA-256 del PDF quedó grabado en la cuenta del lote;
-                podés contrastarlo con el documento.
+                La productora declaró la ficha técnica del lote al registrarlo.
+                El SHA-256 del PDF quedó grabado en la cuenta del lote; podés
+                contrastarlo con el documento.
               </p>
               <div className="space-y-2 rounded-xl border border-border bg-card px-3.5 py-3 text-[11px] text-muted">
                 <p>
                   <a
-                    href={certificate}
+                    href={specSheet}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold text-brand-700 underline underline-offset-2"
                   >
-                    Certificado de planta (PDF)
+                    Ficha técnica del lote (PDF)
                   </a>
                 </p>
                 <p>
                   SHA-256 declarado:{" "}
                   <span className="font-mono text-foreground/75">
-                    {lot.plant_cert_sha256.slice(0, 8)}…
-                    {lot.plant_cert_sha256.slice(-6)}
+                    {lot.spec_sheet_sha256.slice(0, 8)}…
+                    {lot.spec_sheet_sha256.slice(-6)}
                   </span>
                 </p>
-                <CertificateVerification
-                  certificateUrl={certificate}
-                  recordedHex={lot.plant_cert_sha256}
-                />
               </div>
             </div>
           </section>

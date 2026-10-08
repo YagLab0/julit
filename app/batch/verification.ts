@@ -24,7 +24,7 @@ export type IndexedLot = Pick<
   | "mint_address"
   | "status"
   | "claimable_after"
-  | "plant_cert_sha256"
+  | "spec_sheet_sha256"
 > & {
   volume_tonnes: string | number;
   purity_pct: string | number;
@@ -47,7 +47,7 @@ export type OnChainLot = {
     waterM3PerTonneScaled: bigint;
     carbonKgCo2ePerTonneScaled: bigint;
     claimableAfter: bigint;
-    plantCertHash: ReadonlyUint8Array;
+    specSheetHash: ReadonlyUint8Array;
     status: number;
   };
 };
@@ -65,7 +65,7 @@ export type ContrastField =
   | "water"
   | "carbon"
   | "claimableAfter"
-  | "plantCertHash"
+  | "specSheetHash"
   | "status";
 
 export type RecordContrast =
@@ -162,33 +162,16 @@ export function contrastLotRecord(input: {
   if (unixSeconds(indexed.claimable_after) !== account.data.claimableAfter)
     fields.push("claimableAfter");
   if (
-    bytesToHexLower(account.data.plantCertHash) !==
-    indexed.plant_cert_sha256.toLowerCase()
+    bytesToHexLower(account.data.specSheetHash) !==
+    indexed.spec_sheet_sha256.toLowerCase()
   )
-    fields.push("plantCertHash");
+    fields.push("specSheetHash");
   if (ONCHAIN_STATUS[account.data.status] !== indexed.status)
     fields.push("status");
 
   return fields.length === 0
     ? { state: "verified" }
     : { state: "mismatch", fields };
-}
-
-const HEX_64 = /^[0-9a-f]{64}$/;
-
-/**
- * Certificate digest comparison: the PDF's computed SHA-256 against the hex
- * digest recorded for the lot, case-insensitive. Anything that is not an
- * exact 64-hex equality — including malformed input — is a mismatch.
- */
-export function certificateVerdict(
-  recordedHex: string,
-  computedHex: string
-): "match" | "mismatch" {
-  const recorded = recordedHex.trim().toLowerCase();
-  const computed = computedHex.trim().toLowerCase();
-  if (!HEX_64.test(recorded) || !HEX_64.test(computed)) return "mismatch";
-  return recorded === computed ? "match" : "mismatch";
 }
 
 /**

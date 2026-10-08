@@ -33,8 +33,8 @@ sequenceDiagram
   API->>SB: status accepted | revoked
 
   Note over PROD,SC: 3 · Productora registra el lote (on-chain y luego índice)
-  PROD->>FE: Sube certificado de planta (PDF)
-  FE->>API: POST /api/companies/plant-certificate
+  PROD->>FE: Sube ficha técnica del lote (PDF)
+  FE->>API: POST /api/companies/spec-sheet
   API->>API: Recomputa SHA-256 del PDF
   API->>SB: Storage en wallet/sha256.pdf, sin upsert
   PROD->>FE: Formulario de métricas, comprador designado, claimable_after
@@ -72,4 +72,4 @@ sequenceDiagram
   FE->>SB: anon SELECT lots + origins
   FE->>SB: Descarga PDF público del bucket
   FE->>SC: Lee PDA y decodifica la cuenta del lote
-  FE->>FE: SHA-256 del PDF = plant_cert_hash + contraste índice ↔ cadena
+  FE->>FE: Contraste índice ↔ cadena del registro del lote

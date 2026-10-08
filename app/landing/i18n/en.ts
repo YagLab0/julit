@@ -79,12 +79,12 @@ export const en: LandingDict = {
           "Every lot has a unique digital title that concentrates its information, and its entire history is on view in the Passport.",
       },
       {
-        tab: "Plant certificate",
-        title: "One certificate for the whole plant",
+        tab: "Spec sheet",
+        title: "One spec sheet per lot",
         problem:
-          "Auditing each lot separately doesn't reflect how the real industry certifies and multiplies paperwork friction.",
+          "Cargo specifications travel in documents nobody can check against the lot.",
         solution:
-          "The producer declares its plant certificate once; each lot records its reference and anyone can check that the document matches.",
+          "Every lot declares its spec sheet: the PDF's SHA-256 is recorded and anyone can check the document matches.",
       },
       {
         tab: "Reserved purchase",
@@ -116,13 +116,13 @@ export const en: LandingDict = {
         { label: "History", value: "registration · deposit · settlement" },
       ],
     },
-    certificateMock: {
-      fileName: "plant-certificate.pdf",
-      caption: "Declared once by the producer",
+    specSheetMock: {
+      fileName: "lot-spec-sheet.pdf",
+      caption: "Declared by the producer at lot registration",
       hashLabel: "Digital fingerprint",
       hashCheck: "matches",
-      refLabel: "Referenced by",
-      refValue: "3 lots",
+      refLabel: "Bound to",
+      refValue: "lot 0042",
     },
     reservedMock: {
       title: "Lot 0042",
@@ -170,7 +170,7 @@ export const en: LandingDict = {
     ],
     scenes: {
       directoryTitle: "Origin directory",
-      certPill: "Plant cert.",
+      certPill: "Spec sheet",
       privatePill: "Private agreement",
       titleBadge: "Title",
       titleFile: "lot-0042-title",
@@ -193,9 +193,9 @@ export const en: LandingDict = {
     eyebrow: "The Lot Passport",
     heading: "Every lot's history, in one place.",
     description:
-      "The Passport is the public view of the lot's entire journey: its title, its operations and its plant certificate, verifiable by anyone.",
+      "The Passport is the public view of the lot's entire journey: its title, its operations and its spec sheet, viewable by anyone.",
     integrityNote:
-      "The digital title represents a contractual right over the lot; it is not an automatic legal title. Verifying the certificate proves the document matches the registered version, not the truth of its contents.",
+      "The digital title represents a contractual right over the lot; it is not an automatic legal title. Checking the spec sheet proves the document matches the registered version, not the truth of its contents.",
     doc: {
       edition: "Lot record",
       titleTop: "Lot",
@@ -211,9 +211,9 @@ export const en: LandingDict = {
           description: "Declared volume, carbonate composition and lot terms.",
         },
         {
-          title: "Plant certificate",
+          title: "Lot spec sheet",
           description:
-            "The plant's document and its registered integrity reference.",
+            "The lot's technical document and its registered integrity reference.",
         },
         {
           title: "Digital title",
@@ -246,11 +246,11 @@ export const en: LandingDict = {
       items: [
         "The buyer's payment is released the very instant delivery is confirmed.",
         "If the buyer doesn't confirm, you collect the deposit once the agreed deadline passes.",
-        "You declare the plant certificate once and every lot references it.",
+        "You declare the lot's spec sheet and its fingerprint is recorded on-chain.",
         "The lot's history stays verifiable by anyone.",
       ],
       widget: {
-        sources: ["Origin", "Plant cert.", "Lot 0042"],
+        sources: ["Origin", "Spec sheet", "Lot 0042"],
         hub: "Digital title",
         docTitle: "Payout",
       },
@@ -260,7 +260,7 @@ export const en: LandingDict = {
       title: "Payment doesn't move until you confirm delivery.",
       items: [
         "You deposit the lot's price in escrow and it is only released to the producer when you confirm receipt: no risk window.",
-        "You verify the plant certificate and the lot's history before and after settling.",
+        "You check the lot's spec sheet and history before and after settling.",
         "Your confirmation closes the deal and leaves permanent evidence for both parties.",
       ],
       widget: {
@@ -284,8 +284,8 @@ export const en: LandingDict = {
         a: "A unique digital certificate representing the contractual right over the lot. It is custodied by JuLit and retired when the buyer confirms receipt: it never changes hands. It is the digital representation of that right, not an automatic legal title.",
       },
       {
-        q: "What does the plant certificate verify?",
-        a: "That the document matches the registered version: the PDF's digital fingerprint is compared against the reference declared in the lot. It proves the document's integrity, not the truth of its contents.",
+        q: "What does the lot spec sheet prove?",
+        a: "That the document matches the registered version: the PDF's digital fingerprint was declared on the lot. It proves the document's integrity, not the truth of its contents.",
       },
       {
         q: "Does physical delivery go through JuLit?",

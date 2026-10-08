@@ -159,7 +159,7 @@ fn create_lot_ix(
             price_usdc: price,
             buyer,
             claimable_after,
-            plant_cert_hash: [7u8; 32],
+            spec_sheet_hash: [7u8; 32],
             metadata_uri: String::new(),
         }
         .data(),
@@ -739,7 +739,7 @@ fn initialize_and_create_lot_mints_title_into_escrow() {
     assert_eq!(lot.buyer, buyer);
     assert_eq!(lot.price_usdc, 400_000_000);
     assert!(lot.status == LotStatus::Listed);
-    assert_eq!(lot.plant_cert_hash, [7u8; 32]);
+    assert_eq!(lot.spec_sheet_hash, [7u8; 32]);
 
     // Digital Title: exactly one, sitting in the lot's escrow ATA.
     let escrow_title =

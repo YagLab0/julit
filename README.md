@@ -8,7 +8,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-JuLit eliminates trade finance friction in the global critical minerals market. By combining verifiable plant-level laboratory certifications with programmatic escrow accounts on Solana, JuLit allows lithium carbonate producers and international buyers to execute atomic **Delivery-versus-Payment (DvP)** settlements using USDC—drastically cutting the high fees and settlement delays of traditional bank letters of credit.
+JuLit eliminates trade finance friction in the global critical minerals market. By combining cryptographically-anchored lot spec sheets with programmatic escrow accounts on Solana, JuLit allows lithium carbonate producers and international buyers to execute atomic **Delivery-versus-Payment (DvP)** settlements using USDC—drastically cutting the high fees and settlement delays of traditional bank letters of credit.
 
 ---
 
@@ -73,7 +73,7 @@ stateDiagram-v2
 
 We maintain strict honesty about the boundaries of blockchain verification:
 
-- **What on-chain hashing proves:** Recording the SHA-256 hash of a plant analysis PDF on-chain guarantees that the certificate has not been modified, replaced, or tampered with since the lot was listed.
+- **What on-chain hashing proves:** Recording the SHA-256 hash of the lot's spec sheet PDF on-chain guarantees that the document has not been modified, replaced, or tampered with since the lot was listed.
 - **What on-chain hashing does not prove:** It does _not_ prove physical chemical reality or sample chain-of-custody. JuLit does not replace licensed assayers or chemical laboratories. Instead, certified plant documents are legally tied to registered producer entities, making fraudulent declarations legally auditable.
 - **Admissibility criteria:** Only lots meeting **Battery Grade** ($\ge 99.50\%$ purity) with positive volume and valid origin IDs are permitted on-chain.
 

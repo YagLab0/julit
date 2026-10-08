@@ -296,7 +296,7 @@ export const es = {
     producerNew: "+ Registrar lote",
     producerEmptyTitle: "Todavía no registraste lotes",
     producerEmptyBody:
-      "Dá de alta un lote de carbonato de litio grado batería con su certificado de planta y comprador designado.",
+      "Dá de alta un lote de carbonato de litio grado batería con su ficha técnica y comprador designado.",
     producerEmptyAction: "Registrar lote",
   },
   lotCard: {
@@ -310,7 +310,7 @@ export const es = {
   },
   newLot: {
     intro:
-      "Dá de alta un lote de carbonato de litio grado batería en Solana Devnet, con comprador designado y certificado de planta. La wallet verificada de tu empresa firma como productora.",
+      "Dá de alta un lote de carbonato de litio grado batería en Solana Devnet, con comprador designado y ficha técnica del lote. La wallet verificada de tu empresa firma como productora.",
     gates: {
       producerOnly: "El alta de lotes es exclusiva de empresas productoras.",
       wallet:
@@ -356,12 +356,12 @@ export const es = {
       claimableLabel: "Reclamable desde",
       claimableHint:
         "Si el comprador no confirma la recepción antes de esta fecha, podés reclamar los fondos del escrow.",
-      certLabel: "Certificado de planta (PDF)",
-      certHint:
+      specLabel: "Ficha técnica del lote (PDF)",
+      specHint:
         "Se guarda direccionado por contenido; el SHA-256 queda declarado en el lote.",
-      certUploading: "Subiendo y calculando el SHA-256…",
-      certUploadError: "Error al subir el certificado.",
-      certUploadFailed: "No se pudo subir el certificado.",
+      specUploading: "Subiendo y calculando el SHA-256…",
+      specUploadError: "Error al subir la ficha técnica.",
+      specUploadFailed: "No se pudo subir la ficha técnica.",
       signAs: "Firma como {name}:",
       back: "Volver a lotes",
       submit: "Registrar lote",
@@ -393,8 +393,8 @@ export const es = {
       claimableRequired:
         "Ingresá la fecha límite a partir de la cual podés reclamar el escrow.",
       claimableFuture: "La fecha de reclamo debe ser futura.",
-      certRequired:
-        "Subí el certificado de planta (PDF) para obtener su SHA-256.",
+      specRequired:
+        "Subí la ficha técnica del lote (PDF) para obtener su SHA-256.",
     },
   },
   onboarding: {

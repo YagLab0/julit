@@ -31,7 +31,7 @@ const FIELD_LABELS: Record<ContrastField, string> = {
   water: "huella hídrica",
   carbon: "huella de carbono",
   claimableAfter: "fecha de reclamo",
-  plantCertHash: "certificado de planta",
+  specSheetHash: "ficha técnica del lote",
   status: "estado",
 };
 

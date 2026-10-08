@@ -2,7 +2,7 @@
 
 ## Scope
 
-JuLit registers battery-grade lithium carbonate (`Li₂CO₃`) lots on Solana Devnet, each with a designated buyer and escrowed payment. It does not model lithium hydroxide, metallic lithium, cells, or finished batteries. Supabase is a public read index and PDF store, not the authority for production metrics, certification, or settlement. The programme and authenticated Next.js API must implement this contract; these migrations do not implement either application layer.
+JuLit registers battery-grade lithium carbonate (`Li₂CO₃`) lots on Solana Devnet, each with a designated buyer and escrowed payment. It does not model lithium hydroxide, metallic lithium, cells, or finished batteries. Supabase is a public read index and PDF store, not the authority for production metrics, lot documentation, or settlement. The programme and authenticated Next.js API must implement this contract; these migrations do not implement either application layer.
 
 See [the glossary](../GLOSSARY.md) and [architecture decisions](./adr/).
 
@@ -44,19 +44,19 @@ The database uses lowercase statuses mirroring the on-chain `LotStatus` enum:
 
 Funding, redemption, timeout claims, disputes and cancellation are real USDC escrow movements on Devnet — not simulated settlement. The state checks validate a snapshot, not blockchain history. The programme must enforce instruction permissions, status transitions and escrow custody; the API must verify the current PDA rather than trust a requested status, signer, digest, or transaction signature. Server-side cache rebuilding remains possible.
 
-The producer's plant certificate is declared at lot creation as `plant_cert_sha256`. It is a plant-level document, not a per-lot audit: the declaration is attributed to the producer, not an independent attestation.
+The producer's lot spec sheet is declared at lot creation as `spec_sheet_sha256`. The declaration is attributed to the producer, not an independent attestation.
 
 ## PDF storage
 
-The public `plant-certificates` bucket accepts `application/pdf`, with a 50 MiB maximum matching the existing Storage configuration. Certificate paths are content-addressed:
+The public `plant-certificates` bucket accepts `application/pdf`, with a 50 MiB maximum matching the existing Storage configuration. Spec sheet paths are content-addressed:
 
 ```text
 <PRODUCER_WALLET>/<lowercase_SHA256_hex>.pdf
 ```
 
-`plant_certificate_path` is generated from the producer wallet and digest. Public file URLs use `/storage/v1/object/public/plant-certificates/<path>`; listing bucket contents is not required for passport access.
+`spec_sheet_path` is generated from the producer wallet and digest. Public file URLs use `/storage/v1/object/public/plant-certificates/<path>`; listing bucket contents is not required for passport access.
 
-The producer uploads the PDF through the authenticated API before creating the lot; the server recomputes the SHA-256 and stores the file content-addressed, so the digest declared on-chain provably matches the stored certificate. A stored path does not prove that an object exists or matches the on-chain hash: public verification must hash the downloaded bytes and compare against Solana.
+The producer uploads the PDF through the authenticated API before creating the lot; the server recomputes the SHA-256 and stores the file content-addressed, so the digest declared on-chain provably matches the stored spec sheet. A stored path does not prove that an object exists or matches the on-chain hash: the passport contrasts the indexed digest against the decoded on-chain account.
 
 Client insertion, replacement, and deletion are denied by restrictive Storage policies, even if another bucket has a broad permissive policy. Public downloads still work. Server secret keys bypass Storage RLS and must never reach the browser; content addressing does not make off-chain files immutable against a privileged server.
 

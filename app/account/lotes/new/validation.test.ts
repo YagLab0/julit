@@ -11,7 +11,7 @@ const MESSAGES = es.newLot.validation;
 const PRODUCER = "ProducerWa11et111111111111111111111111111";
 const BUYER = "C1ienteTesaEnergy3333333333333333333333333";
 const BUYER_B = "UncontractedBuyer88888888888888888888888";
-const CERT = "ab".repeat(32);
+const SPEC = "ab".repeat(32);
 
 const NOW = Math.floor(Date.parse("2026-10-06T12:00:00Z") / 1000);
 const FUTURE = "2026-11-15T10:00";
@@ -35,7 +35,7 @@ const VALID: LotFormValues = {
   priceUsdc: "12000.123456",
   buyerWallet: BUYER,
   claimableAfter: FUTURE,
-  plantCertSha256: CERT,
+  specSheetSha256: SPEC,
 };
 
 function check(
@@ -64,7 +64,7 @@ describe("validateLotForm", () => {
       producerWallet: PRODUCER,
       buyerWallet: BUYER,
       claimableAfterUnix: Math.floor(Date.parse(FUTURE) / 1000).toString(),
-      plantCertSha256: CERT,
+      specSheetSha256: SPEC,
     });
   });
 
@@ -180,25 +180,25 @@ describe("validateLotForm", () => {
     });
   });
 
-  describe("plantCertSha256", () => {
+  describe("specSheetSha256", () => {
     it("is mandatory", () => {
       expect(
-        check({ plantCertSha256: "" }).errors.plantCertSha256
+        check({ specSheetSha256: "" }).errors.specSheetSha256
       ).toBeTruthy();
     });
     it("rejects malformed digests", () => {
       expect(
-        check({ plantCertSha256: "not-hex" }).errors.plantCertSha256
+        check({ specSheetSha256: "not-hex" }).errors.specSheetSha256
       ).toBeTruthy();
       expect(
-        check({ plantCertSha256: CERT.slice(0, 63) }).errors.plantCertSha256
+        check({ specSheetSha256: SPEC.slice(0, 63) }).errors.specSheetSha256
       ).toBeTruthy();
     });
     it("normalises uppercase hex", () => {
-      expect(check({ plantCertSha256: CERT.toUpperCase() }).errors).toEqual({});
+      expect(check({ specSheetSha256: SPEC.toUpperCase() }).errors).toEqual({});
       expect(
-        check({ plantCertSha256: CERT.toUpperCase() }).payload?.plantCertSha256
-      ).toBe(CERT);
+        check({ specSheetSha256: SPEC.toUpperCase() }).payload?.specSheetSha256
+      ).toBe(SPEC);
     });
   });
 });
