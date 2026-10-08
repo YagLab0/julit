@@ -15,7 +15,6 @@ import {
   findConfigPda,
   findMintPda,
   getFundLotInstructionAsync,
-  getRaiseDisputeInstruction,
   getRedeemLotInstructionAsync,
 } from "../generated/julit";
 import { useCluster } from "../components/cluster-context";
@@ -71,9 +70,8 @@ function confirmContent(
 
 /**
  * The buyer's inbox: lots designated to the company that still await a
- * buyer decision (listed → fund, funded → redeem/dispute, disputed →
- * redeem). The list is always readable; only the action area requires
- * the verified wallet.
+ * buyer decision (listed → fund, funded/disputed → redeem). The list is
+ * always readable; only the action area requires the verified wallet.
  */
 export function DesignatedLotsCard({
   lots,
@@ -233,7 +231,7 @@ function DesignatedLotList({
 
 /**
  * Sign → index → refresh engine for a designated lot's transitions
- * (fund, redeem, dispute), shared by the overview rows and the buy
+ * (fund, redeem), shared by the overview rows and the buy
  * action on the buyer's lot grid cards.
  */
 function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
@@ -404,20 +402,6 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
     });
   }
 
-  function dispute() {
-    void runTransition({
-      build: (buyer) =>
-        getRaiseDisputeInstruction({
-          lot: address(lot.pda_address),
-          buyer,
-        }),
-      endpoint: "/api/lots/dispute",
-      successTitle: t(dict.designated.toasts.disputed, { lot: lot.lot_id }),
-      successDescription: dict.designated.toasts.disputedDesc,
-      failureTitle: dict.designated.toasts.disputeError,
-    });
-  }
-
   return {
     verdict,
     busy,
@@ -425,7 +409,7 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
     indexing,
     confirming,
     setConfirming,
-    handlers: { fund, redeem, dispute } as Record<BuyerLotAction, () => void>,
+    handlers: { fund, redeem } as Record<BuyerLotAction, () => void>,
   };
 }
 
@@ -453,9 +437,7 @@ function DesignatedLotRow({
           type="button"
           disabled={busy || (action === "fund" && verdict.fundBlocker !== null)}
           onClick={() => setConfirming(action)}
-          className={`text-xs px-3 py-1.5 cursor-pointer ${
-            action === "dispute" ? "btn-secondary" : "btn-primary"
-          }`}
+          className="btn-primary text-xs px-3 py-1.5 cursor-pointer"
         >
           {dict.designated.actions[action]}
         </button>

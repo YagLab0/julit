@@ -37,7 +37,6 @@ type TransitionOptions = {
     | "fund_tx_signature"
     | "redeem_tx_signature"
     | "claim_tx_signature"
-    | "dispute_tx_signature"
     | "cancel_tx_signature";
   /** Status written on success. */
   nextStatus: string;
@@ -50,7 +49,7 @@ type TransitionOptions = {
 
 /**
  * Shared POST handler for lifecycle transitions (fund, redeem, claim,
- * dispute). Authenticates the calling company, decodes the submitted
+ * cancel). Authenticates the calling company, decodes the submitted
  * transaction, runs the pure verification seam, then CAS-updates the
  * index row.
  */
@@ -91,9 +90,19 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
   const service = createServiceClient();
   const { data: row } = await service
     .from("lots")
-    .select("status")
+    .select(`lot_id, status, ${opts.txColumn}`)
     .eq("pda_address", lotPda)
     .maybeSingle();
+
+  // Idempotent replay: the previous POST may have committed while its
+  // response never reached the client. If this exact signature already
+  // sits in the transition's column, the index holds the change — report
+  // success so a retry settles instead of hitting staleIndex forever.
+  if (row && row[opts.txColumn as keyof typeof row] === txSignature) {
+    return Response.json({
+      lot: { pda_address: lotPda, lot_id: row.lot_id, status: row.status },
+    });
+  }
 
   const { rpc } = createSolanaClient("devnet");
   const txPromise = rpc

@@ -52,11 +52,8 @@ describe("buyerLotVerdict", () => {
   });
 
   describe("funded", () => {
-    it("offers redeem and dispute", () => {
-      expect(check({ status: "funded" }).actions).toEqual([
-        "redeem",
-        "dispute",
-      ]);
+    it("offers redeem only — there is no dispute path", () => {
+      expect(check({ status: "funded" }).actions).toEqual(["redeem"]);
     });
 
     it("flags the Timeout Claim as live once claimable_after passes", () => {

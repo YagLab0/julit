@@ -37,7 +37,6 @@ JuLit acts as a B2B directory and on-chain escrow settlement engine:
 - **Atomic Delivery-versus-Payment (DvP):** Upon physical receipt and inspection of the cargo at the facility, the buyer signs `redeem_lot`. In a single atomic transaction, the Digital Title is burned inside escrow and the deposited USDC is released to the producer (minus the protocol take rate).
 - **Built-in Safety Mechanisms:**
   - **Claim Timeout (`claim_timeout`):** If an unresponsive buyer fails to redeem after the designated `claimable_after` window, the producer can unilaterally claim the escrowed funds.
-  - **Dispute Freeze (`raise_dispute`):** If the physical cargo does not match specifications, the buyer can flag the lot as disputed, freezing the timeout and mandating off-chain resolution before any funds can be released.
 
 ---
 
@@ -50,9 +49,8 @@ stateDiagram-v2
     [*] --> Listed: create_lot\n(Mints Digital Title into Escrow PDA)
     Listed --> Cancelled: cancel_lot\n(Producer cancels before funding; burns NFT)
     Listed --> Funded: fund_lot\n(Buyer deposits full USDC price into Escrow PDA)
-    Funded --> Disputed: raise_dispute\n(Buyer flags non-conformity; freezes timeout)
-    Disputed --> Redeemed: redeem_lot\n(Off-chain resolution: burns NFT, releases USDC)
     Funded --> Redeemed: redeem_lot\n(Buyer confirms physical receipt: burns NFT, releases USDC)
+    Disputed --> Redeemed: redeem_lot\n(Legacy disputed lots resolve in the producer's favour)
     Funded --> Claimed: claim_timeout\n(Window expires without buyer action: burns NFT, releases USDC)
 ```
 

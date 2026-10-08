@@ -3,7 +3,8 @@
 //   1. airdrops SOL to the admin key and every --wallet
 //   2. creates the dUSDC mint (6 decimals, admin is mint authority)
 //   3. creates each wallet's dUSDC ATA and mints a demo balance
-//   4. calls `initialize` on the JuLit program (Config PDA)
+//   4. calls `initialize` on the JuLit program (Config PDA), or converges
+//      an existing Config's fee_bps to FEE_BPS via `set_fee_bps`
 //
 // Re-runs are safe: the mint and Config are reused from .devnet-seed.json.
 //
@@ -185,8 +186,39 @@ const existing = await rpc
   .getAccountInfo(configPda, { encoding: "base64", commitment: "confirmed" })
   .send();
 
+const FEE_BPS = 100; // protocol take rate = 1%
+
 if (existing.value) {
-  console.log(`  Config already initialized at ${configPda}`);
+  // Config fields are fixed at initialize; re-runs converge the take rate
+  // through set_fee_bps so older deployments pick up this script's value.
+  const raw = existing.value.data;
+  const bytes = Buffer.from(Array.isArray(raw) ? raw[0] : raw, "base64");
+  const currentFeeBps = bytes.readUInt16LE(8 + 32);
+  if (currentFeeBps === FEE_BPS) {
+    console.log(
+      `  Config already initialized at ${configPda} — fee_bps = ${FEE_BPS}`
+    );
+  } else {
+    const setFeeBps = idl.instructions.find((i) => i.name === "set_fee_bps");
+    const data = new Uint8Array(8 + 2);
+    data.set(new Uint8Array(setFeeBps.discriminator), 0);
+    new DataView(data.buffer).setUint16(8, FEE_BPS, true);
+
+    const client = createClient({ url: DEVNET_RPC, payer: admin });
+    const result = await client.sendTransaction([
+      {
+        programAddress: programId,
+        accounts: [
+          { address: configPda, role: AccountRole.WRITABLE },
+          { address: admin.address, role: AccountRole.READONLY_SIGNER },
+        ],
+        data,
+      },
+    ]);
+    console.log(
+      `  fee_bps ${currentFeeBps} → ${FEE_BPS} (tx: ${result.context.signature})`
+    );
+  }
 } else {
   const initialize = idl.instructions.find((i) => i.name === "initialize");
   const discriminator = new Uint8Array(initialize.discriminator);
@@ -194,7 +226,7 @@ if (existing.value) {
   const data = new Uint8Array(8 + 2 + 32 + 32 + 8 + 8);
   data.set(discriminator, 0);
   const view = new DataView(data.buffer);
-  view.setUint16(8, 250, true); // fee_bps = 2.5%
+  view.setUint16(8, FEE_BPS, true);
   data.set(getAddressEncoder().encode(address(usdcMint)), 10);
   data.set(getAddressEncoder().encode(admin.address), 42); // treasury = admin
   view.setBigInt64(74, 86400n, true); // claim_min_secs = 1 day

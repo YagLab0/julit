@@ -134,13 +134,12 @@ export const es = {
     actions: {
       fund: "Comprar con escrow",
       redeem: "Confirmar recepción",
-      dispute: "Disputar",
     },
     confirm: {
       fund: {
         title: "Comprar {lot} con escrow",
         amountLabel: "Precio del lote",
-        body: "Depositás el precio total en el escrow del lote. Se libera a la productora cuando confirmes la recepción; si no confirmás ni disputás antes del límite, la productora puede cobrarlo.",
+        body: "Depositás el precio total en el escrow del lote. Se libera a la productora cuando confirmes la recepción; si no confirmás antes del límite, la productora puede cobrarlo.",
         cta: "Firmar y depositar",
       },
       redeem: {
@@ -151,12 +150,6 @@ export const es = {
         bodyDisputed:
           "El lote está en disputa: liberar el pago custodiado es la resolución on-chain a favor de la productora. El Título Digital se da de baja.",
         cta: "Firmar y liberar pago",
-      },
-      dispute: {
-        title: "Disputar {lot}",
-        amountLabel: "Monto en escrow",
-        body: "La disputa congela el cobro por timeout de la productora mientras resuelven el problema fuera de la cadena. La única salida on-chain es que confirmes la recepción — no hay devolución de fondos.",
-        cta: "Firmar disputa",
       },
     },
     rows: {
@@ -179,7 +172,7 @@ export const es = {
       disputed:
         "Disputa abierta: el cobro por timeout de la productora está congelado.",
       funded:
-        "Si no confirmás ni disputás antes del {deadline}, la productora puede cobrar el escrow.",
+        "Si no confirmás antes del {deadline}, la productora puede cobrar el escrow.",
       listed: "Tenés que confirmar la recepción antes del {deadline}.",
     },
     toasts: {
@@ -197,9 +190,6 @@ export const es = {
       redeemedDesc:
         "El escrow se liberó a la productora y el Título Digital quedó dado de baja.",
       redeemError: "No se pudo confirmar la recepción.",
-      disputed: "Lote {lot} en disputa",
-      disputedDesc: "El cobro por timeout de la productora quedó congelado.",
-      disputeError: "No se pudo abrir la disputa.",
     },
     gate: {
       action: "operar {lot}",
@@ -379,6 +369,7 @@ export const es = {
       reviewFields: "Revisá los campos marcados.",
       notIndexed: "El lote quedó on-chain pero no se indexó",
       notIndexedDesc: "Reintentá la indexación más tarde.",
+      retry: "Reintentar",
       published: "Lote {lot} publicado",
       publishedDesc:
         "La transacción quedó confirmada e indexada como publicada.",

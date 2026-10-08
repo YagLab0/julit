@@ -242,19 +242,3 @@ export function verifyLotCancellation(
     staleIndex: "El lote ya no está publicado.",
   });
 }
-
-export function verifyLotDispute(
-  input: VerifyLotTransitionInput
-): { ok: true } | { ok: false; rejection: LotRejection } {
-  return verifyLifecycleTransition(input, {
-    expectedStatus: "disputed",
-    allowedIndex: ["funded"],
-    onChainParty: "buyer",
-    missingIx: "La transacción no contiene una disputa JuLit.",
-    wrongLot: "La transacción no disputa este lote.",
-    wrongSigner: "La disputa no la firmó tu wallet verificada.",
-    wrongOnChainParty: "Solo la compradora designada puede disputar el lote.",
-    wrongOnChainStatus: "El lote no quedó en disputa en la cadena.",
-    staleIndex: "El lote ya no está fondeado.",
-  });
-}

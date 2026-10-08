@@ -55,14 +55,6 @@ Feature: Atomic lot settlement in escrow
     When the Producer signs claim_timeout
     Then the programme rejects the instruction
 
-  @program @api @db
-  Scenario: The buyer freezes the lot by disputing it
-    Given a "funded" Lot
-    When the Buyer signs raise_dispute
-    Then the Lot becomes "disputed"
-    And the escrowed USDC does not move
-    And claim_timeout is rejected while the lot is disputed
-
   @program
   Scenario: A disputed lot resolves only by the buyer's release
     Given a "disputed" Lot
@@ -96,5 +88,4 @@ Feature: Atomic lot settlement in escrow
       | fund       |
       | redeem     |
       | claim      |
-      | dispute    |
       | cancel     |
