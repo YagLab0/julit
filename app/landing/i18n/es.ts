@@ -32,12 +32,12 @@ export const es = {
   hero: {
     title: "Del salar al mercado, con el pago garantizado.",
     description:
-      "JuLit conecta productores y compradores de carbonato de litio. El pago queda depositado en garantía y la productora lo cobra recién cuando se confirma la entrega: nadie paga sin recibir ni entrega sin cobrar.",
+      "JuLit conecta productores y compradores de carbonato de litio. El pago en USDC queda depositado en garantía y la productora lo cobra recién cuando se confirma la entrega: nadie paga sin recibir ni entrega sin cobrar.",
     location: "Salinas Grandes · Jujuy y Salta, Argentina",
   },
   heroFlow: {
     inputs: [
-      { label: "Lote 0042", meta: "pago en garantía" },
+      { label: "Lote 0042", meta: "USDC en garantía" },
       { label: "Título", meta: "resguardado" },
       { label: "Recepción", meta: "confirmada" },
     ],
@@ -51,12 +51,12 @@ export const es = {
     sideOut: "una sola operación",
   },
   notice:
-    "La demo funciona con dinero de prueba: las operaciones se ejecutan de verdad, pero sin valor comercial.",
+    "La demo corre sobre Solana Devnet con dinero de prueba: las operaciones se ejecutan de verdad, pero sin valor comercial.",
   commerce: {
     eyebrow: "La propuesta JuLit",
     heading: "El pago y la entrega, en el mismo instante.",
     description:
-      "En el comercio B2B de litio, pagar antes de recibir o entregar antes de cobrar deja a una de las partes expuesta. JuLit propone cerrar esa brecha: el pago viaja en garantía y solo se libera cuando la entrega se confirma.",
+      "En el comercio B2B de litio, pagar antes de recibir o entregar antes de cobrar deja a una de las partes expuesta. JuLit propone cerrar esa brecha: el pago en USDC viaja en garantía y solo se libera cuando la entrega se confirma.",
     problemLabel: "El problema",
     slides: [
       {
@@ -65,7 +65,7 @@ export const es = {
         problem:
           "El pago y la entrega del bien no ocurren al mismo tiempo; alguien asume el riesgo de que la otra parte no cumpla.",
         solution:
-          "El pago queda depositado en garantía y solo se libera cuando el comprador confirma la entrega: en ese mismo instante la productora cobra y el título queda dado de baja.",
+          "El pago en USDC queda depositado en garantía y solo se libera cuando el comprador confirma la entrega: en ese mismo instante la productora cobra y el título queda dado de baja.",
       },
       {
         tab: "Registro público",
@@ -89,7 +89,7 @@ export const es = {
         problem:
           "Los acuerdos entre mineras y compradores se negocian en privado, pero los datos comerciales terminan dispersos o públicos.",
         solution:
-          "Todo lote nace reservado a un comprador; el acuerdo se cierra entre las empresas y solo ese comprador puede depositar el pago y confirmar la entrega.",
+          "Todo lote nace reservado a un comprador; el contrato comercial se firma en JuLit entre ambas empresas y solo ese comprador puede depositar el pago y confirmar la entrega.",
       },
     ],
     settlementMock: {
@@ -97,7 +97,7 @@ export const es = {
       pill: "instantánea",
       rows: [
         { asset: "Pago en garantía", to: "Productor" },
-        { asset: "Costo del servicio", to: "Tesorería" },
+        { asset: "Costo del servicio (<1%)", to: "Tesorería" },
         { asset: "Título digital", to: "Se da de baja" },
       ],
       foot: "Todo en una sola operación, o nada",
@@ -136,13 +136,13 @@ export const es = {
     heading: "Del acuerdo comercial al cobro, en cinco pasos.",
     description: "Así se mueve un lote por JuLit.",
     caption:
-      "El registro, el depósito y la liquidación quedan grabados de forma permanente y verificable; el acuerdo comercial y la entrega física ocurren entre las empresas.",
+      "El contrato comercial se firma en JuLit y el registro, el depósito y la liquidación quedan grabados de forma permanente y verificable; la entrega física ocurre entre las empresas.",
     tags: { onchain: "Registro verificable", offchain: "Entre las partes" },
     steps: [
       {
         title: "Descubrimiento",
         description:
-          "El comprador encuentra productores y orígenes en el directorio; el acuerdo comercial se cierra entre las empresas, como siempre.",
+          "El comprador encuentra productores y orígenes en el directorio; ambas empresas negocian y firman el contrato comercial en JuLit.",
       },
       {
         title: "Registro",
@@ -152,7 +152,7 @@ export const es = {
       {
         title: "Depósito en garantía",
         description:
-          "El comprador deposita el precio del lote en garantía: queda bloqueado hasta que confirme la entrega.",
+          "El comprador deposita el precio del lote, en USDC, en garantía: queda bloqueado hasta que confirme la entrega.",
       },
       {
         title: "Entrega",
@@ -162,7 +162,7 @@ export const es = {
       {
         title: "Liquidación",
         description:
-          "El comprador confirma la recepción: en ese mismo instante la productora cobra el pago depositado y el título queda dado de baja, con un registro permanente y verificable.",
+          "El comprador confirma la recepción: en ese mismo instante la productora cobra el pago depositado y el título queda dado de baja, con un registro permanente y verificable. Y si el comprador no responde, la productora puede cobrarlo vencido el plazo pactado.",
       },
     ],
     scenes: {
@@ -243,6 +243,7 @@ export const es = {
       title: "Cobrás cuando se confirma la entrega.",
       items: [
         "El pago del comprador se libera en el mismo instante en que se confirma la entrega.",
+        "Si el comprador no confirma, cobrás el depósito vencido el plazo pactado.",
         "Declarás el certificado de planta una sola vez y cada lote lo referencia.",
         "El historial del lote queda verificable por cualquiera.",
       ],
@@ -290,7 +291,19 @@ export const es = {
       },
       {
         q: "¿Puedo comprar cualquier lote listado?",
-        a: "No. Todo lote nace reservado a un comprador: el acuerdo comercial se cierra entre las empresas y solo ese comprador puede depositar el pago y confirmar la recepción. No hay compra abierta.",
+        a: "No. Todo lote nace reservado a un comprador: el contrato comercial se firma en JuLit entre ambas empresas y solo ese comprador puede depositar el pago y confirmar la recepción. No hay compra abierta.",
+      },
+      {
+        q: "¿Y si el comprador no confirma la recepción?",
+        a: "La productora puede cobrar el pago depositado una vez vencido el plazo pactado en el lote; la fecha límite queda visible desde el registro.",
+      },
+      {
+        q: "¿Cuánto cobra JuLit?",
+        a: "Una comisión menor al 1% del pago, y solo cuando el depósito se libera a la productora.",
+      },
+      {
+        q: "¿Por qué Solana?",
+        a: "La garantía es un programa, no una persona: la confirmación y el pago ocurren en una sola transacción atómica, con comisiones menores a un centavo y un orden de eventos compartido y verificable.",
       },
       {
         q: "¿Quiénes aparecen en el demo?",

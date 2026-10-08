@@ -8,7 +8,7 @@ type Dict = LandingDict["process"];
 /** Step layout metadata: position, on-chain flag and wide card are
  *  structural; copy comes from the locale dictionary. */
 const stepMeta = [
-  { number: "01", onchain: false },
+  { number: "01", onchain: true },
   { number: "02", onchain: true },
   { number: "03", onchain: true },
   { number: "04", onchain: false, wide: true },

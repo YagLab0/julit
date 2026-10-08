@@ -34,12 +34,12 @@ export const en: LandingDict = {
   hero: {
     title: "From the salt flat to market, with payment guaranteed.",
     description:
-      "JuLit connects lithium carbonate producers and buyers. Payment is deposited in escrow and the producer collects it only once delivery is confirmed: nobody pays without receiving, nor delivers without getting paid.",
+      "JuLit connects lithium carbonate producers and buyers. Payment in USDC is deposited in escrow and the producer collects it only once delivery is confirmed: nobody pays without receiving, nor delivers without getting paid.",
     location: "Salinas Grandes · Jujuy and Salta, Argentina",
   },
   heroFlow: {
     inputs: [
-      { label: "Lot 0042", meta: "escrowed payment" },
+      { label: "Lot 0042", meta: "escrowed USDC" },
       { label: "Title", meta: "custodied" },
       { label: "Delivery", meta: "confirmed" },
     ],
@@ -53,12 +53,12 @@ export const en: LandingDict = {
     sideOut: "single transaction",
   },
   notice:
-    "The demo runs on test money: operations execute for real, but carry no commercial value.",
+    "The demo runs on Solana Devnet with test money: operations execute for real, but carry no commercial value.",
   commerce: {
     eyebrow: "The JuLit proposal",
     heading: "Payment and delivery, in the same instant.",
     description:
-      "In B2B lithium trade, paying before receiving or delivering before getting paid leaves one party exposed. JuLit closes that gap: payment travels in escrow and is only released when delivery is confirmed.",
+      "In B2B lithium trade, paying before receiving or delivering before getting paid leaves one party exposed. JuLit closes that gap: payment in USDC travels in escrow and is only released when delivery is confirmed.",
     problemLabel: "The problem",
     slides: [
       {
@@ -68,7 +68,7 @@ export const en: LandingDict = {
         problem:
           "Payment and delivery of the good don't happen at the same time; someone takes on the risk that the other party won't deliver.",
         solution:
-          "Payment is deposited in escrow and only released when the buyer confirms delivery: at that very instant the producer gets paid and the title is retired.",
+          "Payment in USDC is deposited in escrow and only released when the buyer confirms delivery: at that very instant the producer gets paid and the title is retired.",
       },
       {
         tab: "Public record",
@@ -92,7 +92,7 @@ export const en: LandingDict = {
         problem:
           "Agreements between miners and buyers are negotiated privately, but commercial data ends up scattered or public.",
         solution:
-          "Every lot is born reserved to a buyer; the agreement is closed between the companies and only that buyer can deposit the payment and confirm delivery.",
+          "Every lot is born reserved to a buyer; the commercial contract is signed in JuLit between the companies and only that buyer can deposit the payment and confirm delivery.",
       },
     ],
     settlementMock: {
@@ -100,7 +100,7 @@ export const en: LandingDict = {
       pill: "instant",
       rows: [
         { asset: "Escrowed payment", to: "Producer" },
-        { asset: "Service fee", to: "Treasury" },
+        { asset: "Service fee (<1%)", to: "Treasury" },
         { asset: "Digital title", to: "Retired" },
       ],
       foot: "Everything in a single transaction, or nothing",
@@ -139,13 +139,13 @@ export const en: LandingDict = {
     heading: "From commercial agreement to payment, in five steps.",
     description: "This is how a lot moves through JuLit.",
     caption:
-      "Registration, deposit and settlement are recorded permanently and verifiably; the commercial agreement and physical delivery happen between the companies.",
+      "The commercial contract is signed in JuLit; registration, deposit and settlement are recorded permanently and verifiably; physical delivery happens between the companies.",
     tags: { onchain: "Verifiable record", offchain: "Between the parties" },
     steps: [
       {
         title: "Discovery",
         description:
-          "The buyer finds producers and origins in the directory; the commercial agreement is closed between the companies, as always.",
+          "The buyer finds producers and origins in the directory; both companies negotiate and sign the commercial contract in JuLit.",
       },
       {
         title: "Registration",
@@ -155,7 +155,7 @@ export const en: LandingDict = {
       {
         title: "Escrow deposit",
         description:
-          "The buyer deposits the lot's price in escrow: it stays locked until the buyer confirms delivery.",
+          "The buyer deposits the lot's price, in USDC, into escrow: it stays locked until the buyer confirms delivery.",
       },
       {
         title: "Delivery",
@@ -165,7 +165,7 @@ export const en: LandingDict = {
       {
         title: "Settlement",
         description:
-          "The buyer confirms receipt: at that very instant the producer collects the deposited payment and the title is retired, with a permanent, verifiable record.",
+          "The buyer confirms receipt: at that very instant the producer collects the deposited payment and the title is retired, with a permanent, verifiable record. And if the buyer never responds, the producer can still collect once the agreed deadline passes.",
       },
     ],
     scenes: {
@@ -245,6 +245,7 @@ export const en: LandingDict = {
       title: "You get paid when delivery is confirmed.",
       items: [
         "The buyer's payment is released the very instant delivery is confirmed.",
+        "If the buyer doesn't confirm, you collect the deposit once the agreed deadline passes.",
         "You declare the plant certificate once and every lot references it.",
         "The lot's history stays verifiable by anyone.",
       ],
@@ -292,7 +293,19 @@ export const en: LandingDict = {
       },
       {
         q: "Can I buy any listed lot?",
-        a: "No. Every lot is born reserved to a buyer: the commercial agreement is closed between the companies and only that buyer can deposit the payment and confirm receipt. There is no open purchase.",
+        a: "No. Every lot is born reserved to a buyer: the commercial contract is signed in JuLit between the companies and only that buyer can deposit the payment and confirm receipt. There is no open purchase.",
+      },
+      {
+        q: "What if the buyer doesn't confirm receipt?",
+        a: "The producer can collect the deposited payment once the deadline set on the lot passes; the deadline is visible from registration.",
+      },
+      {
+        q: "What does JuLit charge?",
+        a: "A fee under 1% of the payment, and only when the deposit is released to the producer.",
+      },
+      {
+        q: "Why Solana?",
+        a: "The escrow is a program, not a person: confirmation and payment happen in a single atomic transaction, with sub-cent fees and a shared, verifiable order of events.",
       },
       {
         q: "Who appears in the demo?",
