@@ -63,10 +63,8 @@ export type AcquiredLot = AccountLot & {
 };
 
 const CONTRACT_STATUS_STYLES: Record<string, string> = {
-  pending:
-    "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
-  accepted:
-    "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
+  pending: "border-amber-300 bg-amber-50 text-amber-800",
+  accepted: "border-emerald-300 bg-emerald-50 text-emerald-800",
   revoked: "bg-secondary text-muted",
 };
 
@@ -189,7 +187,7 @@ export function BuyerPortfolioCard({
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted">
             {dict.portfolio.settlementLabel}
           </p>
-          <p className="mt-1 text-xs font-semibold text-brand-700 dark:text-brand-400">
+          <p className="mt-1 text-xs font-semibold text-brand-700">
             {dict.portfolio.settlementValue}
           </p>
         </div>
@@ -246,7 +244,7 @@ export function BuyerPortfolioCard({
                     )}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                    className="text-xs text-brand-700 underline-offset-2 hover:underline"
                   >
                     Explorer
                   </a>
@@ -437,7 +435,7 @@ export function BuyerContractsCard({
       </div>
 
       {showModal && (
-        <div className="mt-4 rounded-2xl bg-brand-50 dark:bg-brand-950/40 p-4">
+        <div className="mt-4 rounded-2xl bg-brand-50 p-4">
           <p className="text-xs font-semibold text-foreground">
             {dict.buyerContracts.modalTitle}
           </p>
@@ -484,7 +482,7 @@ export function BuyerContractsCard({
           {pendingIncoming.map((c) => (
             <div
               key={c.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50/60 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/40"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50/60 px-4 py-3"
             >
               <p className="text-xs">
                 <span className="font-medium">{c.producer?.name}</span>{" "}
@@ -574,7 +572,7 @@ export function BuyerContractsCard({
                             )}
                             target="_blank"
                             rel="noreferrer"
-                            className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                            className="font-sans text-brand-700 underline-offset-2 hover:underline"
                           >
                             Explorer ↗
                           </a>
@@ -594,7 +592,7 @@ export function BuyerContractsCard({
                           )}
                           target="_blank"
                           rel="noreferrer"
-                          className="font-sans text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+                          className="font-sans text-brand-700 underline-offset-2 hover:underline"
                         >
                           Explorer ↗
                         </a>
@@ -796,7 +794,7 @@ export function BuyerOffersCard({
           {pending.map((c) => (
             <div
               key={c.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50/60 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/40"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50/60 px-4 py-3"
             >
               <p className="text-xs">
                 <span className="font-medium">{c.counterparty?.name}</span>{" "}
@@ -914,11 +912,11 @@ export function WalletCard({
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold">{dict.walletCard.eyebrow}</h2>
         {walletAddress ? (
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
             {dict.walletCard.verified}
           </span>
         ) : (
-          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
             {dict.walletCard.pending}
           </span>
         )}
@@ -937,7 +935,7 @@ export function WalletCard({
               href={getExplorerUrl(`/address/${walletAddress}`, cluster)}
               target="_blank"
               rel="noreferrer"
-              className="text-xs font-medium text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
+              className="text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
             >
               {dict.walletCard.viewInExplorer}
             </a>
@@ -953,7 +951,7 @@ export function WalletCard({
             </p>
           )}
           {wallet && wallet.account.address !== walletAddress && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">
+            <p className="text-xs text-amber-700">
               {t(dict.walletCard.wrongWallet, {
                 connected: ellipsify(wallet.account.address, 6),
               })}
@@ -967,7 +965,7 @@ export function WalletCard({
           </p>
           {!wallet && <WalletButton />}
           {wallet && !signMessage && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">
+            <p className="text-xs text-amber-700">
               {dict.walletCard.unsupportedWallet}
             </p>
           )}

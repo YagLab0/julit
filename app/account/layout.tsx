@@ -27,7 +27,7 @@ export default async function AccountLayout({
   if (!company) {
     return (
       <AccountI18nProvider dict={dict}>
-        <div className="min-h-screen bg-secondary text-foreground dark:bg-background">
+        <div className="min-h-screen bg-secondary text-foreground">
           <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
             <div className="mb-6 flex items-center justify-between">
               <Link
@@ -49,7 +49,7 @@ export default async function AccountLayout({
   }
 
   return (
-    <div className="min-h-screen bg-secondary text-foreground dark:bg-background">
+    <div className="min-h-screen bg-secondary text-foreground">
       <AccountShell
         company={company}
         email={user.email ?? ""}

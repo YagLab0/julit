@@ -87,7 +87,7 @@ export function SignInForm({ dict }: { dict: SignInDict }) {
         ¿No tenés cuenta?{" "}
         <Link
           href="/sign-up"
-          className="font-semibold text-brand-700 dark:text-brand-400"
+          className="font-semibold text-brand-700"
         >
           Creá la de tu empresa
         </Link>

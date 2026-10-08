@@ -1,4 +1,4 @@
-// Map style: sources, layers and the three basemap modes (light, dark and
+// Map style: sources, layers and the two basemap modes (light and
 // satellite). A single style with every base: switching modes only toggles
 // layers on and off, no setStyle (which would reset terrain, sources and
 // markers). Ported from lithium-passport, Mine -> Origin.
@@ -16,7 +16,7 @@ import { OTHER_SALARES_GEOJSON } from "../data/points";
 import { SALARES } from "../data/points";
 import { BRAND } from "./brand";
 
-export type Basemap = "light" | "dark" | "satellite";
+export type Basemap = "light" | "satellite";
 
 export const TEAL = BRAND;
 export const ROUTE_COLORS = {
@@ -119,28 +119,6 @@ const LOOKS: Record<Basemap, BasemapLook> = {
     otherSalar: { fill: "#d6d3d1", fillOpacity: 0.45, line: "#a8a29e" },
     routeCasing: "#ffffff",
   },
-  dark: {
-    rasterLayers: ["base-dark", "labels-dark"],
-    background: "#0a0a0a",
-    sky: {
-      "sky-color": "#0a0a0a",
-      "horizon-color": "#1c1917",
-      "fog-color": "#111111",
-      "sky-horizon-blend": 0.5,
-      "horizon-fog-blend": 0.4,
-      "fog-ground-blend": 0.6,
-      "atmosphere-blend": ATMOSPHERE_BLEND,
-    },
-    hillshade: {
-      shadow: "#000000",
-      highlight: "#5c5c5c",
-      accent: "#1f1f1f",
-      exaggeration: 0.6,
-    },
-    salarFill: { color: "#e7e5e4", opacity: 0.7 },
-    otherSalar: { fill: "#57534e", fillOpacity: 0.5, line: "#78716c" },
-    routeCasing: "#0a0a0a",
-  },
   satellite: {
     rasterLayers: ["base-satellite", "labels-satellite"],
     background: "#1c1917",
@@ -207,19 +185,6 @@ export function buildStyle(basemap: Basemap): StyleSpecification {
         tileSize: 256,
         maxzoom: 16,
       },
-      "esri-dark": {
-        type: "raster",
-        tiles: [esri("Canvas/World_Dark_Gray_Base")],
-        tileSize: 256,
-        maxzoom: 16,
-        attribution: "© Esri, HERE, Garmin, © OpenStreetMap contributors",
-      },
-      "esri-dark-ref": {
-        type: "raster",
-        tiles: [esri("Canvas/World_Dark_Gray_Reference")],
-        tileSize: 256,
-        maxzoom: 16,
-      },
       "esri-imagery": {
         type: "raster",
         tiles: [esri("World_Imagery")],
@@ -266,7 +231,6 @@ export function buildStyle(basemap: Basemap): StyleSpecification {
         paint: { "background-color": look.background },
       },
       raster("base-light", "esri-light"),
-      raster("base-dark", "esri-dark"),
       raster("base-satellite", "esri-imagery"),
       {
         id: "hillshade",
@@ -318,7 +282,6 @@ export function buildStyle(basemap: Basemap): StyleSpecification {
         },
       },
       raster("labels-light", "esri-light-ref"),
-      raster("labels-dark", "esri-dark-ref"),
       raster("labels-satellite", "esri-imagery-ref"),
       {
         id: "routes-casing",

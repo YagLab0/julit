@@ -45,8 +45,8 @@ export function VerifiedWalletGate({
 
   if (wallet.account.address !== walletAddress) {
     return (
-      <div className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/60 p-8 text-center dark:border-amber-800 dark:bg-amber-950/40">
-        <p className="text-sm text-amber-900 dark:text-amber-200">
+      <div className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/60 p-8 text-center">
+        <p className="text-sm text-amber-900">
           {dict.walletGate.mismatchA}
           <span className="font-mono">
             {ellipsify(wallet.account.address, 4)}

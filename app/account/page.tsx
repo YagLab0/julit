@@ -254,7 +254,7 @@ function StatTile({
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted">{label}</p>
-        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-400">
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-700">
           {icon}
         </span>
       </div>
@@ -289,7 +289,7 @@ function NavCard({
     >
       <h2 className="text-sm font-semibold">{title}</h2>
       <p className="mt-1 text-xs leading-relaxed text-muted">{body}</p>
-      <span className="mt-auto pt-4 text-xs font-semibold text-brand-700 dark:text-brand-400">
+      <span className="mt-auto pt-4 text-xs font-semibold text-brand-700">
         {linkLabel} →
       </span>
     </Link>

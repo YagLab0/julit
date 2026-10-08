@@ -11,7 +11,6 @@ import {
   type RefObject,
 } from "react";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
 import { createClient } from "../../lib/supabase/client";
 import { MapLayersPanel, type LayerState } from "./map-layers-panel";
 import type { Basemap } from "./map-style";
@@ -145,7 +144,7 @@ function IntroTitle({
       aria-hidden={!visible}
       className={`pointer-events-none absolute inset-x-0 z-10 flex flex-col items-center px-6 text-center transition-opacity duration-700 top-[max(12%,calc(var(--explorer-chrome,3.5rem)+0.75rem))] ${visible ? "opacity-100" : "opacity-0"}`}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-400">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700">
         JuLit · Demo visual
       </p>
       <h1 className="mt-2 max-w-2xl text-2xl font-bold tracking-tight text-foreground [text-shadow:0_1px_12px_rgba(255,255,255,0.9)] sm:text-4xl">
@@ -230,7 +229,6 @@ export function ExplorerSurface({ embedded = false }: { embedded?: boolean }) {
     satellite: false,
     routes: false,
   });
-  const { resolvedTheme } = useTheme();
 
   // No session needed: RLS exposes the catalogue to anonymous reads.
   useEffect(() => {
@@ -255,11 +253,7 @@ export function ExplorerSurface({ embedded = false }: { embedded?: boolean }) {
   }, [reloadKey]);
 
   const basemap: Basemap =
-    !embedded && layers.satellite
-      ? "satellite"
-      : resolvedTheme === "dark"
-        ? "dark"
-        : "light";
+    !embedded && layers.satellite ? "satellite" : "light";
 
   const selectedOrigin = origins.find((o) => o.id === selectedId) ?? null;
 
@@ -457,7 +451,7 @@ export function ExplorerSurface({ embedded = false }: { embedded?: boolean }) {
         {ready && (
           <div
             role="note"
-            className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-10 max-w-[calc(100%-4.75rem)] rounded-lg border border-amber-300 bg-amber-50/95 px-3 py-2 text-[11px] leading-snug text-amber-900 shadow-sm lg:bottom-4 lg:left-4 lg:max-w-xs dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200"
+            className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-10 max-w-[calc(100%-4.75rem)] rounded-lg border border-amber-300 bg-amber-50/95 px-3 py-2 text-[11px] leading-snug text-amber-900 shadow-sm lg:bottom-4 lg:left-4 lg:max-w-xs"
           >
             <p>
               <strong>Datos de referencia pública.</strong> Ubicaciones,

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useMemo, type CSSProperties } from "react";
+import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { ellipsify } from "../../lib/explorer";
 import { originName } from "../../lib/origins";
 import type { LotStatus } from "../../explorer/data/lots";
@@ -46,9 +46,14 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 export function LotGridCard({
   lot,
   index,
+  action,
 }: {
   lot: ProducerLot | DesignatedLot | AcquiredLot;
   index: number;
+  /** Optional action footer (e.g. the buyer's escrow fund button). Its
+   *  clicks are default-prevented inside the action so the card link
+   *  does not navigate. */
+  action?: ReactNode;
 }) {
   const dict = useAccountDict();
   const [integerFmt, decimalFmt] = useMemo(
@@ -129,10 +134,12 @@ export function LotGridCard({
 
         <div className="mt-3 flex items-center justify-between border-t border-border-low pt-2.5 text-[11px]">
           <span className="truncate text-muted">{counterparty}</span>
-          <span className="shrink-0 font-semibold text-brand-700 dark:text-brand-400">
+          <span className="shrink-0 font-semibold text-brand-700">
             {dict.lotCard.detail}
           </span>
         </div>
+
+        {action}
       </div>
     </Link>
   );

@@ -109,7 +109,7 @@ export function OriginModal({
           href={origin.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+          className="mt-2 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2"
         >
           {origin.source_label} ↗
         </a>

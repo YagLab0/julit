@@ -107,7 +107,7 @@ export function MapLayersPanel({
                 href={CORRIDOR_SOURCES[corridor].source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-0.5 inline-block pl-7 text-[10px] text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                className="mt-0.5 inline-block pl-7 text-[10px] text-brand-700 underline underline-offset-2"
               >
                 {CORRIDOR_SOURCES[corridor].source.label}
               </a>
