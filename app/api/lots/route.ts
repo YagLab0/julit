@@ -7,7 +7,7 @@ import {
   LotStatus,
 } from "../../generated/julit";
 import { jsonError, readJsonBody } from "../../lib/server/api";
-import { bytesToHex } from "../../lib/server/certificates";
+import { bytesToHex } from "../../lib/server/spec-sheets";
 import { createSolanaClient } from "../../lib/solana-client";
 import { createClient } from "../../lib/supabase/server";
 import { createServiceClient } from "../../lib/supabase/service";
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("lots")
     .select(
-      "pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after, plant_cert_sha256, plant_certificate_path, status, creation_tx_signature, fund_tx_signature, redeem_tx_signature, claim_tx_signature, cancel_tx_signature, dispute_tx_signature, observed_slot, indexed_at"
+      "pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after, spec_sheet_sha256, spec_sheet_path, status, creation_tx_signature, fund_tx_signature, redeem_tx_signature, claim_tx_signature, cancel_tx_signature, dispute_tx_signature, observed_slot, indexed_at"
     )
     .order("indexed_at", { ascending: false });
 
@@ -225,7 +225,7 @@ export async function POST(request: Request) {
       claimable_after: new Date(
         Number(lot.claimableAfter) * 1000
       ).toISOString(),
-      plant_cert_sha256: bytesToHex(lot.plantCertHash),
+      spec_sheet_sha256: bytesToHex(lot.specSheetHash),
       status: "listed",
       creation_tx_signature: txSignature,
       observed_slot: Number(tx!.slot),

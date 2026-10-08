@@ -94,7 +94,7 @@ select results_eq($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id,
     mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
     carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-    plant_cert_sha256, creation_tx_signature, observed_slot
+    spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('3', 31) || '4', 'LIT-2026-CAT-01', repeat('3', 31) || '2',
     repeat('3', 31) || '3', 'condor', repeat('3', 31) || '6', 25, 99.50,

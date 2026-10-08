@@ -23,7 +23,7 @@ export type PassportLot = Omit<Lot, "price_usdc"> & {
 };
 
 export const PASSPORT_LOT_COLUMNS =
-  "pda_address, lot_id, origin_id, status, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, buyer_wallet, claimable_after, plant_cert_sha256, plant_certificate_path, indexed_at, producer_wallet, creation_tx_signature, fund_tx_signature, redeem_tx_signature, claim_tx_signature, cancel_tx_signature, dispute_tx_signature" as const;
+  "pda_address, lot_id, origin_id, status, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, buyer_wallet, claimable_after, spec_sheet_sha256, spec_sheet_path, indexed_at, producer_wallet, creation_tx_signature, fund_tx_signature, redeem_tx_signature, claim_tx_signature, cancel_tx_signature, dispute_tx_signature" as const;
 
 // Same base58 shape the `lots` table enforces on `pda_address`.
 const PDA_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;

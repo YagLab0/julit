@@ -63,11 +63,12 @@ DB trigger rejects index rows without an accepted contract.
 `app/account/lotes/new` — gated by `VerifiedWalletGate`: the connected wallet
 must equal the company's verified wallet.
 
-1. The producer uploads the plant certificate PDF →
-   `POST /api/companies/plant-certificate`: the server recomputes the
+1. The producer uploads the lot spec sheet PDF →
+   `POST /api/companies/spec-sheet`: the server recomputes the
    SHA-256, stores the file content-addressed at
-   `<producer_wallet>/<sha256>.pdf` in the public certificates bucket
-   (never upserts), and returns the digest the form declares on-chain.
+   `<producer_wallet>/<sha256>.pdf` in the public `plant-certificates`
+   bucket (never upserts), and returns the digest the form declares
+   on-chain.
 2. `validateLotForm` parses every metric as a decimal string into scaled
    integers — no floats: `purity` ×100 (basis points, 99.50–100.00 only),
    `water`/`carbon` ×100, `price` ×10⁶ (dUSDC base units). It also checks
@@ -76,7 +77,7 @@ must equal the company's verified wallet.
 3. The frontend builds `create_lot` (generated client) and the producer
    signs. On-chain effects, all in one transaction:
    - Lot PDA `[b"lot", producer, lot_id]` initialized with metrics, price,
-     buyer, `claimable_after`, `plant_cert_hash`, status `Listed`.
+     buyer, `claimable_after`, `spec_sheet_hash`, status `Listed`.
    - Mint PDA `[b"mint", lot]` initialized (decimals 0, authority = Lot
      PDA) and exactly 1 token minted into `escrow_title`, the Lot PDA's
      ATA — the Digital Title never leaves escrow.
@@ -131,9 +132,8 @@ index status) and CAS-updates the index row.
   actions gated by the visitor's wallet.
 - `/batch/[pda]` is the public passport — index row only, no session:
   - declared metrics and origin;
-  - plant certificate: PDF from the public bucket +
-    `CertificateVerification` recomputes the SHA-256 in the browser and
-    contrasts it with the `plant_cert_hash` declared on-chain;
+  - lot spec sheet: the PDF from the public bucket with its declared
+    SHA-256, contrasted against the on-chain account;
   - escrow terms: designated buyer, `claimable_after`, the mint address;
   - the lifecycle timeline — every recorded transition links to its
     confirmed Devnet transaction;

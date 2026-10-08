@@ -74,7 +74,7 @@ function PassportMock({ dict }: { dict: Dict["passportMock"] }) {
   );
 }
 
-function CertificateMock({ dict }: { dict: Dict["certificateMock"] }) {
+function SpecSheetMock({ dict }: { dict: Dict["specSheetMock"] }) {
   return (
     <div className={styles.mockCard}>
       <div className={styles.docRow}>
@@ -163,7 +163,7 @@ const SLIDE_ICONS = [
     path="M6 4h9l3 3v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm4 6h4m-4 4h4"
   />,
   <TabIcon
-    key="cert"
+    key="spec"
     path="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8l-4-5zm0 0v5h4M9 15l2 2 4-4"
   />,
   <TabIcon
@@ -182,7 +182,7 @@ export function CommerceSection({
   const slideMocks: ReactNode[] = [
     <SettlementMock key="dvp" dict={dict.settlementMock} />,
     <PassportMock key="record" dict={dict.passportMock} />,
-    <CertificateMock key="cert" dict={dict.certificateMock} />,
+    <SpecSheetMock key="spec" dict={dict.specSheetMock} />,
     <ReservedMock key="reserved" dict={dict.reservedMock} />,
   ];
   const slides = dict.slides.map((slide, index) => ({

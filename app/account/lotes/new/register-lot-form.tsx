@@ -43,10 +43,10 @@ const INITIAL: LotFormValues = {
   priceUsdc: "",
   buyerWallet: "",
   claimableAfter: "",
-  plantCertSha256: "",
+  specSheetSha256: "",
 };
 
-type CertUpload =
+type SpecUpload =
   | { status: "idle" }
   | { status: "uploading" }
   | { status: "ready"; digest: string; path: string }
@@ -75,7 +75,7 @@ export function RegisterLotForm({
   const [values, setValues] = useState<LotFormValues>(INITIAL);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [indexing, setIndexing] = useState(false);
-  const [cert, setCert] = useState<CertUpload>({ status: "idle" });
+  const [spec, setSpec] = useState<SpecUpload>({ status: "idle" });
 
   const update = (key: FieldKey) => (v: string) => {
     setValues((prev) => ({ ...prev, [key]: v }));
@@ -84,18 +84,18 @@ export function RegisterLotForm({
 
   /** Uploads the PDF first: the server recomputes the digest and stores the
    *  file content-addressed, so the hash declared on-chain provably matches
-   *  the stored certificate. */
-  const handleCertificate = async (file: File | null) => {
+   *  the stored spec sheet. */
+  const handleSpecSheet = async (file: File | null) => {
     if (!file) {
-      setCert({ status: "idle" });
-      setValues((prev) => ({ ...prev, plantCertSha256: "" }));
+      setSpec({ status: "idle" });
+      setValues((prev) => ({ ...prev, specSheetSha256: "" }));
       return;
     }
-    setCert({ status: "uploading" });
+    setSpec({ status: "uploading" });
     try {
       const form = new FormData();
       form.set("file", file);
-      const res = await fetch("/api/companies/plant-certificate", {
+      const res = await fetch("/api/companies/spec-sheet", {
         method: "POST",
         body: form,
       });
@@ -105,17 +105,17 @@ export function RegisterLotForm({
         error?: string;
       } | null;
       if (!res.ok || !body?.digest || !body.path) {
-        throw new Error(body?.error ?? f.certUploadError);
+        throw new Error(body?.error ?? f.specUploadError);
       }
-      setCert({ status: "ready", digest: body.digest, path: body.path });
-      setValues((prev) => ({ ...prev, plantCertSha256: body.digest! }));
+      setSpec({ status: "ready", digest: body.digest, path: body.path });
+      setValues((prev) => ({ ...prev, specSheetSha256: body.digest! }));
       setErrors((prev) =>
-        prev.plantCertSha256 ? { ...prev, plantCertSha256: undefined } : prev
+        prev.specSheetSha256 ? { ...prev, specSheetSha256: undefined } : prev
       );
     } catch (err) {
-      setCert({ status: "failed" });
-      setValues((prev) => ({ ...prev, plantCertSha256: "" }));
-      toast.error(err instanceof Error ? err.message : f.certUploadFailed);
+      setSpec({ status: "failed" });
+      setValues((prev) => ({ ...prev, specSheetSha256: "" }));
+      toast.error(err instanceof Error ? err.message : f.specUploadFailed);
     }
   };
 
@@ -170,7 +170,7 @@ export function RegisterLotForm({
         priceUsdc: BigInt(payload.priceUsdcScaled),
         buyer: address(payload.buyerWallet),
         claimableAfter: BigInt(payload.claimableAfterUnix),
-        plantCertHash: hexToBytes(payload.plantCertSha256),
+        specSheetHash: hexToBytes(payload.specSheetSha256),
         metadataUri: "",
       });
 
@@ -216,7 +216,7 @@ export function RegisterLotForm({
           action: explorerAction,
         });
         setValues(INITIAL);
-        setCert({ status: "idle" });
+        setSpec({ status: "idle" });
       };
 
       const retryIndex = async () => {
@@ -341,9 +341,9 @@ export function RegisterLotForm({
             />
           </Field>
           <Field
-            label={f.certLabel}
-            hint={f.certHint}
-            error={errors.plantCertSha256}
+            label={f.specLabel}
+            hint={f.specHint}
+            error={errors.specSheetSha256}
             span
           >
             <input
@@ -351,15 +351,15 @@ export function RegisterLotForm({
               accept="application/pdf"
               className={`${INPUT_CLASS} file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-2 file:py-1 file:text-xs file:font-semibold`}
               onChange={(e) =>
-                void handleCertificate(e.target.files?.[0] ?? null)
+                void handleSpecSheet(e.target.files?.[0] ?? null)
               }
             />
-            {cert.status === "uploading" && (
-              <p className="mt-1 text-[11px] text-muted">{f.certUploading}</p>
+            {spec.status === "uploading" && (
+              <p className="mt-1 text-[11px] text-muted">{f.specUploading}</p>
             )}
-            {cert.status === "ready" && (
+            {spec.status === "ready" && (
               <p className="mt-1 font-mono text-[11px] text-muted">
-                SHA-256: {cert.digest.slice(0, 12)}…{cert.digest.slice(-8)}
+                SHA-256: {spec.digest.slice(0, 12)}…{spec.digest.slice(-8)}
               </p>
             )}
           </Field>
@@ -382,7 +382,7 @@ export function RegisterLotForm({
           </Link>
           <button
             type="submit"
-            disabled={isSending || indexing || cert.status === "uploading"}
+            disabled={isSending || indexing || spec.status === "uploading"}
             className="btn-primary rounded-full px-5"
           >
             {isSending

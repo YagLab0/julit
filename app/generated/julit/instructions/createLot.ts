@@ -142,7 +142,7 @@ export type CreateLotInstructionData = {
   priceUsdc: bigint;
   buyer: Address;
   claimableAfter: bigint;
-  plantCertHash: ReadonlyUint8Array;
+  specSheetHash: ReadonlyUint8Array;
   metadataUri: string;
 };
 
@@ -156,7 +156,7 @@ export type CreateLotInstructionDataArgs = {
   priceUsdc: number | bigint;
   buyer: Address;
   claimableAfter: number | bigint;
-  plantCertHash: ReadonlyUint8Array;
+  specSheetHash: ReadonlyUint8Array;
   metadataUri: string;
 };
 
@@ -173,7 +173,7 @@ export function getCreateLotInstructionDataEncoder(): Encoder<CreateLotInstructi
       ["priceUsdc", getU64Encoder()],
       ["buyer", getAddressEncoder()],
       ["claimableAfter", getI64Encoder()],
-      ["plantCertHash", fixEncoderSize(getBytesEncoder(), 32)],
+      ["specSheetHash", fixEncoderSize(getBytesEncoder(), 32)],
       ["metadataUri", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
     (value) => ({ ...value, discriminator: CREATE_LOT_DISCRIMINATOR }),
@@ -192,7 +192,7 @@ export function getCreateLotInstructionDataDecoder(): Decoder<CreateLotInstructi
     ["priceUsdc", getU64Decoder()],
     ["buyer", getAddressDecoder()],
     ["claimableAfter", getI64Decoder()],
-    ["plantCertHash", fixDecoderSize(getBytesDecoder(), 32)],
+    ["specSheetHash", fixDecoderSize(getBytesDecoder(), 32)],
     ["metadataUri", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
 }
@@ -262,7 +262,7 @@ export type CreateLotAsyncInput<
   priceUsdc: CreateLotInstructionDataArgs["priceUsdc"];
   buyer: CreateLotInstructionDataArgs["buyer"];
   claimableAfter: CreateLotInstructionDataArgs["claimableAfter"];
-  plantCertHash: CreateLotInstructionDataArgs["plantCertHash"];
+  specSheetHash: CreateLotInstructionDataArgs["specSheetHash"];
   metadataUri: CreateLotInstructionDataArgs["metadataUri"];
 };
 
@@ -519,7 +519,7 @@ export type CreateLotInput<
   priceUsdc: CreateLotInstructionDataArgs["priceUsdc"];
   buyer: CreateLotInstructionDataArgs["buyer"];
   claimableAfter: CreateLotInstructionDataArgs["claimableAfter"];
-  plantCertHash: CreateLotInstructionDataArgs["plantCertHash"];
+  specSheetHash: CreateLotInstructionDataArgs["specSheetHash"];
   metadataUri: CreateLotInstructionDataArgs["metadataUri"];
 };
 

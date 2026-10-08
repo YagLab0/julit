@@ -73,7 +73,7 @@ pub mod julit {
         price_usdc: u64,
         buyer: Pubkey,
         claimable_after: i64,
-        plant_cert_hash: [u8; 32],
+        spec_sheet_hash: [u8; 32],
         metadata_uri: String,
     ) -> Result<()> {
         require!(
@@ -121,7 +121,7 @@ pub mod julit {
         lot.carbon_kg_co2e_per_tonne_scaled = carbon_kg_co2e_per_tonne_scaled;
         lot.price_usdc = price_usdc;
         lot.claimable_after = claimable_after;
-        lot.plant_cert_hash = plant_cert_hash;
+        lot.spec_sheet_hash = spec_sheet_hash;
         lot.status = LotStatus::Listed;
         lot.created_at = now;
         lot.bump = ctx.bumps.lot;
@@ -792,7 +792,7 @@ pub struct Lot {
     pub water_m3_per_tonne_scaled: u64,
     pub carbon_kg_co2e_per_tonne_scaled: u64,
     pub claimable_after: i64,
-    pub plant_cert_hash: [u8; 32],
+    pub spec_sheet_hash: [u8; 32],
     pub status: LotStatus,
     pub created_at: i64,
     pub bump: u8,
@@ -805,7 +805,7 @@ impl Lot {
         + 32 * 3 // producer, buyer, mint
         + 8 * 5 // price + 4 metrics
         + 8 // claimable_after
-        + 32 // plant_cert_hash
+        + 32 // spec_sheet_hash
         + 1 // status
         + 8 // created_at
         + 1; // bump

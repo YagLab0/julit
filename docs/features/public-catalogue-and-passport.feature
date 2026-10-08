@@ -2,7 +2,7 @@
 # Layer tags: @program = Anchor programme, @api = authenticated API, @db = Supabase schema and RLS, @ui = frontend
 Feature: Public catalogue, passport and access control
   Anyone reads the catalogue and the passport without an account; companies stay private
-  and clients never write to the index or the certificate bucket.
+  and clients never write to the index or the spec-sheet bucket.
 
   @db @ui
   Scenario: Catalogue shows the indexed Lots of each Origin
@@ -18,11 +18,11 @@ Feature: Public catalogue, passport and access control
     And an authenticated company reading companies receives only its own row
 
   @db
-  Scenario: Clients cannot mutate the index or the certificates
+  Scenario: Clients cannot mutate the index or the spec sheets
     Given an anonymous or authenticated client
-    When it updates lots, or inserts, replaces or deletes objects in the plant-certificate bucket
+    When it updates lots, or inserts, replaces or deletes objects in the spec-sheet bucket
     Then the operation is denied
-    But public certificate downloads still work
+    But public spec-sheet downloads still work
 
   @ui
   Scenario: The passport renders the lot lifecycle timeline
@@ -31,15 +31,14 @@ Feature: Public catalogue, passport and access control
     Then it shows the lot status badge and declared metrics
     And it renders the lifecycle timeline — creation, funding, an optional
     dispute flag, and the terminal event — each linked to its Devnet transaction
-    And it links the plant certificate PDF and its declared SHA-256
+    And it links the lot spec sheet PDF and its declared SHA-256
     And it never shows the commercial price
 
   @ui @program
   Scenario: The passport proves itself against Solana
     Given the public passport of a Lot at "/batch/<PDA_ADDRESS>"
-    When the visitor verifies the plant certificate
-    Then the SHA-256 of the downloaded bytes is compared with the on-chain digest
-    And the on-chain account is contrasted field by field with the index row
+    When the page renders
+    Then the on-chain account is contrasted field by field with the index row
     And the QR image and the Explorer links are derived, never stored
 
   @ui

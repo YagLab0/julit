@@ -74,7 +74,7 @@ export type Lot = {
   waterM3PerTonneScaled: bigint;
   carbonKgCo2ePerTonneScaled: bigint;
   claimableAfter: bigint;
-  plantCertHash: ReadonlyUint8Array;
+  specSheetHash: ReadonlyUint8Array;
   status: LotStatus;
   createdAt: bigint;
   bump: number;
@@ -92,7 +92,7 @@ export type LotArgs = {
   waterM3PerTonneScaled: number | bigint;
   carbonKgCo2ePerTonneScaled: number | bigint;
   claimableAfter: number | bigint;
-  plantCertHash: ReadonlyUint8Array;
+  specSheetHash: ReadonlyUint8Array;
   status: LotStatusArgs;
   createdAt: number | bigint;
   bump: number;
@@ -114,7 +114,7 @@ export function getLotEncoder(): Encoder<LotArgs> {
       ["waterM3PerTonneScaled", getU64Encoder()],
       ["carbonKgCo2ePerTonneScaled", getU64Encoder()],
       ["claimableAfter", getI64Encoder()],
-      ["plantCertHash", fixEncoderSize(getBytesEncoder(), 32)],
+      ["specSheetHash", fixEncoderSize(getBytesEncoder(), 32)],
       ["status", getLotStatusEncoder()],
       ["createdAt", getI64Encoder()],
       ["bump", getU8Encoder()],
@@ -138,7 +138,7 @@ export function getLotDecoder(): Decoder<Lot> {
     ["waterM3PerTonneScaled", getU64Decoder()],
     ["carbonKgCo2ePerTonneScaled", getU64Decoder()],
     ["claimableAfter", getI64Decoder()],
-    ["plantCertHash", fixDecoderSize(getBytesDecoder(), 32)],
+    ["specSheetHash", fixDecoderSize(getBytesDecoder(), 32)],
     ["status", getLotStatusDecoder()],
     ["createdAt", getI64Decoder()],
     ["bump", getU8Decoder()],

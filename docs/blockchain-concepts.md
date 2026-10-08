@@ -19,7 +19,7 @@ Deterministic, keyless addresses derived from seeds + the program id:
 - `Config` — `[b"config"]`: singleton with admin, `fee_bps`, `usdc_mint`,
   `treasury`, and the claim window bounds.
 - `Lot` — `[b"lot", producer_wallet, lot_id]`: the lot's full record
-  (metrics, price, designated buyer, `claimable_after`, `plant_cert_hash`,
+  (metrics, price, designated buyer, `claimable_after`, `spec_sheet_hash`,
   status). The producer wallet is a seed, so each producer has its own
   lot namespace.
 - `mint` — `[b"mint", lot]`: the Digital Title mint, bound to its lot.
@@ -88,11 +88,10 @@ Anchor account constraints express the trust model declaratively:
 
 ## Anchoring off-chain evidence
 
-The plant certificate PDF lives in Supabase Storage; its SHA-256 digest
-(`plant_cert_hash`) is declared on-chain at `create_lot`. The public
-passport recomputes the digest in the browser and contrasts the indexed
-row field-by-field against the decoded on-chain account — integrity of
-the document and the record, without trusting the index.
+The lot spec sheet PDF lives in Supabase Storage; its SHA-256 digest
+(`spec_sheet_hash`) is declared on-chain at `create_lot`. The public
+passport contrasts the indexed row field-by-field against the decoded
+on-chain account — integrity of the record, without trusting the index.
 
 ## Cluster and value
 

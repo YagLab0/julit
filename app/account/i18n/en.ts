@@ -297,7 +297,7 @@ export const en: AccountDict = {
     producerNew: "+ Register lot",
     producerEmptyTitle: "You have not registered any lots yet",
     producerEmptyBody:
-      "Register a battery-grade lithium carbonate lot with its plant certificate and designated buyer.",
+      "Register a battery-grade lithium carbonate lot with its spec sheet and designated buyer.",
     producerEmptyAction: "Register lot",
   },
   lotCard: {
@@ -311,7 +311,7 @@ export const en: AccountDict = {
   },
   newLot: {
     intro:
-      "Register a battery-grade lithium carbonate lot on Solana Devnet, with a designated buyer and plant certificate. Your company's verified wallet signs as producer.",
+      "Register a battery-grade lithium carbonate lot on Solana Devnet, with a designated buyer and lot spec sheet. Your company's verified wallet signs as producer.",
     gates: {
       producerOnly: "Lot registration is exclusive to producer companies.",
       wallet: "Link your company's verified wallet to be able to sign lots.",
@@ -356,11 +356,11 @@ export const en: AccountDict = {
       claimableLabel: "Claimable from",
       claimableHint:
         "If the buyer does not confirm receipt before this date, you may claim the escrowed funds.",
-      certLabel: "Plant certificate (PDF)",
-      certHint: "Stored content-addressed; its SHA-256 is declared on the lot.",
-      certUploading: "Uploading and computing the SHA-256…",
-      certUploadError: "Error uploading the certificate.",
-      certUploadFailed: "Could not upload the certificate.",
+      specLabel: "Lot spec sheet (PDF)",
+      specHint: "Stored content-addressed; its SHA-256 is declared on the lot.",
+      specUploading: "Uploading and computing the SHA-256…",
+      specUploadError: "Error uploading the spec sheet.",
+      specUploadFailed: "Could not upload the spec sheet.",
       signAs: "Signs as {name}:",
       back: "Back to lots",
       submit: "Register lot",
@@ -391,7 +391,7 @@ export const en: AccountDict = {
       claimableRequired:
         "Enter the deadline after which you may claim the escrow.",
       claimableFuture: "The claim date must be in the future.",
-      certRequired: "Upload the plant certificate (PDF) to obtain its SHA-256.",
+      specRequired: "Upload the lot spec sheet (PDF) to obtain its SHA-256.",
     },
   },
   onboarding: {

@@ -27,7 +27,7 @@ insert into public.lots (
   pda_address, lot_id, producer_wallet, buyer_wallet,
   origin_id, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
   carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-  plant_cert_sha256, creation_tx_signature, observed_slot
+  spec_sheet_sha256, creation_tx_signature, observed_slot
 ) values (
   repeat('1', 31) || '7', 'LIT-2026-EXAR-02', repeat('1', 31) || '2',
   repeat('1', 31) || '4',
@@ -132,9 +132,9 @@ select throws_ok($$update public.lots set lot_id = 'LIT-2026-EXAR-02'
 select throws_ok($$update public.lots set mint_address = 'not-base58!'
   where lot_id = 'LIT-2026-EXAR-02'$$,
   '23514', null, 'The Digital Title mint must be a base58 address');
-select throws_ok($$update public.lots set plant_cert_sha256 = repeat('a', 63)
+select throws_ok($$update public.lots set spec_sheet_sha256 = repeat('a', 63)
   where lot_id = 'LIT-2026-EXAR-02'$$,
-  '23514', null, 'A plant certificate digest requires all 64 hexadecimal characters');
+  '23514', null, 'A spec sheet digest requires all 64 hexadecimal characters');
 
 insert into public.company_contracts (producer_id, counterparty_id, status, responded_at) values
   ('00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000004', 'accepted', now());
@@ -143,7 +143,7 @@ select results_eq($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
     carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-    plant_cert_sha256, creation_tx_signature, observed_slot
+    spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('1', 31) || '9', 'LIT-2026-EXAR-02', repeat('1', 31) || '6',
     repeat('1', 31) || '5', 'pena_blanca', repeat('2', 31) || '9',
@@ -200,7 +200,7 @@ select results_eq($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
     carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-    plant_cert_sha256, creation_tx_signature, observed_slot,
+    spec_sheet_sha256, creation_tx_signature, observed_slot,
     status, cancel_tx_signature
   ) values (
     repeat('3', 31) || '9', 'LIT-2026-EXAR-09', repeat('1', 31) || '2',
@@ -214,7 +214,7 @@ select throws_ok($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
     carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
-    plant_cert_sha256, creation_tx_signature, observed_slot,
+    spec_sheet_sha256, creation_tx_signature, observed_slot,
     status, fund_tx_signature
   ) values (
     repeat('5', 31) || '9', 'LIT-2026-EXAR-10', repeat('1', 31) || '2',
