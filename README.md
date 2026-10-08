@@ -1,6 +1,6 @@
 # JuLit
 
-**B2B Directory & Escrowed Delivery-versus-Payment (DvP) Protocol for Lithium Carbonate Lots on Solana.**
+**Safe payments for new lithium companies. A B2B directory and payment escrow for lithium carbonate lots on Solana.**
 
 [![Solana Devnet](https://img.shields.io/badge/Solana-Devnet-14F195?logo=solana&logoColor=black)](https://explorer.solana.com/address/BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky?cluster=devnet)
 [![Program ID](https://img.shields.io/badge/Program_ID-BntbtLZd...Xtky-blueviolet)](https://explorer.solana.com/address/BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky?cluster=devnet)
@@ -8,103 +8,105 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-JuLit eliminates trade finance friction in the global critical minerals market. By combining cryptographically-anchored lot spec sheets with programmatic escrow accounts on Solana, JuLit allows lithium carbonate producers and international buyers to execute atomic **Delivery-versus-Payment (DvP)** settlements using USDC—drastically cutting the high fees and settlement delays of traditional bank letters of credit.
+The buyer pays only when the lithium arrives, and the producer knows the money is already there. JuLit locks the buyer's USDC in a Solana program and releases it to the producer when the buyer confirms delivery.
+
+Pitch deck: [`public/pitch-en.html`](public/pitch-en.html) ([PDF](public/pitch-en.pdf)) · Spanish: [`public/pitch.html`](public/pitch.html) · Script: [`public/pitch-script-en.pdf`](public/pitch-script-en.pdf)
 
 ---
 
 ## 1. The Problem
 
-The global transition to electric mobility relies heavily on **battery-grade lithium carbonate ($Li_2CO_3 \ge 99.50\%$)**. However, cross-border physical transactions between mining producers (e.g., in the South American Lithium Triangle) and international industrial buyers (battery and cathode manufacturers) suffer from two major bottlenecks:
+New lithium producers sell to buyers they don't know.
 
-1. **Trade Finance Inefficiency (Letters of Credit):**
-   - Traditional bank Letters of Credit (LCs) charge **1.5% to 3.5% in bank commissions** and fees (_Sources: ICC Global Trade Finance Survey, World Bank / IFC Trade Finance Reports_).
-   - Bureaucratic verification processes delay capital release by **15 to 45 days**, immobilizing millions of dollars in working capital (_Sources: ICC UCP 600, 60%–70% first-presentation discrepancy rejection rates documented by Trade Finance Global & ICC Trade Register_).
-   - Counterparty standoff: Buyers hesitate to pay upfront before delivery, while producers cannot afford to ship multimillion-dollar cargo without guaranteed payment.
-
-2. **Opaque and Fragmented Environmental Evidence:**
-   - Critical metrics (chemical purity, water consumption per tonne, carbon emissions) circulate via unlinked PDF files sent over email.
-   - Unverifiable paper certificates increase the risk of greenwashing and complicate compliance with strict global standards, such as the upcoming **EU Battery Regulation (Regulation (EU) 2023/1542, Articles 65 & 77)**, which mandates digital battery passports from February 2027.
+- **Big players sell to their own partners.** At Cauchari-Olaroz (Jujuy), the owners take the lithium in proportion to their shares.<sup>[1]</sup> There is no trust problem to solve.
+- **New players carry the risk.** Argosy Minerals (Salta) sold 20 t of lithium carbonate to a Hong Kong buyer, who paid everything before the ship was loaded.<sup>[2]</sup>
+- **Banks leave small companies out.** In 2022, SMEs sent 38% of trade finance requests but received 45% of the rejections.<sup>[3]</sup> A letter of credit is expensive and needs a lot of paperwork.<sup>[4]</sup> Of rejected SMEs that looked for other financing, 40% used their own money<sup>[5]</sup> — with no protection.
 
 ---
 
-## 2. The Solution
+## 2. Who We Serve
 
-JuLit acts as a B2B directory and on-chain escrow settlement engine:
+| Segment                    | Fit         | Why                                                                     |
+| -------------------------- | ----------- | ----------------------------------------------------------------------- |
+| **New producers**          | Yes         | Selling their first lots to buyers who are not partners or shareholders |
+| **Small buyers & traders** | Yes         | No bank credit line; today they must pay in advance to get the lithium  |
+| **Big integrated groups**  | Not for now | They sell to their own shareholders and already trust their buyer       |
 
-- **Digital Title in Escrow:** When a producer registers a lot, an immutable **Metaplex NFT** (Digital Title) is minted directly into the lot's Program-Derived Address (PDA) escrow. The token _never leaves the escrow account_, making unauthorized transfers or secondary market speculation impossible by design.
-- **Cryptographic Evidence Anchoring:** The SHA-256 digest of the producer's certified plant analysis report is recorded permanently on-chain in the Lot PDA and Metaplex metadata.
-- **Escrowed Funding (USDC):** The designated buyer deposits the full lot price into the lot's program-owned USDC token account (`fund_lot`). Funds remain securely locked under smart contract custody.
-- **Atomic Delivery-versus-Payment (DvP):** Upon physical receipt and inspection of the cargo at the facility, the buyer signs `redeem_lot`. In a single atomic transaction, the Digital Title is burned inside escrow and the deposited USDC is released to the producer (minus the protocol take rate).
-- **Built-in Safety Mechanisms:**
-  - **Claim Timeout (`claim_timeout`):** If an unresponsive buyer fails to redeem after the designated `claimable_after` window, the producer can unilaterally claim the escrowed funds.
+Buyers must operate where stablecoin payments are legal. Mainland China bans them,<sup>[6]</sup> so mainland buyers are out of scope.
 
 ---
 
-## 3. On-Chain Architecture & Lifecycle
+## 3. The Solution
 
-All state transitions are enforced by the JuLit Anchor program on Solana:
+A payment box that opens only on delivery:
+
+1. **Register** — We (the JuLit admin) register each producer with its production data, like lithium purity. Every lot from that producer uses the same data.
+2. **Contract** — Producer and buyer sign a contract in JuLit. The producer creates a lot for that buyer (`create_lot`).
+3. **Deposit** — The buyer puts the money, in USDC, into the box (`fund_lot`). The funds sit in a program-owned account: nobody can take them — not even us.
+4. **Delivery** — The lithium arrives, the buyer checks it and confirms (`redeem_lot`). In that same transaction, the producer gets paid.
+
+Yes, the buyer pays first. But without a bank, small buyers already pay first. With JuLit, that money is protected.
+
+---
+
+## 4. How It Works On-Chain
+
+Each lot is a Program-Derived Address (PDA) that owns its USDC vault and a Digital Title token (Metaplex). The title never leaves the escrow; it is burned when the payment is released.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Listed: create_lot\n(Mints Digital Title into Escrow PDA)
-    Listed --> Cancelled: cancel_lot\n(Producer cancels before funding; burns NFT)
-    Listed --> Funded: fund_lot\n(Buyer deposits full USDC price into Escrow PDA)
-    Funded --> Redeemed: redeem_lot\n(Buyer confirms physical receipt: burns NFT, releases USDC)
-    Disputed --> Redeemed: redeem_lot\n(Legacy disputed lots resolve in the producer's favour)
-    Funded --> Claimed: claim_timeout\n(Window expires without buyer action: burns NFT, releases USDC)
+    [*] --> Listed: create_lot\n(Producer lists a lot for one buyer)
+    Listed --> Cancelled: cancel_lot\n(Producer cancels before funding)
+    Listed --> Funded: fund_lot\n(Buyer deposits the full USDC price)
+    Funded --> Redeemed: redeem_lot\n(Buyer confirms delivery: title burned, USDC released)
+    Funded --> Claimed: claim_timeout\n(Agreed date passes: title burned, USDC released)
 ```
 
 ### Deployed Program (Solana Devnet)
 
 - **Program ID:** [`BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky`](https://explorer.solana.com/address/BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky?cluster=devnet)
-- **Devnet Mint (dUSDC):** Compatible with project-seeded test USDC mint for deterministic end-to-end testing.
+- **Money:** a project-owned test USDC mint (dUSDC). No real funds.
 
 ---
 
-## 4. Why Solana?
+## 5. Why Solana
 
-- **Sub-Second Finality & Low Transaction Costs:** Moving physical commodity settlement on-chain requires atomic multi-instruction transactions (token burning, split payments to producer and treasury) that cost a fraction of a cent and execute in under 1 second.
-- **Program Derived Addresses (PDAs) as Autonomous Escrows:** JuLit eliminates human custodians. The `Lot PDA` autonomously owns the token vault and controls token burning and fund distribution strictly via `invoke_signed`.
-- **Standard Compatibility:** Built using the standard SPL Token program, Metaplex Token Metadata V3, and Anchor 0.32.1.
+We use Solana because it is fast, and each transaction costs less than one cent.<sup>[7]</sup>
 
 ---
 
-## 5. Trust Model & Oracle Boundaries
+## 6. Business Model
 
-We maintain strict honesty about the boundaries of blockchain verification:
+We earn only when the payment is released.
 
-- **What on-chain hashing proves:** Recording the SHA-256 hash of the lot's spec sheet PDF on-chain guarantees that the document has not been modified, replaced, or tampered with since the lot was listed.
-- **What on-chain hashing does not prove:** It does _not_ prove physical chemical reality or sample chain-of-custody. JuLit does not replace licensed assayers or chemical laboratories. Instead, certified plant documents are legally tied to registered producer entities, making fraudulent declarations legally auditable.
-- **Admissibility criteria:** Only lots meeting **Battery Grade** ($\ge 99.50\%$ purity) with positive volume and valid origin IDs are permitted on-chain.
+- **1% fee**, charged only when the box releases the money to the producer. The fee is stored on-chain in the program's `Config` and set by the admin (`set_fee_bps`, currently 100 bps on Devnet).
+- **Creating a lot and depositing are free.**
+- **Why they pay:** the producer ships knowing the money is already locked; the buyer's money is protected until delivery.
 
----
-
-## 6. Business Model & Unit Economics
-
-JuLit charges an on-chain **Take Rate** (in basis points) exclusively upon successful settlement:
-
-- **Fee Structure:** Deduces a small protocol fee from the escrow release when `redeem_lot` or `claim_timeout` executes, routing it directly to the protocol treasury ATA.
-- **Zero Pre-Execution Cost:** Listing a lot (`create_lot`) and depositing funds (`fund_lot`) incur no protocol fees.
-- **Cost Comparison vs. Letters of Credit:**
-  - **Traditional LC:** A typical 50-tonne spot shipment (~$1,000,000 USD) costs **$15,000 to $35,000 USD** in banking commissions plus 30+ days of illiquidity (_Benchmark: Fastmarkets / S&P Global Platts lithium spot pricing & ICC banking fees_).
-  - **JuLit Escrow:** Programmatic fee of **0.50% to 1.00%** ($5,000 to $10,000 USD) with instantaneous fund release upon delivery confirmation, yielding significant savings and unlocking cash flow.
+We don't replace bank credit. We give a safe option to the companies that can't get it.
 
 ---
 
-## 7. The Team & Regional Edge
+## 7. Status & Limits
 
-JuLit is built by a team based in **San Salvador de Jujuy, Argentina**, located directly in the heart of the South American **Lithium Triangle** (Jujuy, Salta, and Catamarca):
-
-- **Mauricio Rios** — Team Lead & Smart Contract Engineer | [LinkedIn](https://www.linkedin.com/in/rios-mauricio) | [GitHub](https://github.com/RiosMauricio)
-- **Samuel Paredes** — Full-Stack Developer & Backend Integration | [LinkedIn](https://www.linkedin.com/in/samas-dev/) | [GitHub](https://github.com/Samas1503)
-- **Mauro Benjamin Mamani** — Frontend & Design Engineer | [LinkedIn](https://www.linkedin.com/in/mauromamani/) | [GitHub](https://github.com/mauromamani)
-- **Mayko Fernandez** — Protocol & QA Engineer | [LinkedIn](https://www.linkedin.com/in/Mayko2003) | [GitHub](https://github.com/Mayko2003)
-
-Our regional presence provides direct access to regional mining facilities, local testing laboratories, and provincial chambers of commerce.
+- **Live on Devnet:** the full flow — contract, lot, deposit, confirm, payment — runs on Solana Devnet with test money.
+- **Tested:** the Anchor program is tested with LiteSVM, and the app with Vitest.
+- **Limit — the chain can't see lithium:** the blockchain proves that records were not changed. It cannot check the cargo. Today the buyer checks it before confirming.
 
 ---
 
-## 8. Technology Stack
+## 8. The Team
+
+Built in **San Salvador de Jujuy, Argentina**, inside the Lithium Triangle — close to the new producers we want to help.
+
+- **Mauricio Rios** — Team Lead · Solana | [LinkedIn](https://www.linkedin.com/in/rios-mauricio) | [GitHub](https://github.com/RiosMauricio)
+- **Mauro Benjamin Mamani** — Frontend | [LinkedIn](https://www.linkedin.com/in/mauromamani/) | [GitHub](https://github.com/mauromamani)
+- **Mayko Fernandez** — Protocol · QA | [LinkedIn](https://www.linkedin.com/in/Mayko2003) | [GitHub](https://github.com/Mayko2003)
+- **Samuel Paredes** — Full-Stack | [LinkedIn](https://www.linkedin.com/in/samas-dev/) | [GitHub](https://github.com/Samas1503)
+
+---
+
+## 9. Technology Stack
 
 | Layer                   | Technology                                                 |
 | ----------------------- | ---------------------------------------------------------- |
@@ -118,7 +120,7 @@ Our regional presence provides direct access to regional mining facilities, loca
 
 ---
 
-## 9. Quickstart: Running in < 5 Minutes
+## 10. Quickstart
 
 ### Prerequisites
 
@@ -141,11 +143,12 @@ Our regional presence provides direct access to regional mining facilities, loca
    pnpm install
    ```
 
-3. **Configure environment:**
+3. **Configure environment** — create `.env.local` with your Supabase project values:
 
    ```bash
-   cp .env.example .env.local
-   # Fill in your Supabase Devnet credentials
+   NEXT_PUBLIC_SUPABASE_URL=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   SUPABASE_SECRET_KEY=...
    ```
 
 4. **Run the local development server:**
@@ -154,53 +157,53 @@ Our regional presence provides direct access to regional mining facilities, loca
    pnpm dev
    ```
 
-   Open [http://localhost:3000](http://localhost:3000) for the public landing page, or [http://localhost:3000/explorer](http://localhost:3000/explorer) for the Origin & Lot Explorer.
+   Open [http://localhost:3000](http://localhost:3000) for the landing page, or [http://localhost:3000/explorer](http://localhost:3000/explorer) for the producer and lot explorer.
 
-5. **Run the test suite:**
-   - **Full-stack API & verification tests (104 tests):**
+5. **Run the tests:**
+   - **App tests (Vitest):**
      ```bash
      pnpm test
      ```
    - **Anchor program tests (LiteSVM):**
      ```bash
-     cd anchor && cargo test
+     pnpm anchor-test
      ```
 
 ---
 
-## 10. Repository Structure
+## 11. Repository Structure
 
 ```
 ├── anchor/
-│   ├── programs/julit/src/lib.rs    # Anchor smart contract (Escrow DvP, PDAs, Metaplex CPIs)
-│   └── tests/lot_lifecycle.rs       # LiteSVM integration tests for lot lifecycle
+│   ├── programs/julit/src/lib.rs    # Anchor program (escrow, PDAs, Digital Title)
+│   └── programs/julit/tests/        # LiteSVM lot lifecycle tests
 ├── app/
-│   ├── explorer/                    # B2B lot catalogue, origin map, and lot creation
-│   ├── batch/[pda]/                 # Public digital passport and PDF hash verification
-│   ├── api/lots/                    # API route handlers for on-chain transitions (fund, redeem, dispute)
-│   ├── generated/julit/             # Codama-generated TypeScript client from Anchor IDL
-│   ├── landing/                     # Landing page components, motion, and process widgets
-│   ├── layout.tsx & page.tsx        # Next.js 16 root shell and public landing
+│   ├── explorer/                    # B2B directory, origin map, and lot creation
+│   ├── batch/[pda]/                 # Public lot page
+│   ├── account/                     # Producer and buyer lot actions
+│   ├── api/lots/                    # Lot transitions (fund, redeem, claim, cancel)
+│   ├── generated/julit/             # Codama-generated TypeScript client from the Anchor IDL
+│   └── landing/                     # Landing page
 ├── docs/
-│   ├── adr/                         # Architectural Decision Records (ADR-0019 Escrow DvP)
+│   ├── adr/                         # Architectural Decision Records
 │   └── features/                    # Feature specifications
 ├── public/
-│   ├── pitch.html                   # Spanish pitch deck (print-ready)
-│   ├── pitch-en.html                # English pitch deck (print-ready, source of pitch-en.pdf)
-│   ├── pitch-script-en.html         # English pitch script (source of pitch-script-en.pdf)
-│   └── landing/                     # Optimized visual assets and photography
+│   ├── pitch.html                   # Spanish pitch deck
+│   ├── pitch-en.html / .pdf         # English pitch deck
+│   └── pitch-script-en.html / .pdf  # English pitch script
+├── scripts/                         # Devnet and local seeding
 └── supabase/
-    └── migrations/                  # PostgreSQL schemas, RLS policies, and lot indexing
+    └── migrations/                  # PostgreSQL schema, RLS policies, and lot indexing
 ```
 
 ---
 
-## 11. Public Reports & Authoritative Sources
+## 12. Sources
 
-| Area                                  | Institution / Report                                                                                                       | Key Citation & Metric                                                                                                                                                                                                     |
-| :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Lithium Market Growth**             | **McKinsey & Company** (_Lithium mining: How new supply is answering battery demand_) & **Benchmark Mineral Intelligence** | Projections forecast the battery value chain exceeding **$150B–$400B by 2030**, requiring over $50B in capital investments for mines and refining capacity.                                                               |
-| **Letters of Credit Costs**           | **International Chamber of Commerce (ICC)** (_Global Survey on Trade Finance_) & **World Bank / IFC**                      | All-in banking costs for commercial documentary letters of credit in emerging market corridors (including Latin America) average **1.5% to 3.5%** across issuance (0.5%–1.5%) and international confirmation (1.0%–2.5%). |
-| **Settlement Delays & Discrepancies** | **ICC UCP 600 Rules** & **Trade Finance Global (TFG)**                                                                     | **60% to 70%** of initial document presentations face discrepancy rejections under documentary credits, prolonging the settlement and payment turnaround cycle to **15 to 45 days**.                                      |
-| **Mandatory Battery Passport**        | **European Union (EUR-Lex / OJEU)** (_Regulation (EU) 2023/1542, Articles 65 & 77_)                                        | Enforces a mandatory Digital Battery Passport with certified raw material provenance and carbon footprint accounting effective **February 18, 2027**.                                                                     |
-| **Lithium Reserves Concentration**    | **U.S. Geological Survey (USGS)** (_Mineral Commodity Summaries_)                                                          | The South American **Lithium Triangle** (Argentina, Bolivia, and Chile) accounts for over **53% of global identified lithium resources**.                                                                                 |
+1. Lithium Argentina AG, Exhibit 99.1 filed with the SEC (2026) — Cauchari-Olaroz: 44.8% Lithium Argentina, 46.7% Ganfeng, 8.5% JEMSE; "Both parties are entitled to offtake in proportion to their ownership interests." [sec.gov](https://www.sec.gov/Archives/edgar/data/1440972/000106299326004563/exhibit99-1.htm)
+2. Argosy Minerals (ASX: AGY), _Lithium Carbonate Spot Sales Contract_, March 2025 — 20 t to a Hong Kong based chemical company, FOB Buenos Aires, "requiring a 30% deposit and the 70% balance required prior to ship loading". [argosyminerals.com.au](https://www.argosyminerals.com.au/wp-content/uploads/2025/03/2861224.pdf)
+3. Asian Development Bank, _2023 Trade Finance Gaps, Growth, and Jobs Survey_ (Brief 256) — in 2022, SMEs submitted 38% of applications and received 45% of rejections. [adb.org](https://www.adb.org/sites/default/files/publication/906596/adb-brief-256-2023-trade-finance-gaps-growth-jobs-survey.pdf)
+4. U.S. International Trade Administration, _Letter of Credit_ — "labor-intensive and relatively expensive due to bank fees"; documents "prone to errors and discrepancies". [trade.gov](https://www.trade.gov/letter-credit)
+5. Asian Development Bank, _2021 Trade Finance Gaps, Growth, and Jobs Survey_ (Brief 192) — "Among SMEs who were initially rejected and sought alternative financing, 40% used their own funds." [adb.org](https://www.adb.org/sites/default/files/publication/739286/adb-brief-192-trade-finance-gaps-jobs-survey.pdf)
+6. People's Bank of China and seven other authorities, Notice Yin Fa [2026] No. 42 (6 February 2026) — virtual currency business activities, including stablecoins, are illegal financial activities in mainland China. [pbc.gov.cn](https://www.pbc.gov.cn/tiaofasi/144941/3581332/2026020619591971323/index.html)
+7. Solana Docs, _Fees_ — base fee of 5,000 lamports (0.000005 SOL) per signature; under one US cent at any SOL price below $2,000. [solana.com](https://solana.com/docs/core/fees)
