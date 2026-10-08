@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* Dark applies everywhere except subtrees pinned light with `.light`
+   (the public passport shares its chrome with dark-mode surfaces). */
+@custom-variant dark (
+  &:where(.dark, .dark *):not(:where(.light, .light *))
+);
 
-:root {
+:root,
+.light {
   --background: #ffffff;
   --foreground: #0a0a0a;
   /* Primary action color = brand. Change --color-brand-* below (and the
@@ -107,6 +112,7 @@
 @theme {
   --animate-fade-in: fade-in 180ms ease-out both;
   --animate-modal-in: modal-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-bento-in: bento-in 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
 
   @keyframes fade-in {
     from {
@@ -119,11 +125,23 @@
       transform: translateY(12px) scale(0.98);
     }
   }
+  @keyframes bento-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+}
+
+/* Bento entrance stagger: --bento-i sets the per-item delay index. */
+.animate-bento-in {
+  animation-delay: calc(var(--bento-i, 0) * 55ms);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
-  .animate-modal-in {
+  .animate-modal-in,
+  .animate-bento-in {
     animation: none;
   }
 }

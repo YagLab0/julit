@@ -60,7 +60,7 @@ DB trigger rejects index rows without an accepted contract.
 
 ## 3. Lot registration (producer)
 
-`app/explorer/new` — gated by `VerifiedWalletGate`: the connected wallet
+`app/account/lotes/new` — gated by `VerifiedWalletGate`: the connected wallet
 must equal the company's verified wallet.
 
 1. The producer uploads the plant certificate PDF →

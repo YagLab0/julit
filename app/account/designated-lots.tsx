@@ -35,11 +35,9 @@ import { findAssociatedTokenAddress } from "../lib/solana/ata";
 import { useSendTransaction } from "../lib/hooks/use-send-transaction";
 import { useSolanaClient } from "../lib/solana-client-context";
 import { useWallet } from "../lib/wallet/context";
-import {
-  buyerLotVerdict,
-  type BuyerLotAction,
-  type FundBlocker,
-} from "./lot-actions";
+import { buyerLotVerdict, type BuyerLotAction } from "./lot-actions";
+import { useAccountDict } from "./i18n/context";
+import { t, type AccountDict } from "./i18n";
 import type { DesignatedLot } from "./account-client";
 
 type Settlement = {
@@ -47,50 +45,28 @@ type Settlement = {
   treasury: Address;
 };
 
-const FUND_BLOCKER_HINTS: Record<FundBlocker, string> = {
-  checking_balance: "Verificando tu saldo dUSDC…",
-  insufficient_balance: "Saldo dUSDC insuficiente para el precio del lote.",
-};
-
-const ACTION_LABELS: Record<BuyerLotAction, string> = {
-  fund: "Comprar con escrow",
-  redeem: "Confirmar recepción",
-  dispute: "Disputar",
-};
-
-const CONFIRM_CONTENT: Record<
-  BuyerLotAction,
-  {
-    title: (lot: DesignatedLot) => string;
-    amountLabel: string;
-    body: (lot: DesignatedLot) => string;
-    cta: string;
-  }
-> = {
-  fund: {
-    title: (lot) => `Comprar ${lot.lot_id} con escrow`,
-    amountLabel: "Precio del lote",
-    body: () =>
-      "Depositás el precio total en el escrow del lote. Se libera a la productora cuando confirmes la recepción; si no confirmás ni disputás antes del límite, la productora puede cobrarlo.",
-    cta: "Firmar y depositar",
-  },
-  redeem: {
-    title: (lot) => `Confirmar recepción de ${lot.lot_id}`,
-    amountLabel: "Monto en escrow",
-    body: (lot) =>
-      lot.status === "disputed"
-        ? "El lote está en disputa: liberar el pago custodiado es la resolución on-chain a favor de la productora. El Título Digital se da de baja."
-        : "Liberás el pago custodiado a la productora (menos la comisión del protocolo) y el Título Digital se da de baja. Es la confirmación de que recibiste el cargamento.",
-    cta: "Firmar y liberar pago",
-  },
-  dispute: {
-    title: (lot) => `Disputar ${lot.lot_id}`,
-    amountLabel: "Monto en escrow",
-    body: () =>
-      "La disputa congela el cobro por timeout de la productora mientras resuelven el problema fuera de la cadena. La única salida on-chain es que confirmes la recepción — no hay devolución de fondos.",
-    cta: "Firmar disputa",
-  },
-};
+/** Confirm-modal copy for a buyer action, resolved from the dictionary. */
+function confirmContent(
+  dict: AccountDict,
+  action: BuyerLotAction,
+  lot: DesignatedLot
+): { title: string; amountLabel: string; body: string; cta: string } {
+  const c = dict.designated.confirm[action];
+  const body =
+    action === "redeem"
+      ? lot.status === "disputed"
+        ? dict.designated.confirm.redeem.bodyDisputed
+        : dict.designated.confirm.redeem.bodyFunded
+      : "body" in c
+        ? c.body
+        : "";
+  return {
+    title: t(c.title, { lot: lot.lot_id }),
+    amountLabel: c.amountLabel,
+    body,
+    cta: c.cta,
+  };
+}
 
 /**
  * The buyer's inbox: lots designated to the company that still await a
@@ -102,22 +78,23 @@ export function DesignatedLotsCard({
   lots,
   companyName,
   walletAddress,
+  className,
 }: {
   lots: DesignatedLot[];
   companyName: string;
   walletAddress: string | null;
+  className?: string;
 }) {
+  const dict = useAccountDict();
   return (
-    <section className="rounded-2xl border border-border-low bg-card p-5">
+    <section className={`rounded-3xl bg-card p-6 ${className ?? ""}`}>
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Lotes designados</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Lotes que una productora te reservó y esperan tu decisión.
-          </p>
+          <h2 className="text-sm font-semibold">{dict.designated.eyebrow}</h2>
+          <p className="mt-0.5 text-xs text-muted">{dict.designated.sub}</p>
         </div>
         <span className="font-mono text-xs text-muted">
-          {lots.length} {lots.length === 1 ? "lote" : "lotes"}
+          {lots.length} {lots.length === 1 ? dict.common.lot : dict.common.lots}
         </span>
       </div>
 
@@ -219,6 +196,7 @@ function DesignatedLotList({
   companyName: string;
   walletAddress: string | null;
 }) {
+  const dict = useAccountDict();
   const { settlement, dUsdcBalance, balanceFailed, deductBalance } =
     useSettlement(lots.length > 0 ? walletAddress : null);
 
@@ -226,17 +204,8 @@ function DesignatedLotList({
     return (
       <div className="mt-4 rounded-xl border border-dashed border-border-low p-6 text-center">
         <p className="text-xs font-medium text-muted">
-          Ninguna productora te designó lotes todavía.
+          {dict.designated.empty}
         </p>
-        <p className="mt-1 text-xs text-muted">
-          Necesitás un contrato comercial aceptado para que te reserven lotes.
-        </p>
-        <a
-          href="#contratos"
-          className="btn-secondary mt-3 inline-block text-xs"
-        >
-          Solicitar contrato
-        </a>
       </div>
     );
   }
@@ -280,6 +249,7 @@ function DesignatedLotRow({
   const { wallet, signer } = useWallet();
   const { send, isSending } = useSendTransaction();
   const { getExplorerUrl } = useCluster();
+  const dict = useAccountDict();
 
   const [confirming, setConfirming] = useState<BuyerLotAction | null>(null);
   const [indexing, setIndexing] = useState(false);
@@ -302,7 +272,7 @@ function DesignatedLotRow({
 
   function explorerAction(txSignature: string) {
     return {
-      label: "Ver transacción",
+      label: dict.common.viewTx,
       onClick: () =>
         window.open(getExplorerUrl(`/tx/${txSignature}`), "_blank"),
     };
@@ -318,7 +288,7 @@ function DesignatedLotRow({
     onSuccess?: () => void;
   }) {
     if (!signer) {
-      toast.error("Conectá la wallet verificada para firmar.");
+      toast.error(dict.designated.toasts.connectWallet);
       return;
     }
 
@@ -329,10 +299,10 @@ function DesignatedLotRow({
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (/reject|cancel|denied/i.test(message)) {
-        toast.error("Cancelaste la firma.");
+        toast.error(dict.common.cancelled);
       } else {
         toast.error(args.failureTitle, {
-          description: message || "Error inesperado.",
+          description: message || dict.common.unexpected,
         });
       }
       return;
@@ -358,10 +328,10 @@ function DesignatedLotRow({
             error?: string;
           } | null)
         : null;
-      toast.error("La transacción quedó on-chain pero no se indexó", {
-        description: body?.error ?? "Reintentá la indexación más tarde.",
+      toast.error(dict.designated.toasts.notIndexed, {
+        description: body?.error ?? dict.designated.toasts.notIndexedDesc,
         action: {
-          label: "Reintentar",
+          label: dict.designated.toasts.retry,
           onClick: () => void retryIndex(),
         },
         cancel: explorerAction(txSignature),
@@ -394,8 +364,8 @@ function DesignatedLotRow({
 
   function requireSettlement(): Settlement | null {
     if (settlement) return settlement;
-    toast.error("No se pudo cargar la configuración del protocolo.", {
-      description: "Recargá la página e intentá de nuevo.",
+    toast.error(dict.designated.toasts.settlementError, {
+      description: dict.designated.toasts.settlementErrorDesc,
     });
     return null;
   }
@@ -412,10 +382,9 @@ function DesignatedLotRow({
           usdcMint: config.usdcMint,
         }),
       endpoint: "/api/lots/fund",
-      successTitle: `Lote ${lot.lot_id} fondeado`,
-      successDescription:
-        "El pago quedó custodiado en el escrow e indexado como fondeado.",
-      failureTitle: "No se pudo fondear el lote.",
+      successTitle: t(dict.designated.toasts.funded, { lot: lot.lot_id }),
+      successDescription: dict.designated.toasts.fundedDesc,
+      failureTitle: dict.designated.toasts.fundError,
       onSuccess: () => deductBalance(lot.price_usdc),
     });
   }
@@ -436,10 +405,9 @@ function DesignatedLotRow({
         });
       },
       endpoint: "/api/lots/redeem",
-      successTitle: `Recepción confirmada — lote ${lot.lot_id} liquidado`,
-      successDescription:
-        "El escrow se liberó a la productora y el Título Digital quedó dado de baja.",
-      failureTitle: "No se pudo confirmar la recepción.",
+      successTitle: t(dict.designated.toasts.redeemed, { lot: lot.lot_id }),
+      successDescription: dict.designated.toasts.redeemedDesc,
+      failureTitle: dict.designated.toasts.redeemError,
     });
   }
 
@@ -451,10 +419,9 @@ function DesignatedLotRow({
           buyer,
         }),
       endpoint: "/api/lots/dispute",
-      successTitle: `Lote ${lot.lot_id} en disputa`,
-      successDescription:
-        "El cobro por timeout de la productora quedó congelado.",
-      failureTitle: "No se pudo abrir la disputa.",
+      successTitle: t(dict.designated.toasts.disputed, { lot: lot.lot_id }),
+      successDescription: dict.designated.toasts.disputedDesc,
+      failureTitle: dict.designated.toasts.disputeError,
     });
   }
 
@@ -476,7 +443,7 @@ function DesignatedLotRow({
             action === "dispute" ? "btn-secondary" : "btn-primary"
           }`}
         >
-          {ACTION_LABELS[action]}
+          {dict.designated.actions[action]}
         </button>
       ))}
     </div>
@@ -489,16 +456,16 @@ function DesignatedLotRow({
           <span className="font-mono text-xs font-bold text-foreground">
             {lot.lot_id}
           </span>
-          <StatusBadge status={lot.status} />
+          <StatusBadge status={lot.status} labels={dict.lotStatus} />
           {verdict.timeoutClaimLive && (
-            <Chip tone="warn">La productora ya puede cobrar</Chip>
+            <Chip tone="warn">{dict.designated.timeoutClaimLive}</Chip>
           )}
         </div>
         <Link
           href={`/batch/${lot.pda_address}`}
           className="text-xs font-medium text-brand-700 underline-offset-2 hover:underline dark:text-brand-400"
         >
-          Ver Pasaporte
+          {dict.common.viewPassport}
         </Link>
       </div>
 
@@ -516,7 +483,7 @@ function DesignatedLotRow({
         </span>
       </p>
 
-      <LotClockNote lot={lot} />
+      <LotClockNote lot={lot} dict={dict} />
 
       {verdict.actions.length > 0 ? (
         <div className="mt-3 border-t border-border-low pt-3">
@@ -524,8 +491,8 @@ function DesignatedLotRow({
             <VerifiedWalletGate
               name={companyName}
               walletAddress={walletAddress}
-              action={`operar ${lot.lot_id}`}
-              signAs="firmar como compradora"
+              action={t(dict.designated.gate.action, { lot: lot.lot_id })}
+              signAs={dict.designated.gate.signAs}
             >
               {actionButtons}
             </VerifiedWalletGate>
@@ -535,87 +502,93 @@ function DesignatedLotRow({
           {verdict.fundBlocker && verdict.actions.includes("fund") && (
             <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-400">
               {balanceFailed
-                ? "No se pudo leer tu saldo dUSDC. Recargá la página."
-                : FUND_BLOCKER_HINTS[verdict.fundBlocker]}
+                ? dict.designated.fundBlocker.readError
+                : verdict.fundBlocker === "checking_balance"
+                  ? dict.designated.fundBlocker.checking
+                  : dict.designated.fundBlocker.insufficient}
               {!balanceFailed &&
                 verdict.fundBlocker === "insufficient_balance" &&
                 dUsdcBalance !== null &&
-                ` Tenés ${priceFmt.format(dUsdcBalance)} dUSDC.`}
+                ` ${t(dict.designated.fundBlocker.balance, { balance: priceFmt.format(dUsdcBalance) })}`}
             </p>
           )}
         </div>
       ) : verdict.walletBlocked ? (
         <p className="mt-3 border-t border-border-low pt-3 text-[11px] text-muted">
-          Conectá la wallet verificada de tu empresa para operar este lote.
+          {dict.designated.walletBlocked}
         </p>
       ) : null}
 
-      {confirming && (
-        <Modal
-          onClose={() => setConfirming(null)}
-          labelledBy={`lot-action-title-${lot.lot_id}`}
-        >
-          <div className="p-6">
-            <h3
-              id={`lot-action-title-${lot.lot_id}`}
-              className="text-base font-semibold text-foreground"
+      {confirming &&
+        (() => {
+          const content = confirmContent(dict, confirming, lot);
+          return (
+            <Modal
+              onClose={() => setConfirming(null)}
+              labelledBy={`lot-action-title-${lot.lot_id}`}
             >
-              {CONFIRM_CONTENT[confirming].title(lot)}
-            </h3>
+              <div className="p-6">
+                <h3
+                  id={`lot-action-title-${lot.lot_id}`}
+                  className="text-base font-semibold text-foreground"
+                >
+                  {content.title}
+                </h3>
 
-            <dl className="mt-4 space-y-2 text-xs">
-              <ConfirmRow label="Productora">
-                {lot.producer_name ?? ellipsify(lot.producer_wallet, 6)}
-              </ConfirmRow>
-              <ConfirmRow label={CONFIRM_CONTENT[confirming].amountLabel}>
-                {priceFmt.format(lot.price_usdc)} dUSDC
-              </ConfirmRow>
-              {confirming === "fund" && (
-                <ConfirmRow label="Tu saldo dUSDC">
-                  {dUsdcBalance === null
-                    ? balanceFailed
-                      ? "No se pudo leer"
-                      : "Verificando…"
-                    : `${priceFmt.format(dUsdcBalance)} dUSDC`}
-                </ConfirmRow>
-              )}
-              <ConfirmRow label="Límite de recepción">
-                {dateFmt.format(new Date(lot.claimable_after))}
-              </ConfirmRow>
-            </dl>
+                <dl className="mt-4 space-y-2 text-xs">
+                  <ConfirmRow label={dict.designated.rows.producer}>
+                    {lot.producer_name ?? ellipsify(lot.producer_wallet, 6)}
+                  </ConfirmRow>
+                  <ConfirmRow label={content.amountLabel}>
+                    {priceFmt.format(lot.price_usdc)} dUSDC
+                  </ConfirmRow>
+                  {confirming === "fund" && (
+                    <ConfirmRow label={dict.designated.rows.balance}>
+                      {dUsdcBalance === null
+                        ? balanceFailed
+                          ? dict.designated.rows.balanceError
+                          : dict.designated.rows.balanceLoading
+                        : `${priceFmt.format(dUsdcBalance)} dUSDC`}
+                    </ConfirmRow>
+                  )}
+                  <ConfirmRow label={dict.designated.rows.deadline}>
+                    {dateFmt.format(new Date(lot.claimable_after))}
+                  </ConfirmRow>
+                </dl>
 
-            <p className="mt-4 text-xs leading-relaxed text-muted">
-              {CONFIRM_CONTENT[confirming].body(lot)}
-            </p>
+                <p className="mt-4 text-xs leading-relaxed text-muted">
+                  {content.body}
+                </p>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={
-                  busy ||
-                  (confirming === "fund" && verdict.fundBlocker !== null)
-                }
-                onClick={handlers[confirming]}
-                className="btn-primary text-xs px-4 py-2 cursor-pointer"
-              >
-                {isSending
-                  ? "Firmando…"
-                  : indexing
-                    ? "Indexando…"
-                    : CONFIRM_CONTENT[confirming].cta}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setConfirming(null)}
-                className="btn-secondary text-xs px-4 py-2 cursor-pointer"
-              >
-                Volver
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={
+                      busy ||
+                      (confirming === "fund" && verdict.fundBlocker !== null)
+                    }
+                    onClick={handlers[confirming]}
+                    className="btn-primary text-xs px-4 py-2 cursor-pointer"
+                  >
+                    {isSending
+                      ? dict.common.signing
+                      : indexing
+                        ? dict.common.indexing
+                        : content.cta}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setConfirming(null)}
+                    className="btn-secondary text-xs px-4 py-2 cursor-pointer"
+                  >
+                    {dict.common.back}
+                  </button>
+                </div>
+              </div>
+            </Modal>
+          );
+        })()}
     </article>
   );
 }
@@ -636,13 +609,19 @@ function ConfirmRow({
 }
 
 /** The claim clock line under each pending lot. */
-function LotClockNote({ lot }: { lot: DesignatedLot }) {
+function LotClockNote({
+  lot,
+  dict,
+}: {
+  lot: DesignatedLot;
+  dict: AccountDict;
+}) {
   const deadline = dateFmt.format(new Date(lot.claimable_after));
 
   if (lot.status === "disputed") {
     return (
       <p className="mt-1 text-[11px] text-muted">
-        Disputa abierta: el cobro por timeout de la productora está congelado.
+        {dict.designated.clock.disputed}
       </p>
     );
   }
@@ -650,15 +629,14 @@ function LotClockNote({ lot }: { lot: DesignatedLot }) {
   if (lot.status === "funded") {
     return (
       <p className="mt-1 text-[11px] text-muted">
-        Si no confirmás ni disputás antes del {deadline}, la productora puede
-        cobrar el escrow.
+        {t(dict.designated.clock.funded, { deadline })}
       </p>
     );
   }
 
   return (
     <p className="mt-1 text-[11px] text-muted">
-      Tenés que confirmar la recepción antes del {deadline}.
+      {t(dict.designated.clock.listed, { deadline })}
     </p>
   );
 }

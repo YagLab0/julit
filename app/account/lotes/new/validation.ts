@@ -2,6 +2,8 @@
 // (docs/database.md): values are parsed as decimal strings into scaled
 // integers — never through Number — so nothing is rounded or truncated.
 
+import type { AccountDict } from "../../i18n";
+
 const U64_MAX = (1n << 64n) - 1n;
 const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const HEX_64_RE = /^[0-9a-f]{64}$/;
@@ -30,6 +32,9 @@ export type ProducerSpecs = {
 
 export type FieldKey = keyof LotFormValues;
 export type FieldErrors = Partial<Record<FieldKey | "producerSpecs", string>>;
+
+/** Localized error copy, injected so the form follows the account locale. */
+export type ValidationMessages = AccountDict["newLot"]["validation"];
 
 export type LotFormContext = {
   /** The producer's verified company wallet. */
@@ -76,26 +81,27 @@ function scaledInt(raw: string, decimals: number): bigint | null {
 
 export function validateLotForm(
   values: LotFormValues,
-  ctx: LotFormContext
+  ctx: LotFormContext,
+  messages: ValidationMessages
 ): { errors: FieldErrors; payload: CreateLotPayload | null } {
   const errors: FieldErrors = {};
 
   const lotId = values.lotId.trim();
   if (!lotId) {
-    errors.lotId = "Ingresá un identificador de lote.";
+    errors.lotId = messages.lotIdRequired;
   } else if (new TextEncoder().encode(lotId).length > 32) {
-    errors.lotId = "El identificador no puede superar los 32 bytes.";
+    errors.lotId = messages.lotIdTooLong;
   }
 
   const volume = INTEGER_RE.test(values.volumeTonnes.trim())
     ? BigInt(values.volumeTonnes.trim())
     : null;
   if (volume === null) {
-    errors.volumeTonnes = "Ingresá un volumen entero en toneladas.";
+    errors.volumeTonnes = messages.volumeInvalid;
   } else if (volume < 1n) {
-    errors.volumeTonnes = "El lote debe tener al menos 1 tonelada.";
+    errors.volumeTonnes = messages.volumeMin;
   } else if (volume > U64_MAX) {
-    errors.volumeTonnes = "El volumen supera el máximo representable.";
+    errors.volumeTonnes = messages.volumeMax;
   }
 
   // The Production Specification comes from the producer's company record,
@@ -113,44 +119,40 @@ export function validateLotForm(
     carbon === null ||
     carbon > U64_MAX
   ) {
-    errors.producerSpecs =
-      "Las especificaciones de producción de tu empresa no son válidas. Contactá al operador de la demo.";
+    errors.producerSpecs = messages.specsInvalid;
   }
 
   const price = scaledInt(values.priceUsdc, 6);
   if (price === null) {
-    errors.priceUsdc = "Ingresá el precio total en USDC con hasta 6 decimales.";
+    errors.priceUsdc = messages.priceInvalid;
   } else if (price === 0n) {
-    errors.priceUsdc = "El precio debe ser mayor a cero.";
+    errors.priceUsdc = messages.priceMin;
   } else if (price > U64_MAX) {
-    errors.priceUsdc = "El precio supera el máximo representable.";
+    errors.priceUsdc = messages.priceMax;
   }
 
   const buyerWallet = values.buyerWallet.trim();
   if (!buyerWallet) {
-    errors.buyerWallet = "Elegí el comprador designado del lote.";
+    errors.buyerWallet = messages.buyerRequired;
   } else if (
     !BASE58_RE.test(buyerWallet) ||
     !ctx.contractedBuyers.includes(buyerWallet)
   ) {
-    errors.buyerWallet =
-      "El comprador debe tener un contrato aceptado con tu empresa.";
+    errors.buyerWallet = messages.buyerNotContracted;
   } else if (buyerWallet === ctx.producerWallet) {
-    errors.buyerWallet = "El comprador no puede ser tu propia productora.";
+    errors.buyerWallet = messages.buyerIsProducer;
   }
 
   const claimableMs = Date.parse(values.claimableAfter);
   if (!values.claimableAfter || Number.isNaN(claimableMs)) {
-    errors.claimableAfter =
-      "Ingresá la fecha límite a partir de la cual podés reclamar el escrow.";
+    errors.claimableAfter = messages.claimableRequired;
   } else if (Math.floor(claimableMs / 1000) <= ctx.nowUnixSeconds) {
-    errors.claimableAfter = "La fecha de reclamo debe ser futura.";
+    errors.claimableAfter = messages.claimableFuture;
   }
 
   const certHash = values.plantCertSha256.trim().toLowerCase();
   if (!HEX_64_RE.test(certHash)) {
-    errors.plantCertSha256 =
-      "Subí el certificado de planta (PDF) para obtener su SHA-256.";
+    errors.plantCertSha256 = messages.certRequired;
   }
 
   const payload =

@@ -7,7 +7,6 @@ import {
   dateFmt,
 } from "../../explorer/components/lot-display";
 import { PassportQr } from "../../components/passport-qr";
-import { ThemeToggle } from "../../components/theme-toggle";
 import { plantCertificateUrl } from "../../explorer/data/lots";
 import { ellipsify, getExplorerUrl } from "../../lib/explorer";
 import { getPassportRecord, type PassportLot } from "../data/passport";
@@ -124,12 +123,11 @@ export default async function LotPassportPage({
   const mintUrl = getExplorerUrl(`/address/${lot.mint_address}`, "devnet");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-6 py-4">
+    <div className="light min-h-screen bg-background text-foreground">
+      <header className="mx-auto max-w-2xl px-6 py-4">
         <Link href="/explorer" className="text-sm font-bold tracking-tight">
           JuLit
         </Link>
-        <ThemeToggle />
       </header>
 
       <main className="mx-auto max-w-2xl px-6 pb-16">

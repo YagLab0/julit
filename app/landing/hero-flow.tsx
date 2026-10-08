@@ -1,4 +1,7 @@
 import styles from "./hero-flow.module.css";
+import type { LandingDict } from "./i18n";
+
+type Dict = LandingDict["heroFlow"];
 
 function HexMark() {
   return (
@@ -44,18 +47,7 @@ function Beams({ paths, flip }: { paths: string[]; flip?: boolean }) {
   );
 }
 
-const inputs = [
-  { label: "Lote 0042", meta: "pago en garantía" },
-  { label: "Título", meta: "resguardado" },
-  { label: "Recepción", meta: "confirmada" },
-];
-
-const outputs = [
-  { asset: "Pago", to: "Productor" },
-  { asset: "Título", to: "dado de baja" },
-];
-
-function SideCell({ flip }: { flip?: boolean }) {
+function SideCell({ caption, flip }: { caption: string; flip?: boolean }) {
   return (
     <div className={`${styles.cellSide} ${flip ? styles.flip : ""}`}>
       <div className={styles.cellHatch} />
@@ -69,21 +61,19 @@ function SideCell({ flip }: { flip?: boolean }) {
           <span style={{ width: 96 }} />
           <span style={{ width: 60 }} />
         </div>
-        <span className={styles.cellCaption}>
-          {flip ? "una sola operación" : "entrega contra pago"}
-        </span>
+        <span className={styles.cellCaption}>{caption}</span>
       </div>
     </div>
   );
 }
 
-export function HeroFlow() {
+export function HeroFlow({ dict }: { dict: Dict }) {
   return (
     <div className={styles.wrap} aria-hidden="true">
-      <SideCell />
+      <SideCell caption={dict.sideIn} />
       <div className={styles.cellFlow}>
         <div className={styles.inputs}>
-          {inputs.map(({ label, meta }) => (
+          {dict.inputs.map(({ label, meta }) => (
             <div className={styles.inputCard} key={label}>
               <span className={styles.inputLabel}>{label}</span>
               <span className={styles.inputMeta}>{meta}</span>
@@ -97,11 +87,11 @@ export function HeroFlow() {
           <div className={styles.node}>
             <HexMark />
           </div>
-          <span className={styles.nodeLabel}>Liquidación</span>
+          <span className={styles.nodeLabel}>{dict.nodeLabel}</span>
         </div>
         <Beams paths={outPaths} flip />
         <div className={styles.outputs}>
-          {outputs.map(({ asset, to }) => (
+          {dict.outputs.map(({ asset, to }) => (
             <div className={styles.outCard} key={to}>
               <span className={styles.outAsset}>{asset}</span>
               <svg viewBox="0 0 24 24" className={styles.outArrow}>
@@ -113,10 +103,10 @@ export function HeroFlow() {
         </div>
         <span className={styles.txChip}>
           <span className={styles.txDot} />
-          confirmada · una sola operación
+          {dict.txChip}
         </span>
       </div>
-      <SideCell flip />
+      <SideCell caption={dict.sideOut} flip />
     </div>
   );
 }

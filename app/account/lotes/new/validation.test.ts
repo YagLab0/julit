@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { es } from "../../i18n/es";
 import {
   validateLotForm,
   type LotFormContext,
   type LotFormValues,
 } from "./validation";
+
+const MESSAGES = es.newLot.validation;
 
 const PRODUCER = "ProducerWa11et111111111111111111111111111";
 const BUYER = "C1ienteTesaEnergy3333333333333333333333333";
@@ -39,7 +42,11 @@ function check(
   overrides: Partial<LotFormValues> = {},
   ctx: Partial<LotFormContext> = {}
 ) {
-  return validateLotForm({ ...VALID, ...overrides }, { ...CTX, ...ctx });
+  return validateLotForm(
+    { ...VALID, ...overrides },
+    { ...CTX, ...ctx },
+    MESSAGES
+  );
 }
 
 describe("validateLotForm", () => {

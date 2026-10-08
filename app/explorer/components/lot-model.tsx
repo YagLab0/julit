@@ -220,8 +220,9 @@ function TokenRing({ height }: { height: number }) {
 }
 
 /**
- * Drag-to-orbit camera with gentle auto-rotation (no zoom/pan). Distance
- * follows the stack height so 1- and 2-layer batches both fit the frame.
+ * Gentle auto-rotation only — the lot card is a link, so the camera is not
+ * user-draggable (no zoom/pan/rotate). Distance follows the stack height so
+ * 1- and 2-layer batches both fit the frame.
  */
 function Controls({
   target,
@@ -234,6 +235,7 @@ function Controls({
   const dom = useThree((s) => s.gl.domElement);
   const controls = useMemo(() => {
     const c = new OrbitControls(camera, dom);
+    c.enableRotate = false;
     c.enableZoom = false;
     c.enablePan = false;
     c.enableDamping = true;
@@ -241,9 +243,8 @@ function Controls({
     c.maxPolarAngle = Math.PI / 2.2;
     c.autoRotate = !prefersReducedMotion();
     c.autoRotateSpeed = 0.8;
-    // OrbitControls sets touch-action:none, which kills touch scrolling.
-    // pan-y hands vertical swipes back to the modal scroll while horizontal
-    // drags still orbit the stack.
+    // OrbitControls sets touch-action:none, which would kill vertical
+    // scrolling over the card.
     c.domElement?.style.setProperty("touch-action", "pan-y");
     return c;
   }, [camera, dom]);
@@ -326,7 +327,6 @@ export function LotModel({
       dpr={[1, 2]}
       camera={{ position: [3.7, 2.7, 3.7], fov: 30 }}
       gl={{ antialias: true, alpha: true }}
-      className="cursor-grab active:cursor-grabbing"
     >
       <Scene lotId={lotId} volumeTonnes={volumeTonnes} />
     </Canvas>

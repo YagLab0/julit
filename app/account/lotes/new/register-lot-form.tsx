@@ -10,18 +10,18 @@ import {
   findLotPda,
   findMintPda,
   getCreateLotInstructionAsync,
-} from "../../generated/julit";
-import { Field } from "../../components/form-field";
-import { ellipsify, getExplorerUrl } from "../../lib/explorer";
-import { useSendTransaction } from "../../lib/hooks/use-send-transaction";
-import { useWallet } from "../../lib/wallet/context";
-import { createSolanaClient } from "../../lib/solana-client";
+} from "../../../generated/julit";
+import { Field } from "../../../components/form-field";
+import { ellipsify, getExplorerUrl } from "../../../lib/explorer";
+import { useSendTransaction } from "../../../lib/hooks/use-send-transaction";
+import { useWallet } from "../../../lib/wallet/context";
+import { createSolanaClient } from "../../../lib/solana-client";
 import {
   findMasterEditionPda,
   findMetadataPda,
-} from "../../lib/solana/metaplex";
-import { useCluster } from "../../components/cluster-context";
-import { decimalFmt } from "../components/lot-display";
+} from "../../../lib/solana/metaplex";
+import { useCluster } from "../../../components/cluster-context";
+import { decimalFmt } from "../../../explorer/components/lot-display";
 import type { ProducerInfo } from "./new-lot-client";
 import {
   validateLotForm,
@@ -29,9 +29,11 @@ import {
   type FieldKey,
   type FieldErrors,
 } from "./validation";
+import { useAccountDict } from "../../i18n/context";
+import { t } from "../../i18n";
 
 const INPUT_CLASS =
-  "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25";
+  "w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25";
 
 export type Counterparty = { name: string; wallet: string };
 
@@ -68,6 +70,8 @@ export function RegisterLotForm({
   const { signer } = useWallet();
   const { cluster } = useCluster();
   const { send, isSending } = useSendTransaction();
+  const dict = useAccountDict();
+  const f = dict.newLot.form;
   const [values, setValues] = useState<LotFormValues>(INITIAL);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [indexing, setIndexing] = useState(false);
@@ -101,7 +105,7 @@ export function RegisterLotForm({
         error?: string;
       } | null;
       if (!res.ok || !body?.digest || !body.path) {
-        throw new Error(body?.error ?? "Error al subir el certificado.");
+        throw new Error(body?.error ?? f.certUploadError);
       }
       setCert({ status: "ready", digest: body.digest, path: body.path });
       setValues((prev) => ({ ...prev, plantCertSha256: body.digest! }));
@@ -111,28 +115,30 @@ export function RegisterLotForm({
     } catch (err) {
       setCert({ status: "failed" });
       setValues((prev) => ({ ...prev, plantCertSha256: "" }));
-      toast.error(
-        err instanceof Error ? err.message : "No se pudo subir el certificado."
-      );
+      toast.error(err instanceof Error ? err.message : f.certUploadFailed);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!signer) {
-      toast.error("Conectá la wallet verificada para firmar.");
+      toast.error(f.connectToast);
       return;
     }
-    const { errors, payload } = validateLotForm(values, {
-      producerWallet: producer.walletAddress,
-      originId: producer.originId,
-      producerSpecs: producer.specs,
-      contractedBuyers: buyers.map((b) => b.wallet),
-      nowUnixSeconds: Math.floor(Date.now() / 1000),
-    });
+    const { errors, payload } = validateLotForm(
+      values,
+      {
+        producerWallet: producer.walletAddress,
+        originId: producer.originId,
+        producerSpecs: producer.specs,
+        contractedBuyers: buyers.map((b) => b.wallet),
+        nowUnixSeconds: Math.floor(Date.now() / 1000),
+      },
+      dict.newLot.validation
+    );
     setErrors(errors);
     if (!payload) {
-      toast.error("Revisá los campos marcados.");
+      toast.error(f.reviewFields);
       return;
     }
 
@@ -182,10 +188,10 @@ export function RegisterLotForm({
         const body = (await response.json().catch(() => null)) as {
           error?: string;
         } | null;
-        toast.error("El lote quedó on-chain pero no se indexó", {
-          description: body?.error ?? "Reintentá la indexación más tarde.",
+        toast.error(f.notIndexed, {
+          description: body?.error ?? f.notIndexedDesc,
           action: {
-            label: "Ver transacción",
+            label: dict.common.viewTx,
             onClick: () =>
               window.open(
                 getExplorerUrl(`/tx/${txSignature}`, cluster),
@@ -196,11 +202,10 @@ export function RegisterLotForm({
         return;
       }
 
-      toast.success(`Lote ${payload.lotId} publicado`, {
-        description:
-          "La transacción quedó confirmada e indexada como publicada.",
+      toast.success(t(f.published, { lot: payload.lotId }), {
+        description: f.publishedDesc,
         action: {
-          label: "Ver transacción",
+          label: dict.common.viewTx,
           onClick: () =>
             window.open(
               getExplorerUrl(`/tx/${txSignature}`, cluster),
@@ -214,10 +219,10 @@ export function RegisterLotForm({
       setIndexing(false);
       const message = err instanceof Error ? err.message : "";
       if (/reject|cancel|denied/i.test(message)) {
-        toast.error("Cancelaste la firma.");
+        toast.error(dict.common.cancelled);
       } else {
-        toast.error("No se pudo registrar el lote.", {
-          description: message || "Error inesperado.",
+        toast.error(f.submitError, {
+          description: message || dict.common.unexpected,
         });
       }
     }
@@ -225,30 +230,26 @@ export function RegisterLotForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="mt-6">
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <p className="eyebrow">Identificación</p>
+      <div className="rounded-3xl bg-card p-6">
+        <p className="eyebrow">{f.identification}</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Identificador de lote"
-            hint="Único por productora. Ej.: LIT-2026-PBL-02"
-            error={errors.lotId}
-          >
+          <Field label={f.lotIdLabel} hint={f.lotIdHint} error={errors.lotId}>
             <input
               className={INPUT_CLASS}
               value={values.lotId}
               onChange={(e) => update("lotId")(e.target.value)}
-              placeholder="LIT-2026-OLZ-05"
+              placeholder={f.lotIdPlaceholder}
               maxLength={64}
             />
           </Field>
-          <Field label="Origen" hint="Del perfil de tu empresa.">
-            <p className="rounded-lg border border-border-low bg-cream/50 px-3 py-2 text-sm font-medium">
+          <Field label={f.originLabel} hint={f.originHint}>
+            <p className="rounded-xl bg-secondary px-3 py-2 text-sm font-medium">
               {producer.originName}
             </p>
           </Field>
           <Field
-            label="Volumen (toneladas)"
-            hint="Toneladas enteras de Li₂CO₃."
+            label={f.volumeLabel}
+            hint={f.volumeHint}
             error={errors.volumeTonnes}
           >
             <input
@@ -256,12 +257,12 @@ export function RegisterLotForm({
               inputMode="numeric"
               value={values.volumeTonnes}
               onChange={(e) => update("volumeTonnes")(e.target.value)}
-              placeholder="420"
+              placeholder={f.volumePlaceholder}
             />
           </Field>
           <Field
-            label="Precio del lote (USDC)"
-            hint="Cotización total del lote, hasta 6 decimales. El comprador la deposita entera en el escrow."
+            label={f.priceLabel}
+            hint={f.priceHint}
             error={errors.priceUsdc}
           >
             <input
@@ -269,31 +270,30 @@ export function RegisterLotForm({
               inputMode="decimal"
               value={values.priceUsdc}
               onChange={(e) => update("priceUsdc")(e.target.value)}
-              placeholder="12000.123456"
+              placeholder={f.pricePlaceholder}
             />
           </Field>
           <Field
-            label="Especificaciones de producción"
-            hint="Provisionadas en la ficha de tu empresa; se declaran en el lote al firmar."
+            label={f.specsLabel}
+            hint={f.specsHint}
             error={errors.producerSpecs}
             span
           >
-            <p className="rounded-lg border border-border-low bg-cream/50 px-3 py-2 text-sm font-medium">
-              Pureza {decimalFmt.format(Number(producer.specs.purityPct))} % ·
-              Huella hídrica{" "}
-              {decimalFmt.format(Number(producer.specs.waterM3PerTonne))} m³/t ·
-              Huella de carbono{" "}
-              {decimalFmt.format(Number(producer.specs.carbonKgCo2ePerTonne))}{" "}
-              kg CO₂e/t
+            <p className="rounded-xl bg-secondary px-3 py-2 text-sm font-medium">
+              {t(f.specsValue, {
+                purity: decimalFmt.format(Number(producer.specs.purityPct)),
+                water: decimalFmt.format(
+                  Number(producer.specs.waterM3PerTonne)
+                ),
+                carbon: decimalFmt.format(
+                  Number(producer.specs.carbonKgCo2ePerTonne)
+                ),
+              })}
             </p>
           </Field>
           <Field
-            label="Comprador designado"
-            hint={
-              buyers.length > 0
-                ? "Solo esta empresa podrá fondear el escrow del lote."
-                : "No tenés compradores con contrato aceptado."
-            }
+            label={f.buyerLabel}
+            hint={buyers.length > 0 ? f.buyerHintAvailable : f.buyerHintEmpty}
             error={errors.buyerWallet}
             span
           >
@@ -303,7 +303,7 @@ export function RegisterLotForm({
               onChange={(e) => update("buyerWallet")(e.target.value)}
             >
               <option value="" disabled>
-                Elegí un comprador…
+                {f.buyerPlaceholder}
               </option>
               {buyers.map((b) => (
                 <option key={b.wallet} value={b.wallet}>
@@ -313,8 +313,8 @@ export function RegisterLotForm({
             </select>
           </Field>
           <Field
-            label="Reclamable desde"
-            hint="Si el comprador no confirma la recepción antes de esta fecha, podés reclamar los fondos del escrow."
+            label={f.claimableLabel}
+            hint={f.claimableHint}
             error={errors.claimableAfter}
             span
           >
@@ -326,8 +326,8 @@ export function RegisterLotForm({
             />
           </Field>
           <Field
-            label="Certificado de planta (PDF)"
-            hint="Se guarda direccionado por contenido; el SHA-256 queda declarado en el lote."
+            label={f.certLabel}
+            hint={f.certHint}
             error={errors.plantCertSha256}
             span
           >
@@ -340,9 +340,7 @@ export function RegisterLotForm({
               }
             />
             {cert.status === "uploading" && (
-              <p className="mt-1 text-[11px] text-muted">
-                Subiendo y calculando el SHA-256…
-              </p>
+              <p className="mt-1 text-[11px] text-muted">{f.certUploading}</p>
             )}
             {cert.status === "ready" && (
               <p className="mt-1 font-mono text-[11px] text-muted">
@@ -355,25 +353,28 @@ export function RegisterLotForm({
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted">
-          Firma como {producer.name}:{" "}
+          {t(f.signAs, { name: producer.name })}{" "}
           <span className="font-mono">
             {ellipsify(producer.walletAddress, 4)}
           </span>
         </p>
         <div className="flex gap-2">
-          <Link href="/explorer" className="btn-secondary">
-            Volver al catálogo
+          <Link
+            href="/account/lotes"
+            className="btn-secondary rounded-full px-4"
+          >
+            {f.back}
           </Link>
           <button
             type="submit"
             disabled={isSending || indexing || cert.status === "uploading"}
-            className="btn-primary"
+            className="btn-primary rounded-full px-5"
           >
             {isSending
-              ? "Firmando…"
+              ? dict.common.signing
               : indexing
-                ? "Indexando…"
-                : "Registrar lote"}
+                ? dict.common.indexing
+                : f.submit}
           </button>
         </div>
       </div>
