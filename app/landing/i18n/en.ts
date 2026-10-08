@@ -165,7 +165,7 @@ export const en: LandingDict = {
       {
         title: "Settlement",
         description:
-          "The buyer confirms receipt: at that very instant the producer collects the deposited payment and the title is retired, with a permanent, verifiable record. And if the buyer never responds, the producer can still collect once the agreed deadline passes.",
+          "The buyer confirms receipt: at that very instant the producer collects the deposited payment and the title is retired, with a permanent, verifiable record.",
       },
     ],
     scenes: {
@@ -245,7 +245,7 @@ export const en: LandingDict = {
       title: "You get paid when delivery is confirmed.",
       items: [
         "The buyer's payment is released the very instant delivery is confirmed.",
-        "If the buyer doesn't confirm, you collect the deposit once the agreed deadline passes.",
+        "The deposit stays custodied on-chain: no other party can move it before you get paid.",
         "You declare the lot's spec sheet and its fingerprint is recorded on-chain.",
         "The lot's history stays verifiable by anyone.",
       ],
@@ -297,7 +297,7 @@ export const en: LandingDict = {
       },
       {
         q: "What if the buyer doesn't confirm receipt?",
-        a: "The producer can collect the deposited payment once the deadline set on the lot passes; the deadline is visible from registration.",
+        a: "The payment stays custodied in escrow until the buyer confirms: there is no other release path. Contingencies are settled in the commercial contract between the companies.",
       },
       {
         q: "What does JuLit charge?",

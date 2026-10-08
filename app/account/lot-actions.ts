@@ -16,8 +16,6 @@ export type BuyerLotVerdict = {
   actions: BuyerLotAction[];
   /** Set when "fund" is offered but blocked; drives the disabled hint. */
   fundBlocker: FundBlocker | null;
-  /** funded && past claimable_after: the producer's Timeout Claim is live. */
-  timeoutClaimLive: boolean;
   /**
    * The lot's status admits buyer actions but the connected wallet is not
    * the designated buyer (or none is connected) — the UI shows a hint.
@@ -34,24 +32,13 @@ export function buyerLotVerdict(input: {
   dUsdcBalance: number | null;
   /** Lot price in display units. */
   priceUsdc: number;
-  claimableAfterUnix: number;
-  nowUnixSeconds: number;
 }): BuyerLotVerdict {
-  // The claim clock is lot state, not session state: it stays visible even
-  // without the designated wallet connected.
-  const timeoutClaimLive =
-    input.status === "funded" &&
-    input.nowUnixSeconds >= input.claimableAfterUnix;
-
   const actionable =
-    input.status === "listed" ||
-    input.status === "funded" ||
-    input.status === "disputed";
+    input.status === "listed" || input.status === "funded";
 
   const none: BuyerLotVerdict = {
     actions: [],
     fundBlocker: null,
-    timeoutClaimLive,
     walletBlocked: actionable && input.connectedWallet !== input.buyerWallet,
   };
 
@@ -70,7 +57,6 @@ export function buyerLotVerdict(input: {
       return {
         actions: ["fund"],
         fundBlocker,
-        timeoutClaimLive,
         walletBlocked: false,
       };
     }
@@ -78,15 +64,6 @@ export function buyerLotVerdict(input: {
       return {
         actions: ["redeem"],
         fundBlocker: null,
-        timeoutClaimLive,
-        walletBlocked: false,
-      };
-    case "disputed":
-      // Dispute freezes the Timeout Claim; Redemption is the only exit.
-      return {
-        actions: ["redeem"],
-        fundBlocker: null,
-        timeoutClaimLive,
         walletBlocked: false,
       };
     default:
@@ -179,14 +156,13 @@ export type SettledLotRaw = {
   producer_wallet: string;
   buyer_wallet: string;
   redeem_tx_signature?: string | null;
-  claim_tx_signature?: string | null;
   indexed_at: string;
 };
 
 export type TreasuryLedgerItem = {
   lotId: string;
   pdaAddress: string;
-  status: "redeemed" | "claimed";
+  status: "redeemed";
   volumeTonnes: number;
   priceUsdc: number;
   feeBps: number;
@@ -210,9 +186,7 @@ export function computeTreasuryLedger(
   lots: SettledLotRaw[],
   feeBps: number
 ): TreasuryLedger {
-  const settledLots = (lots ?? []).filter(
-    (l) => l.status === "redeemed" || l.status === "claimed"
-  );
+  const settledLots = (lots ?? []).filter((l) => l.status === "redeemed");
 
   let totalSettledVolumeTonnes = 0;
   let totalSettledValueUsdc = 0;
@@ -232,7 +206,7 @@ export function computeTreasuryLedger(
     items.push({
       lotId: lot.lot_id,
       pdaAddress: lot.pda_address,
-      status: lot.status as "redeemed" | "claimed",
+      status: "redeemed",
       volumeTonnes: volume,
       priceUsdc: price,
       feeBps,
@@ -240,10 +214,7 @@ export function computeTreasuryLedger(
       producerPayoutUsdc: settlement.producerPayoutUsdc,
       producerWallet: lot.producer_wallet,
       buyerWallet: lot.buyer_wallet,
-      txSignature:
-        lot.status === "redeemed"
-          ? (lot.redeem_tx_signature ?? null)
-          : (lot.claim_tx_signature ?? null),
+      txSignature: lot.redeem_tx_signature ?? null,
       settledAt: lot.indexed_at,
     });
   }

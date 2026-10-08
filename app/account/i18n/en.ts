@@ -15,9 +15,7 @@ export const en: AccountDict = {
   lotStatus: {
     listed: "Listed",
     funded: "Funded",
-    disputed: "Disputed",
     redeemed: "Settled",
-    claimed: "Claimed",
     cancelled: "Cancelled",
   },
   contractStatus: {
@@ -117,7 +115,7 @@ export const en: AccountDict = {
   },
   portfolio: {
     eyebrow: "Acquired Lots Portfolio",
-    sub: "History of lots settled or collected by the producer via Devnet escrow.",
+    sub: "History of lots settled to the producer via Devnet escrow.",
     volumeLabel: "Total volume",
     investedLabel: "Total investment",
     settlementLabel: "Settlement",
@@ -140,29 +138,24 @@ export const en: AccountDict = {
       fund: {
         title: "Buy {lot} with escrow",
         amountLabel: "Lot price",
-        body: "You deposit the full price into the lot's escrow. It is released to the producer when you confirm receipt; if you do not confirm before the deadline, the producer may claim it.",
+        body: "You deposit the full price into the lot's escrow. It is released to the producer when you confirm receipt.",
         cta: "Sign and deposit",
       },
       redeem: {
         title: "Confirm receipt of {lot}",
         amountLabel: "Escrow amount",
-        bodyFunded:
-          "You release the custodied payment to the producer (minus the protocol fee) and the Digital Title is retired. This confirms you received the shipment.",
-        bodyDisputed:
-          "The lot is under dispute: releasing the custodied payment is the on-chain resolution in the producer's favour. The Digital Title is retired.",
+        body: "You release the custodied payment to the producer (minus the protocol fee) and the Digital Title is retired. This confirms you received the shipment.",
         cta: "Sign and release payment",
       },
     },
     rows: {
       producer: "Producer",
       balance: "Your dUSDC balance",
-      deadline: "Receipt deadline",
       fee: "Protocol fee",
       producerPayout: "Payout to producer",
       balanceLoading: "Checking…",
       balanceError: "Could not read",
     },
-    timeoutClaimLive: "The producer can already claim",
     walletBlocked:
       "Connect your company's verified wallet to operate this lot.",
     fundBlocker: {
@@ -170,12 +163,6 @@ export const en: AccountDict = {
       insufficient: "Insufficient dUSDC balance for the lot price.",
       balance: "You have {balance} dUSDC.",
       readError: "Could not read your dUSDC balance. Reload the page.",
-    },
-    clock: {
-      disputed: "Open dispute: the producer's timeout claim is frozen.",
-      funded:
-        "If you do not confirm before {deadline}, the producer may claim the escrow.",
-      listed: "You must confirm receipt before {deadline}.",
     },
     toasts: {
       connectWallet: "Connect the verified wallet to sign.",
@@ -353,9 +340,6 @@ export const en: AccountDict = {
         "Only this company will be able to fund the lot's escrow.",
       buyerHintEmpty: "You have no buyers with an accepted contract.",
       buyerPlaceholder: "Choose a buyer…",
-      claimableLabel: "Claimable from",
-      claimableHint:
-        "If the buyer does not confirm receipt before this date, you may claim the escrowed funds.",
       specLabel: "Lot spec sheet (PDF)",
       specHint: "Stored content-addressed; its SHA-256 is declared on the lot.",
       specUploading: "Uploading and computing the SHA-256…",
@@ -388,9 +372,6 @@ export const en: AccountDict = {
       buyerNotContracted:
         "The buyer must hold an accepted contract with your company.",
       buyerIsProducer: "The buyer cannot be your own producer company.",
-      claimableRequired:
-        "Enter the deadline after which you may claim the escrow.",
-      claimableFuture: "The claim date must be in the future.",
       specRequired: "Upload the lot spec sheet (PDF) to obtain its SHA-256.",
     },
   },
@@ -463,10 +444,9 @@ export const en: AccountDict = {
     taskCenter: {
       eyebrow: "Operational Supervision",
       title: "Task & Lot Management Center",
-      desc: "Filters by settlement status, dispute mediation, and on-chain delivery verification.",
+      desc: "Filters by settlement status and on-chain delivery verification.",
       lotsSummary: "{filtered} of {total} lots",
       tabs: {
-        disputed: "Disputed",
         funded: "Funded",
         listed: "Listed",
         redeemed: "Settled",
@@ -481,15 +461,12 @@ export const en: AccountDict = {
       emptyDescFiltered: "Try adjusting or clearing filters to see other results.",
       emptyDescInitial: "No lots with this status have been indexed yet in the protocol.",
       resetFilters: "Reset filters",
-      superviseDispute: "Supervise Dispute",
       inspect: "Inspect",
       passportLink: "Passport ↗",
       thVolumePurity: "Volume & Purity",
       thPrice: "USDC Price",
       thFee: "JuLit Fee (1%)",
       thParties: "Parties Involved",
-      disputeAlert: "Active dispute: the buyer reported a delivery issue. The Timeout Claim timer is paused.",
-      viewMediation: "View mediation",
     },
     companies: {
       eyebrow: "JuLit Ecosystem",
@@ -528,20 +505,9 @@ export const en: AccountDict = {
       view3dMap: "View in 3D map ↗",
     },
     lotInspection: {
-      title: "Lot Inspection & Mediation",
+      title: "Lot Inspection",
       originPrefix: "Origin:",
       indexedOn: "Indexed on",
-      disputeMediationTitle: "Dispute Mediation Panel",
-      disputeMediationBody:
-        "The buyer ({buyer}) opened a commercial dispute for this lot. The on-chain Timeout Claim timer has been paused, preventing the producer from claiming funds without delivery conformity.",
-      adminRecommendationsTitle:
-        "Operational guidelines for the Administrator:",
-      adminRec1:
-        "1. Request the receiving or discrepancy report from the buyer.",
-      adminRec2:
-        "2. Cross-reference purity and volume certificates with the producer.",
-      adminRec3:
-        "3. Once a commercial agreement is reached, the buyer must confirm receipt on the dApp to release the escrow and protocol fees.",
       settlementTitle: "Settlement Financial Breakdown (DvP)",
       totalPrice: "Total Price",
       protocolFee: "Protocol Fee (1%)",
@@ -557,7 +523,6 @@ export const en: AccountDict = {
       mintNft: "Digital Title NFT Mint",
       fundTx: "Funding Transaction",
       redeemTx: "Settlement Transaction",
-      disputeTx: "Dispute Transaction",
       explorerBtn: "Explorer ↗",
       pdaLabel: "Solana PDA Address",
       lotInfo: "General Information",
@@ -576,10 +541,6 @@ export const en: AccountDict = {
       purity: "Chemical Purity",
       waterFootprint: "Water Footprint",
       carbonFootprint: "Carbon Footprint",
-      disputeAlertTitle: "Active Dispute Registered",
-      disputeAlertDesc:
-        "The buyer reported an issue prior to delivery confirmation. Funds remain locked in the PDA account.",
-      disputeTxSignature: "Freeze signature:",
       closeBtn: "Close",
     },
     createCompanyModal: {

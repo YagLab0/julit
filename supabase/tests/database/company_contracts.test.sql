@@ -7,7 +7,7 @@ select no_plan();
 insert into auth.users (id, email)
 select ('00000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
   'contract-company-' || n || '@example.test'
-from generate_series(1, 4) as n;
+from generate_series(1, 5) as n;
 
 insert into public.companies (id, name, company_type, wallet_address, wallet_verified_at, origin_id) values
   ('00000000-0000-0000-0000-000000000001', 'Producer One', 'producer', repeat('2', 31) || '2', now(), 'pena_blanca'),
@@ -87,36 +87,36 @@ select lives_ok($$insert into public.company_contracts (producer_id, counterpart
 select throws_ok($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    carbon_footprint_kg_co2e_per_tonne, price_usdc,
     spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('6', 44), 'LIT-T1', repeat('2', 31) || '2', repeat('4', 31) || '6',
     'pena_blanca', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
-    now() + interval '30 days', repeat('a', 64), repeat('6', 63) || '8', 2000
+    repeat('a', 64), repeat('6', 63) || '8', 2000
   )$$,
   '23514', null, 'A buyer without an accepted contract with that producer is rejected');
 
 select throws_ok($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    carbon_footprint_kg_co2e_per_tonne, price_usdc,
     spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('6', 44), 'LIT-T2', repeat('2', 31) || '2', repeat('4', 31) || '4',
     'condor', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
-    now() + interval '30 days', repeat('a', 64), repeat('6', 63) || '8', 2000
+    repeat('a', 64), repeat('6', 63) || '8', 2000
   )$$,
   '23514', null, 'A lot origin differing from the producer origin is rejected');
 
 select lives_ok($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address,
     volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    carbon_footprint_kg_co2e_per_tonne, price_usdc,
     spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('6', 44), 'LIT-T3', repeat('2', 31) || '2', repeat('4', 31) || '4',
     'pena_blanca', repeat('7', 44), 10, 99.5, 50, 8000, 1000,
-    now() + interval '30 days', repeat('a', 64), repeat('6', 63) || '8', 2000
+    repeat('a', 64), repeat('6', 63) || '8', 2000
   )$$,
   'A lot whose buyer holds an accepted contract and whose origin matches is indexed');
 

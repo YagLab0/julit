@@ -10,8 +10,6 @@ import {
 } from "./verification";
 
 const SPEC_SHEET = "a".repeat(64);
-const CLAIMABLE_ISO = "2026-11-15T00:00:00.000Z";
-const CLAIMABLE_SECS = BigInt(Math.trunc(Date.parse(CLAIMABLE_ISO) / 1000));
 
 const INDEXED: IndexedLot = {
   pda_address: "LotPda111111111111111111111111111111111111",
@@ -21,7 +19,6 @@ const INDEXED: IndexedLot = {
   mint_address: "MintPda111111111111111111111111111111111111",
   origin_id: "condor",
   status: "listed",
-  claimable_after: CLAIMABLE_ISO,
   spec_sheet_sha256: SPEC_SHEET,
   volume_tonnes: "120",
   purity_pct: "99.52",
@@ -45,7 +42,6 @@ function account(
       purityBasisPoints: 9952n,
       waterM3PerTonneScaled: 3875n,
       carbonKgCo2ePerTonneScaled: 412050n,
-      claimableAfter: CLAIMABLE_SECS,
       specSheetHash: new Uint8Array(32).fill(0xaa),
       status: LotStatus.Listed,
       ...data,
@@ -153,14 +149,6 @@ describe("contrastLotRecord", () => {
         account: account({ carbonKgCo2ePerTonneScaled: 412051n }),
       })
     ).toEqual(mismatch(["carbon"]));
-  });
-
-  it("names claimableAfter when the deadline differs", () => {
-    expect(
-      contrast({
-        account: account({ claimableAfter: CLAIMABLE_SECS + 60n }),
-      })
-    ).toEqual(mismatch(["claimableAfter"]));
   });
 
   it("names specSheetHash when the spec sheet digest differs", () => {

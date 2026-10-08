@@ -13,10 +13,6 @@ const BUYER = "C1ienteTesaEnergy3333333333333333333333333";
 const BUYER_B = "UncontractedBuyer88888888888888888888888";
 const SPEC = "ab".repeat(32);
 
-const NOW = Math.floor(Date.parse("2026-10-06T12:00:00Z") / 1000);
-const FUTURE = "2026-11-15T10:00";
-const PAST = "2026-10-01T10:00";
-
 const CTX: LotFormContext = {
   producerWallet: PRODUCER,
   originId: "pena_blanca",
@@ -26,7 +22,6 @@ const CTX: LotFormContext = {
     carbonKgCo2ePerTonne: "8200.00",
   },
   contractedBuyers: [BUYER],
-  nowUnixSeconds: NOW,
 };
 
 const VALID: LotFormValues = {
@@ -34,7 +29,6 @@ const VALID: LotFormValues = {
   volumeTonnes: "420",
   priceUsdc: "12000.123456",
   buyerWallet: BUYER,
-  claimableAfter: FUTURE,
   specSheetSha256: SPEC,
 };
 
@@ -63,7 +57,6 @@ describe("validateLotForm", () => {
       priceUsdcScaled: "12000123456",
       producerWallet: PRODUCER,
       buyerWallet: BUYER,
-      claimableAfterUnix: Math.floor(Date.parse(FUTURE) / 1000).toString(),
       specSheetSha256: SPEC,
     });
   });
@@ -159,23 +152,6 @@ describe("validateLotForm", () => {
     it("rejects malformed wallets", () => {
       expect(
         check({ buyerWallet: "0OIl-not-base58" }).errors.buyerWallet
-      ).toBeTruthy();
-    });
-  });
-
-  describe("claimableAfter", () => {
-    it("is mandatory and must parse", () => {
-      expect(check({ claimableAfter: "" }).errors.claimableAfter).toBeTruthy();
-      expect(
-        check({ claimableAfter: "not-a-date" }).errors.claimableAfter
-      ).toBeTruthy();
-    });
-    it("rejects past and present deadlines", () => {
-      expect(
-        check({ claimableAfter: PAST }).errors.claimableAfter
-      ).toBeTruthy();
-      expect(
-        check({ claimableAfter: "2026-10-06T00:00" }).errors.claimableAfter
       ).toBeTruthy();
     });
   });

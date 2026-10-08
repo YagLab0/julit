@@ -7,8 +7,6 @@ export type ProtocolConfig = {
   feeBps: number;
   usdcMint: Address;
   treasury: Address;
-  claimMinSecs: bigint;
-  claimMaxSecs: bigint;
   bump: number;
 };
 
@@ -26,8 +24,6 @@ export async function fetchProtocolConfig(
     feeBps: account.data.feeBps,
     usdcMint: account.data.usdcMint,
     treasury: account.data.treasury,
-    claimMinSecs: account.data.claimMinSecs,
-    claimMaxSecs: account.data.claimMaxSecs,
     bump: account.data.bump,
   };
 }

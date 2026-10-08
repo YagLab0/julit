@@ -27,11 +27,11 @@ export type ProducerLot = {
   indexed_at: string;
 };
 
-const DESIGNATED_STATUSES = ["listed", "funded", "disputed"] as const;
-const HISTORY_STATUSES = ["redeemed", "claimed"] as const;
+const DESIGNATED_STATUSES = ["listed", "funded"] as const;
+const HISTORY_STATUSES = ["redeemed"] as const;
 
 const LOT_COLUMNS =
-  "lot_id, pda_address, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, mint_address, claimable_after, origin_id, fund_tx_signature, redeem_tx_signature, dispute_tx_signature, claim_tx_signature, indexed_at";
+  "lot_id, pda_address, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, mint_address, origin_id, fund_tx_signature, redeem_tx_signature, indexed_at";
 
 type LotRow = Omit<DesignatedLot, "producer_name" | "status"> & {
   status: string;
@@ -49,12 +49,9 @@ export type AdminLot = {
   producer_wallet: string;
   buyer_wallet: string;
   mint_address: string | null;
-  claimable_after: number | null;
   origin_id: string;
   fund_tx_signature: string | null;
   redeem_tx_signature: string | null;
-  dispute_tx_signature: string | null;
-  claim_tx_signature: string | null;
   indexed_at: string;
   producer_name?: string | null;
   buyer_name?: string | null;
@@ -445,9 +442,7 @@ export type ProtocolStats = {
     byStatus: {
       listed: number;
       funded: number;
-      disputed: number;
       redeemed: number;
-      claimed: number;
       cancelled: number;
     };
     totalVolumeTonnes: number;
@@ -506,9 +501,7 @@ export function calculateProtocolStats(data: {
   const byStatus = {
     listed: lots.filter((l) => l.status === "listed").length,
     funded: lots.filter((l) => l.status === "funded").length,
-    disputed: lots.filter((l) => l.status === "disputed").length,
     redeemed: lots.filter((l) => l.status === "redeemed").length,
-    claimed: lots.filter((l) => l.status === "claimed").length,
     cancelled: lots.filter((l) => l.status === "cancelled").length,
   };
 
@@ -528,15 +521,13 @@ export function calculateProtocolStats(data: {
     totalVolumeTonnes += vol;
     totalValueUsdc += val;
 
-    if (lot.status === "redeemed" || lot.status === "claimed") {
+    if (lot.status === "redeemed") {
       settledVolumeTonnes += vol;
       settledValueUsdc += val;
     } else if (lot.status === "listed") {
       listedVolumeTonnes += vol;
     } else if (lot.status === "funded") {
       fundedVolumeTonnes += vol;
-      escrowedValueUsdc += val;
-    } else if (lot.status === "disputed") {
       escrowedValueUsdc += val;
     }
   }

@@ -36,10 +36,8 @@ const mockStats: ProtocolStats = {
     byStatus: {
       listed: 1,
       funded: 1,
-      disputed: 1,
       redeemed: 1,
-      claimed: 0,
-      cancelled: 0,
+      cancelled: 1,
     },
     totalVolumeTonnes: 380,
     settledVolumeTonnes: 150,
@@ -54,9 +52,9 @@ const mockStats: ProtocolStats = {
 
 const mockLots: AdminLot[] = [
   {
-    lot_id: "LOT-DISP-001",
-    pda_address: "PdaDisp111111111111111111111111111111111",
-    status: "disputed",
+    lot_id: "LOT-CANC-001",
+    pda_address: "PdaCanc111111111111111111111111111111111",
+    status: "cancelled",
     volume_tonnes: 50,
     purity_pct: 99.52,
     water_footprint_m3_per_tonne: 52.4,
@@ -67,12 +65,9 @@ const mockLots: AdminLot[] = [
     producer_name: "Sales del Altiplano S.A.",
     buyer_name: "Comprador Demo",
     mint_address: "Mint111111111111111111111111111111111111",
-    claimable_after: 1791550000,
     origin_id: "pena_blanca",
-    fund_tx_signature: "SigFund111",
+    fund_tx_signature: null,
     redeem_tx_signature: null,
-    dispute_tx_signature: "SigDisp111",
-    claim_tx_signature: null,
     indexed_at: "2026-10-07T12:00:00Z",
   },
   {
@@ -89,12 +84,9 @@ const mockLots: AdminLot[] = [
     producer_name: "Minera Cóndor S.A.",
     buyer_name: "Comprador Demo",
     mint_address: "Mint222222222222222222222222222222222222",
-    claimable_after: 1791650000,
     origin_id: "condor",
     fund_tx_signature: "SigFund222",
     redeem_tx_signature: null,
-    dispute_tx_signature: null,
-    claim_tx_signature: null,
     indexed_at: "2026-10-06T12:00:00Z",
   },
   {
@@ -111,12 +103,9 @@ const mockLots: AdminLot[] = [
     producer_name: "Sales del Altiplano S.A.",
     buyer_name: "Comprador Demo",
     mint_address: null,
-    claimable_after: null,
     origin_id: "pena_blanca",
     fund_tx_signature: null,
     redeem_tx_signature: null,
-    dispute_tx_signature: null,
-    claim_tx_signature: null,
     indexed_at: "2026-10-05T12:00:00Z",
   },
   {
@@ -133,12 +122,9 @@ const mockLots: AdminLot[] = [
     producer_name: "Minera Cóndor S.A.",
     buyer_name: "Comprador Demo",
     mint_address: "Mint444444444444444444444444444444444444",
-    claimable_after: null,
     origin_id: "condor",
     fund_tx_signature: "SigFund444",
     redeem_tx_signature: "SigRedm444",
-    dispute_tx_signature: null,
-    claim_tx_signature: null,
     indexed_at: "2026-10-04T12:00:00Z",
   },
 ];
@@ -206,15 +192,14 @@ describe("AdminDashboard Component", () => {
     );
 
     expect(html).toContain("Centro de Gestión de Tareas y Lotes");
-    expect(html).toContain("En Disputa");
     expect(html).toContain("Fondeados");
     expect(html).toContain("Publicados");
     expect(html).toContain("Liquidados");
     expect(html).toContain("Todos los Lotes");
 
-    // Default tab with disputes should render the disputed lot
-    expect(html).toContain("LOT-DISP-001");
-    expect(html).toContain("Disputa activa");
+    // The default "all" tab renders every indexed lot
+    expect(html).toContain("LOT-CANC-001");
+    expect(html).toContain("LOT-FUND-002");
   });
 
   it("renders cleanly with empty lots and null stats without errors", () => {
@@ -269,7 +254,6 @@ describe("AdminDashboard Component", () => {
 
     // Task Center in English
     expect(html).toContain("Task &amp; Lot Management Center");
-    expect(html).toContain("Disputed");
     expect(html).toContain("Funded");
     expect(html).toContain("Listed");
     expect(html).toContain("Settled");

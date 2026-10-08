@@ -37,7 +37,7 @@ sequenceDiagram
   FE->>API: POST /api/companies/spec-sheet
   API->>API: Recomputa SHA-256 del PDF
   API->>SB: Storage en wallet/sha256.pdf, sin upsert
-  PROD->>FE: Formulario de métricas, comprador designado, claimable_after
+  PROD->>FE: Formulario de métricas y comprador designado
   FE->>SC: tx create_lot (firma la wallet)
   SC->>SC: Lot PDA + mint NFT + escrow_title + escrow_usdc + Metaplex
   SC-->>FE: PDA confirmada + creation_tx_signature
@@ -55,16 +55,13 @@ sequenceDiagram
 
   Note over PROD,SC: 5 · Liquidación — exactamente una vía terminal
   alt Compradora confirma recepción
-    BUY->>SC: tx redeem_lot (Funded o Disputed)
-    SC->>SC: quema título + escrow → productora menos fee → tesorería
-  else Productora reclama por timeout
-    PROD->>SC: tx claim_timeout (Funded, now ≥ claimable_after)
+    BUY->>SC: tx redeem_lot (Funded)
     SC->>SC: quema título + escrow → productora menos fee → tesorería
   else Productora cancela antes del fondeo
     PROD->>SC: tx cancel_lot (Listed → Cancelled, quema título)
   end
   SC-->>FE: confirmada + tx_signature
-  FE->>API: POST /api/lots/{redeem,claim,cancel}
+  FE->>API: POST /api/lots/{redeem,cancel}
   API->>SB: CAS update del estado indexado
 
   Note over VIS,SC: 6 · Pasaporte público batch/PDA, sin cuenta

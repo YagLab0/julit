@@ -59,7 +59,6 @@ stateDiagram-v2
     Listed --> Cancelled: cancel_lot\n(Producer cancels before funding)
     Listed --> Funded: fund_lot\n(Buyer deposits the full USDC price)
     Funded --> Redeemed: redeem_lot\n(Buyer confirms delivery: title burned, USDC released)
-    Funded --> Claimed: claim_timeout\n(Agreed date passes: title burned, USDC released)
 ```
 
 ### Deployed Program (Solana Devnet)
@@ -181,7 +180,7 @@ Built in **San Salvador de Jujuy, Argentina**, inside the Lithium Triangle — c
 │   ├── explorer/                    # B2B directory, origin map, and lot creation
 │   ├── batch/[pda]/                 # Public lot page
 │   ├── account/                     # Producer and buyer lot actions
-│   ├── api/lots/                    # Lot transitions (fund, redeem, claim, cancel)
+│   ├── api/lots/                    # Lot transitions (fund, redeem, cancel)
 │   ├── generated/julit/             # Codama-generated TypeScript client from the Anchor IDL
 │   └── landing/                     # Landing page
 ├── docs/

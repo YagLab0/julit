@@ -43,23 +43,20 @@ export type AccountLot = {
   producer_name: string | null;
   buyer_wallet: string;
   mint_address: string;
-  claimable_after: string;
   origin_id: string;
   fund_tx_signature: string | null;
   redeem_tx_signature: string | null;
-  dispute_tx_signature: string | null;
-  claim_tx_signature: string | null;
   indexed_at: string;
 };
 
 /** A designated lot still awaiting a buyer decision. */
 export type DesignatedLot = AccountLot & {
-  status: "listed" | "funded" | "disputed";
+  status: "listed" | "funded";
 };
 
-/** A settled lot: redeemed by the buyer or claimed by the producer. */
+/** A settled lot: redeemed by the buyer. */
 export type AcquiredLot = AccountLot & {
-  status: "redeemed" | "claimed";
+  status: "redeemed";
 };
 
 const CONTRACT_STATUS_STYLES: Record<string, string> = {
@@ -236,10 +233,10 @@ export function BuyerPortfolioCard({
                 >
                   {dict.common.viewPassport}
                 </Link>
-                {(lot.redeem_tx_signature ?? lot.claim_tx_signature) && (
+                {lot.redeem_tx_signature && (
                   <a
                     href={getExplorerUrl(
-                      `/tx/${lot.redeem_tx_signature ?? lot.claim_tx_signature}`,
+                      `/tx/${lot.redeem_tx_signature}`,
                       cluster
                     )}
                     target="_blank"

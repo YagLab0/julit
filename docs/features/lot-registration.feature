@@ -22,7 +22,6 @@ Feature: Lot registration and public indexing
       | carbon_kg_per_t   | 450.25               |
       | price_usdc        | 12000.123456         |
     And the transaction designates the contracted Buyer
-    And the transaction sets claimable_after inside the configured window
     And the transaction carries the lot spec sheet SHA-256
     When the Producer signs and submits the transaction to Devnet
     Then the Lot account is created with status "listed"
@@ -66,12 +65,6 @@ Feature: Lot registration and public indexing
     Given a Buyer company with no accepted contract with the Producer
     When the Producer registers a Lot reserved for that Buyer
     Then the database rejects the lot row
-
-  @program
-  Scenario: Reject a claim window outside the configured bounds
-    Given the Config bounds claims between claim_min_secs and claim_max_secs
-    When create_lot sets claimable_after outside that window
-    Then the programme rejects the instruction
 
   @api
   Scenario: Indexing requires a verified on-chain Lot

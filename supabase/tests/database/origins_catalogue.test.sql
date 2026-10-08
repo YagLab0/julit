@@ -93,12 +93,12 @@ insert into public.company_contracts (producer_id, counterparty_id, status, resp
 select results_eq($$insert into public.lots (
     pda_address, lot_id, producer_wallet, buyer_wallet, origin_id,
     mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne,
-    carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after,
+    carbon_footprint_kg_co2e_per_tonne, price_usdc,
     spec_sheet_sha256, creation_tx_signature, observed_slot
   ) values (
     repeat('3', 31) || '4', 'LIT-2026-CAT-01', repeat('3', 31) || '2',
     repeat('3', 31) || '3', 'condor', repeat('3', 31) || '6', 25, 99.50,
-    100, 200, 3000, now() + interval '30 days',
+    100, 200, 3000,
     repeat('a', 64), repeat('3', 63) || '5', 1002
   ) returning origin_id$$,
   $$values ('condor'::text)$$,

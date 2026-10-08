@@ -15,9 +15,7 @@ import type { VerifyLotTransitionInput } from "./verify";
 const LOT_STATUS: Readonly<Record<number, string>> = {
   [LotStatus.Listed]: "listed",
   [LotStatus.Funded]: "funded",
-  [LotStatus.Disputed]: "disputed",
   [LotStatus.Redeemed]: "redeemed",
-  [LotStatus.Claimed]: "claimed",
   [LotStatus.Cancelled]: "cancelled",
 };
 
@@ -36,7 +34,6 @@ type TransitionOptions = {
   txColumn:
     | "fund_tx_signature"
     | "redeem_tx_signature"
-    | "claim_tx_signature"
     | "cancel_tx_signature";
   /** Status written on success. */
   nextStatus: string;
@@ -48,10 +45,9 @@ type TransitionOptions = {
 };
 
 /**
- * Shared POST handler for lifecycle transitions (fund, redeem, claim,
- * cancel). Authenticates the calling company, decodes the submitted
- * transaction, runs the pure verification seam, then CAS-updates the
- * index row.
+ * Shared POST handler for lifecycle transitions (fund, redeem, cancel).
+ * Authenticates the calling company, decodes the submitted transaction,
+ * runs the pure verification seam, then CAS-updates the index row.
  */
 export async function transitionLot(request: Request, opts: TransitionOptions) {
   const supabase = await createClient();
@@ -189,9 +185,7 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
             status: LOT_STATUS[lotData.status] as
               | "listed"
               | "funded"
-              | "disputed"
               | "redeemed"
-              | "claimed"
               | "cancelled",
           }
         : null,

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   verifyLotCancellation,
-  verifyLotClaim,
   verifyLotCreation,
   verifyLotFunding,
   verifyLotRedemption,
@@ -284,11 +283,8 @@ function redeemBase(
 }
 
 describe("verifyLotRedemption", () => {
-  it("accepts a confirmed redeem_lot from funded and from disputed", () => {
+  it("accepts a confirmed redeem_lot from funded", () => {
     expect(verifyLotRedemption(redeemBase())).toEqual({ ok: true });
-    expect(
-      verifyLotRedemption(redeemBase({ indexedStatus: "disputed" }))
-    ).toEqual({ ok: true });
   });
 
   it("rejects a missing or failed transaction", () => {
@@ -398,85 +394,6 @@ describe("verifyLotRedemption", () => {
 
 const PRODUCER = WALLET;
 
-function claimBase(
-  overrides: Partial<VerifyLotTransitionInput> = {}
-): VerifyLotTransitionInput {
-  return fundBase({
-    signerWallet: PRODUCER,
-    indexedStatus: "funded",
-    transaction: {
-      signature: "sig",
-      slot: 100,
-      failed: false,
-      lifecycleInstruction: { lot: LOT_PDA, signer: PRODUCER },
-    },
-    lotAccount: {
-      programOwned: true,
-      producer: PRODUCER,
-      buyer: BUYER,
-      status: "claimed",
-    },
-    ...overrides,
-  });
-}
-
-describe("verifyLotClaim", () => {
-  it("accepts a confirmed claim_timeout by the lot producer", () => {
-    expect(verifyLotClaim(claimBase())).toEqual({ ok: true });
-  });
-
-  it("rejects a claim signed by the buyer", () => {
-    const r = verifyLotClaim(
-      claimBase({
-        transaction: {
-          signature: "sig",
-          slot: 100,
-          failed: false,
-          lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
-        },
-      })
-    );
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.rejection.status).toBe(403);
-  });
-
-  it("rejects when the caller is not the on-chain producer", () => {
-    const r = verifyLotClaim(
-      claimBase({
-        lotAccount: {
-          programOwned: true,
-          producer: "OtherProducer11111111111111111111111",
-          buyer: BUYER,
-          status: "claimed",
-        },
-      })
-    );
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.rejection.status).toBe(403);
-  });
-
-  it("rejects a disputed or unindexed lot", () => {
-    const r = verifyLotClaim(claimBase({ indexedStatus: "disputed" }));
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.rejection.status).toBe(409);
-    expect(verifyLotClaim(claimBase({ indexedStatus: null })).ok).toBe(false);
-  });
-
-  it("rejects when the on-chain status is not claimed", () => {
-    const r = verifyLotClaim(
-      claimBase({
-        lotAccount: {
-          programOwned: true,
-          producer: PRODUCER,
-          buyer: BUYER,
-          status: "funded",
-        },
-      })
-    );
-    expect(r.ok).toBe(false);
-  });
-});
-
 function cancelBase(
   overrides: Partial<VerifyLotTransitionInput> = {}
 ): VerifyLotTransitionInput {
@@ -537,9 +454,7 @@ describe("verifyLotCancellation", () => {
   it("rejects funded and later index states — cancellation is impossible", () => {
     for (const indexedStatus of [
       "funded",
-      "disputed",
       "redeemed",
-      "claimed",
       "cancelled",
     ] as const) {
       const r = verifyLotCancellation(cancelBase({ indexedStatus }));

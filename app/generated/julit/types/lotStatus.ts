@@ -18,9 +18,7 @@ import {
 export enum LotStatus {
   Listed,
   Funded,
-  Disputed,
   Redeemed,
-  Claimed,
   Cancelled,
 }
 

@@ -42,7 +42,6 @@ const INITIAL: LotFormValues = {
   volumeTonnes: "",
   priceUsdc: "",
   buyerWallet: "",
-  claimableAfter: "",
   specSheetSha256: "",
 };
 
@@ -132,7 +131,6 @@ export function RegisterLotForm({
         originId: producer.originId,
         producerSpecs: producer.specs,
         contractedBuyers: buyers.map((b) => b.wallet),
-        nowUnixSeconds: Math.floor(Date.now() / 1000),
       },
       dict.newLot.validation
     );
@@ -169,7 +167,6 @@ export function RegisterLotForm({
         carbonKgCo2ePerTonneScaled: BigInt(payload.carbonKgCo2ePerTonneScaled),
         priceUsdc: BigInt(payload.priceUsdcScaled),
         buyer: address(payload.buyerWallet),
-        claimableAfter: BigInt(payload.claimableAfterUnix),
         specSheetHash: hexToBytes(payload.specSheetSha256),
         metadataUri: "",
       });
@@ -326,19 +323,6 @@ export function RegisterLotForm({
                 </option>
               ))}
             </select>
-          </Field>
-          <Field
-            label={f.claimableLabel}
-            hint={f.claimableHint}
-            error={errors.claimableAfter}
-            span
-          >
-            <input
-              type="datetime-local"
-              className={INPUT_CLASS}
-              value={values.claimableAfter}
-              onChange={(e) => update("claimableAfter")(e.target.value)}
-            />
           </Field>
           <Field
             label={f.specLabel}

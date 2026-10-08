@@ -3,7 +3,7 @@
 // authoritative ledger, so the fiche never claims verification.
 
 export type LotStatus =
-  "listed" | "funded" | "disputed" | "redeemed" | "claimed" | "cancelled";
+  "listed" | "funded" | "redeemed" | "cancelled";
 
 export type Lot = {
   pda_address: string;
@@ -20,7 +20,6 @@ export type Lot = {
   producer_wallet: string;
   /** Designated buyer fixed at creation; only this wallet may fund the escrow. */
   buyer_wallet: string;
-  claimable_after: string;
   spec_sheet_sha256: string;
   spec_sheet_path: string;
   indexed_at: string;
@@ -28,7 +27,7 @@ export type Lot = {
 
 /** Columns the origin fiche needs, in one place for the per-origin query. */
 export const LOT_COLUMNS =
-  "pda_address, lot_id, origin_id, status, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, claimable_after, spec_sheet_sha256, spec_sheet_path, indexed_at" as const;
+  "pda_address, lot_id, origin_id, status, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, spec_sheet_sha256, spec_sheet_path, indexed_at" as const;
 
 /** Public URL of the lot's spec sheet PDF, content-addressed by digest. */
 export function specSheetUrl(lot: Pick<Lot, "spec_sheet_path">): string {

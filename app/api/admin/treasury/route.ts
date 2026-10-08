@@ -99,9 +99,9 @@ export async function GET() {
   const { data: rawLots, error: lotsError } = await lotsClient
     .from("lots")
     .select(
-      "lot_id, pda_address, status, volume_tonnes, price_usdc, producer_wallet, buyer_wallet, redeem_tx_signature, claim_tx_signature, indexed_at"
+      "lot_id, pda_address, status, volume_tonnes, price_usdc, producer_wallet, buyer_wallet, redeem_tx_signature, indexed_at"
     )
-    .in("status", ["redeemed", "claimed"])
+    .in("status", ["redeemed"])
     .order("indexed_at", { ascending: false });
 
   if (lotsError) {
@@ -130,8 +130,6 @@ export async function GET() {
       fee_bps: config.feeBps,
       fee_percentage: config.feeBps / 100,
       usdc_mint: config.usdcMint,
-      claim_min_secs: Number(config.claimMinSecs),
-      claim_max_secs: Number(config.claimMaxSecs),
       bump: config.bump,
     },
     balances: {

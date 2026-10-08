@@ -14,8 +14,6 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getI64Decoder,
-  getI64Encoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
@@ -78,16 +76,12 @@ export type InitializeInstructionData = {
   feeBps: number;
   usdcMint: Address;
   treasury: Address;
-  claimMinSecs: bigint;
-  claimMaxSecs: bigint;
 };
 
 export type InitializeInstructionDataArgs = {
   feeBps: number;
   usdcMint: Address;
   treasury: Address;
-  claimMinSecs: number | bigint;
-  claimMaxSecs: number | bigint;
 };
 
 export function getInitializeInstructionDataEncoder(): FixedSizeEncoder<InitializeInstructionDataArgs> {
@@ -97,8 +91,6 @@ export function getInitializeInstructionDataEncoder(): FixedSizeEncoder<Initiali
       ["feeBps", getU16Encoder()],
       ["usdcMint", getAddressEncoder()],
       ["treasury", getAddressEncoder()],
-      ["claimMinSecs", getI64Encoder()],
-      ["claimMaxSecs", getI64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_DISCRIMINATOR }),
   );
@@ -110,8 +102,6 @@ export function getInitializeInstructionDataDecoder(): FixedSizeDecoder<Initiali
     ["feeBps", getU16Decoder()],
     ["usdcMint", getAddressDecoder()],
     ["treasury", getAddressDecoder()],
-    ["claimMinSecs", getI64Decoder()],
-    ["claimMaxSecs", getI64Decoder()],
   ]);
 }
 
@@ -136,8 +126,6 @@ export type InitializeAsyncInput<
   feeBps: InitializeInstructionDataArgs["feeBps"];
   usdcMint: InitializeInstructionDataArgs["usdcMint"];
   treasury: InitializeInstructionDataArgs["treasury"];
-  claimMinSecs: InitializeInstructionDataArgs["claimMinSecs"];
-  claimMaxSecs: InitializeInstructionDataArgs["claimMaxSecs"];
 };
 
 export async function getInitializeInstructionAsync<
@@ -216,8 +204,6 @@ export type InitializeInput<
   feeBps: InitializeInstructionDataArgs["feeBps"];
   usdcMint: InitializeInstructionDataArgs["usdcMint"];
   treasury: InitializeInstructionDataArgs["treasury"];
-  claimMinSecs: InitializeInstructionDataArgs["claimMinSecs"];
-  claimMaxSecs: InitializeInstructionDataArgs["claimMaxSecs"];
 };
 
 export function getInitializeInstruction<

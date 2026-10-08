@@ -19,8 +19,6 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getI64Decoder,
-  getI64Encoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
@@ -55,8 +53,6 @@ export type Config = {
   feeBps: number;
   usdcMint: Address;
   treasury: Address;
-  claimMinSecs: bigint;
-  claimMaxSecs: bigint;
   bump: number;
 };
 
@@ -65,8 +61,6 @@ export type ConfigArgs = {
   feeBps: number;
   usdcMint: Address;
   treasury: Address;
-  claimMinSecs: number | bigint;
-  claimMaxSecs: number | bigint;
   bump: number;
 };
 
@@ -79,8 +73,6 @@ export function getConfigEncoder(): FixedSizeEncoder<ConfigArgs> {
       ["feeBps", getU16Encoder()],
       ["usdcMint", getAddressEncoder()],
       ["treasury", getAddressEncoder()],
-      ["claimMinSecs", getI64Encoder()],
-      ["claimMaxSecs", getI64Encoder()],
       ["bump", getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: CONFIG_DISCRIMINATOR }),
@@ -95,8 +87,6 @@ export function getConfigDecoder(): FixedSizeDecoder<Config> {
     ["feeBps", getU16Decoder()],
     ["usdcMint", getAddressDecoder()],
     ["treasury", getAddressDecoder()],
-    ["claimMinSecs", getI64Decoder()],
-    ["claimMaxSecs", getI64Decoder()],
     ["bump", getU8Decoder()],
   ]);
 }
@@ -160,5 +150,5 @@ export async function fetchAllMaybeConfig(
 }
 
 export function getConfigSize(): number {
-  return 123;
+  return 107;
 }

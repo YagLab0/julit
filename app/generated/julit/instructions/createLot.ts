@@ -16,8 +16,6 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getI64Decoder,
-  getI64Encoder,
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
@@ -141,7 +139,6 @@ export type CreateLotInstructionData = {
   carbonKgCo2ePerTonneScaled: bigint;
   priceUsdc: bigint;
   buyer: Address;
-  claimableAfter: bigint;
   specSheetHash: ReadonlyUint8Array;
   metadataUri: string;
 };
@@ -155,7 +152,6 @@ export type CreateLotInstructionDataArgs = {
   carbonKgCo2ePerTonneScaled: number | bigint;
   priceUsdc: number | bigint;
   buyer: Address;
-  claimableAfter: number | bigint;
   specSheetHash: ReadonlyUint8Array;
   metadataUri: string;
 };
@@ -172,7 +168,6 @@ export function getCreateLotInstructionDataEncoder(): Encoder<CreateLotInstructi
       ["carbonKgCo2ePerTonneScaled", getU64Encoder()],
       ["priceUsdc", getU64Encoder()],
       ["buyer", getAddressEncoder()],
-      ["claimableAfter", getI64Encoder()],
       ["specSheetHash", fixEncoderSize(getBytesEncoder(), 32)],
       ["metadataUri", addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())],
     ]),
@@ -191,7 +186,6 @@ export function getCreateLotInstructionDataDecoder(): Decoder<CreateLotInstructi
     ["carbonKgCo2ePerTonneScaled", getU64Decoder()],
     ["priceUsdc", getU64Decoder()],
     ["buyer", getAddressDecoder()],
-    ["claimableAfter", getI64Decoder()],
     ["specSheetHash", fixDecoderSize(getBytesDecoder(), 32)],
     ["metadataUri", addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())],
   ]);
@@ -261,7 +255,6 @@ export type CreateLotAsyncInput<
   carbonKgCo2ePerTonneScaled: CreateLotInstructionDataArgs["carbonKgCo2ePerTonneScaled"];
   priceUsdc: CreateLotInstructionDataArgs["priceUsdc"];
   buyer: CreateLotInstructionDataArgs["buyer"];
-  claimableAfter: CreateLotInstructionDataArgs["claimableAfter"];
   specSheetHash: CreateLotInstructionDataArgs["specSheetHash"];
   metadataUri: CreateLotInstructionDataArgs["metadataUri"];
 };
@@ -518,7 +511,6 @@ export type CreateLotInput<
   carbonKgCo2ePerTonneScaled: CreateLotInstructionDataArgs["carbonKgCo2ePerTonneScaled"];
   priceUsdc: CreateLotInstructionDataArgs["priceUsdc"];
   buyer: CreateLotInstructionDataArgs["buyer"];
-  claimableAfter: CreateLotInstructionDataArgs["claimableAfter"];
   specSheetHash: CreateLotInstructionDataArgs["specSheetHash"];
   metadataUri: CreateLotInstructionDataArgs["metadataUri"];
 };

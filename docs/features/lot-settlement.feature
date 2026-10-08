@@ -2,9 +2,10 @@
 # Layer tags: @program = Anchor programme, @api = authenticated API, @db = Supabase schema and RLS, @ui = frontend
 Feature: Atomic lot settlement in escrow
   The designated Buyer funds a reserved Lot; the escrowed USDC sits in the
-  lot-owned escrow until the buyer's receipt confirmation or the claim
-  deadline releases it — the Digital Title is burned inside escrow in the
-  same transaction. No funds move outside these transitions.
+  lot-owned escrow until the buyer's receipt confirmation releases it —
+  the Digital Title is burned inside escrow in the same transaction.
+  Buyer confirmation is the sole settlement path (ADR-0021); no funds
+  move outside these transitions.
 
   Background:
     Given a "listed" Lot reserved for a Buyer at a fixed USDC price
@@ -43,27 +44,6 @@ Feature: Atomic lot settlement in escrow
     And neither the title nor the escrowed USDC moves
 
   @program @api @db
-  Scenario: The producer collects after an unresponsive buyer's deadline
-    Given a "funded" Lot whose claimable_after has passed
-    When the Producer signs claim_timeout
-    Then the Digital Title is burned and the escrow splits like a redeem
-    And the Lot becomes "claimed"
-
-  @program
-  Scenario: The producer cannot collect before the deadline
-    Given a "funded" Lot whose claimable_after has not passed
-    When the Producer signs claim_timeout
-    Then the programme rejects the instruction
-
-  @program
-  Scenario: A disputed lot resolves only by the buyer's release
-    Given a "disputed" Lot
-    When the Buyer signs redeem_lot
-    Then the escrow releases to the producer minus the take rate
-    And the Lot becomes "redeemed"
-    And no refund or arbiter path exists on-chain
-
-  @program @api @db
   Scenario: The producer cancels an unfunded reservation
     Given a "listed" Lot the buyer never funded
     When the Producer signs cancel_lot
@@ -87,5 +67,4 @@ Feature: Atomic lot settlement in escrow
       | transition |
       | fund       |
       | redeem     |
-      | claim      |
       | cancel     |

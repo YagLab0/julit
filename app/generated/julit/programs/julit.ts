@@ -18,14 +18,12 @@ import {
 } from "@solana/kit";
 import {
   parseCancelLotInstruction,
-  parseClaimTimeoutInstruction,
   parseCreateLotInstruction,
   parseFundLotInstruction,
   parseInitializeInstruction,
   parseRedeemLotInstruction,
   parseSetFeeBpsInstruction,
   type ParsedCancelLotInstruction,
-  type ParsedClaimTimeoutInstruction,
   type ParsedCreateLotInstruction,
   type ParsedFundLotInstruction,
   type ParsedInitializeInstruction,
@@ -74,7 +72,6 @@ export function identifyJulitAccount(
 
 export enum JulitInstruction {
   CancelLot,
-  ClaimTimeout,
   CreateLot,
   FundLot,
   Initialize,
@@ -96,17 +93,6 @@ export function identifyJulitInstruction(
     )
   ) {
     return JulitInstruction.CancelLot;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([130, 234, 45, 53, 120, 90, 86, 178]),
-      ),
-      0,
-    )
-  ) {
-    return JulitInstruction.ClaimTimeout;
   }
   if (
     containsBytes(
@@ -175,9 +161,6 @@ export type ParsedJulitInstruction<
       instructionType: JulitInstruction.CancelLot;
     } & ParsedCancelLotInstruction<TProgram>)
   | ({
-      instructionType: JulitInstruction.ClaimTimeout;
-    } & ParsedClaimTimeoutInstruction<TProgram>)
-  | ({
       instructionType: JulitInstruction.CreateLot;
     } & ParsedCreateLotInstruction<TProgram>)
   | ({
@@ -203,13 +186,6 @@ export function parseJulitInstruction<TProgram extends string>(
       return {
         instructionType: JulitInstruction.CancelLot,
         ...parseCancelLotInstruction(instruction),
-      };
-    }
-    case JulitInstruction.ClaimTimeout: {
-      assertIsInstructionWithAccounts(instruction);
-      return {
-        instructionType: JulitInstruction.ClaimTimeout,
-        ...parseClaimTimeoutInstruction(instruction),
       };
     }
     case JulitInstruction.CreateLot: {
