@@ -16,8 +16,8 @@ its header).
   `BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky`.
 - `node scripts/seed-devnet.mjs --wallet <w>...` creates the demo dUSDC
   mint, airdrops SOL, funds dUSDC ATAs, and calls `initialize` — creating
-  the singleton Config PDA `[b"config"]` with admin, fee_bps, usdc_mint,
-  treasury and the claim window (`claim_min_secs`/`claim_max_secs`).
+  the singleton Config PDA `[b"config"]` with admin, fee_bps, usdc_mint
+  and treasury.
 
 ## 1. Company onboarding (per company, once)
 
@@ -72,19 +72,17 @@ must equal the company's verified wallet.
 2. `validateLotForm` parses every metric as a decimal string into scaled
    integers — no floats: `purity` ×100 (basis points, 99.50–100.00 only),
    `water`/`carbon` ×100, `price` ×10⁶ (dUSDC base units). It also checks
-   `lot_id` ≤ 32 bytes, volume ≥ 1 t, buyer ∈ contracted buyers, and
-   `claimable_after` in the future.
+   `lot_id` ≤ 32 bytes, volume ≥ 1 t and buyer ∈ contracted buyers.
 3. The frontend builds `create_lot` (generated client) and the producer
    signs. On-chain effects, all in one transaction:
    - Lot PDA `[b"lot", producer, lot_id]` initialized with metrics, price,
-     buyer, `claimable_after`, `spec_sheet_hash`, status `Listed`.
+     buyer, `spec_sheet_hash`, status `Listed`.
    - Mint PDA `[b"mint", lot]` initialized (decimals 0, authority = Lot
      PDA) and exactly 1 token minted into `escrow_title`, the Lot PDA's
      ATA — the Digital Title never leaves escrow.
    - `escrow_usdc`, the Lot PDA's ATA for the configured `usdc_mint`.
    - Metaplex metadata + master edition PDAs created by CPI (max supply 0,
      update authority = Lot PDA, immutable).
-   - `claimable_after` must sit inside the Config's claim window.
 4. `POST /api/lots` `{ tx_signature }` indexes it: fetches the confirmed
    transaction, decodes the `create_lot` args, re-derives the expected PDA
    from the caller's **verified wallet** + `lot_id`, fetches the lot
@@ -109,19 +107,16 @@ match):
 ## 5. Settlement — exactly one terminal path
 
 All lifecycle calls follow the same pattern: sign the instruction, then
-`POST /api/lots/{redeem,claim,cancel}` verifies on-chain facts
+`POST /api/lots/{redeem,cancel}` verifies on-chain facts
 (instruction kind, signer position, party role, resulting status, current
 index status) and CAS-updates the index row.
 
-- **`redeem_lot`** (buyer, `Funded` or `Disputed`): burns the Digital
+- **`redeem_lot`** (buyer, `Funded` only): burns the Digital
   Title inside escrow and releases the escrowed USDC — `price − fee` to
   the producer's ATA, `fee` to the treasury's ATA (both
-  `init_if_needed`). `→ Redeemed`. `Disputed` is a legacy state: the
-  dispute instruction was removed, and lots already disputed keep their
-  frozen `claim_timeout` until the buyer redeems.
-- **`claim_timeout`** (producer, `Funded`, `now ≥ claimable_after`):
-  same burn + release as redeem, with the clock signing instead of the
-  buyer. `→ Claimed`.
+  `init_if_needed`). `→ Redeemed`. It is the sole settlement path after
+  funding: if the buyer never confirms, the escrow stays locked
+  (ADR-0021).
 - **`cancel_lot`** (producer, `Listed` only): burns the title before any
   funding existed. `→ Cancelled`.
 
@@ -134,7 +129,7 @@ index status) and CAS-updates the index row.
   - declared metrics and origin;
   - lot spec sheet: the PDF from the public bucket with its declared
     SHA-256, contrasted against the on-chain account;
-  - escrow terms: designated buyer, `claimable_after`, the mint address;
+  - escrow terms: designated buyer and the mint address;
   - the lifecycle timeline — every recorded transition links to its
     confirmed Devnet transaction;
   - `RecordContrast` (ADR-0011): re-derives the PDA, fetches and decodes
@@ -148,7 +143,7 @@ index status) and CAS-updates the index row.
 
 | Layer          | Guarantees                                                                                                                                                            |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Anchor program | Ownership (PDA seeds), party roles (signer constraints), state machine, exact-price escrow, bounded claim window, fee math                                            |
+| Anchor program | Ownership (PDA seeds), party roles (signer constraints), state machine, exact-price escrow, fee math                                                                 |
 | API routes     | Auth session, verified-wallet match, transaction authenticity (confirmed, correct program + discriminator, signer position), on-chain account re-read before indexing |
 | DB             | Origin binding, accepted-contract requirement, unique wallet, single-use challenges, CAS status transitions                                                           |
 | Frontend       | Form validation mirroring on-chain rules, verified-wallet gate, cluster pinning to Devnet for lifecycle actions                                                       |

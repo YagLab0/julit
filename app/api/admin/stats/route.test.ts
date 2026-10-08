@@ -41,9 +41,7 @@ describe("calculateProtocolStats", () => {
       byStatus: {
         listed: 0,
         funded: 0,
-        disputed: 0,
         redeemed: 0,
-        claimed: 0,
         cancelled: 0,
       },
       totalVolumeTonnes: 0,
@@ -104,25 +102,23 @@ describe("calculateProtocolStats", () => {
       lots: [
         { status: "listed", volume_tonnes: 100, price_usdc: 150000 },
         { status: "funded", volume_tonnes: 50, price_usdc: 80000 },
-        { status: "disputed", volume_tonnes: 20, price_usdc: 30000 },
+        { status: "funded", volume_tonnes: 20, price_usdc: 30000 },
         { status: "redeemed", volume_tonnes: 200, price_usdc: 320000 },
-        { status: "claimed", volume_tonnes: 80, price_usdc: 120000 },
+        { status: "redeemed", volume_tonnes: 80, price_usdc: 120000 },
         { status: "cancelled", volume_tonnes: 40, price_usdc: 60000 },
       ],
     });
 
     expect(stats.lots.total).toBe(6);
     expect(stats.lots.byStatus.listed).toBe(1);
-    expect(stats.lots.byStatus.funded).toBe(1);
-    expect(stats.lots.byStatus.disputed).toBe(1);
-    expect(stats.lots.byStatus.redeemed).toBe(1);
-    expect(stats.lots.byStatus.claimed).toBe(1);
+    expect(stats.lots.byStatus.funded).toBe(2);
+    expect(stats.lots.byStatus.redeemed).toBe(2);
     expect(stats.lots.byStatus.cancelled).toBe(1);
 
     expect(stats.lots.totalVolumeTonnes).toBe(490);
     expect(stats.lots.settledVolumeTonnes).toBe(280); // 200 + 80
     expect(stats.lots.listedVolumeTonnes).toBe(100);
-    expect(stats.lots.fundedVolumeTonnes).toBe(50);
+    expect(stats.lots.fundedVolumeTonnes).toBe(70); // 50 + 20
 
     expect(stats.lots.totalValueUsdc).toBe(760000);
     expect(stats.lots.settledValueUsdc).toBe(440000); // 320000 + 120000

@@ -47,9 +47,7 @@ const BATTERY_GRADE_PURITY_PCT = 99.5;
 const STATUS_LABELS: Record<LotStatus, string> = {
   listed: "Publicado",
   funded: "Fondeado",
-  disputed: "En disputa",
   redeemed: "Liquidado",
-  claimed: "Cobrado",
   cancelled: "Cancelado",
 };
 
@@ -62,15 +60,7 @@ const STATUS_CLASSES: Record<LotStatus, { pill: string; dot: string }> = {
     pill: "bg-amber-50 text-amber-800 ring-amber-200",
     dot: "bg-amber-500",
   },
-  disputed: {
-    pill: "bg-amber-50 text-amber-800 ring-amber-200",
-    dot: "bg-amber-500",
-  },
   redeemed: {
-    pill: "bg-secondary text-foreground/75 ring-border",
-    dot: "bg-muted",
-  },
-  claimed: {
     pill: "bg-secondary text-foreground/75 ring-border",
     dot: "bg-muted",
   },

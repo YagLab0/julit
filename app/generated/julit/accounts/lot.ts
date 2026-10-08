@@ -73,7 +73,6 @@ export type Lot = {
   purityBasisPoints: bigint;
   waterM3PerTonneScaled: bigint;
   carbonKgCo2ePerTonneScaled: bigint;
-  claimableAfter: bigint;
   specSheetHash: ReadonlyUint8Array;
   status: LotStatus;
   createdAt: bigint;
@@ -91,7 +90,6 @@ export type LotArgs = {
   purityBasisPoints: number | bigint;
   waterM3PerTonneScaled: number | bigint;
   carbonKgCo2ePerTonneScaled: number | bigint;
-  claimableAfter: number | bigint;
   specSheetHash: ReadonlyUint8Array;
   status: LotStatusArgs;
   createdAt: number | bigint;
@@ -113,7 +111,6 @@ export function getLotEncoder(): Encoder<LotArgs> {
       ["purityBasisPoints", getU64Encoder()],
       ["waterM3PerTonneScaled", getU64Encoder()],
       ["carbonKgCo2ePerTonneScaled", getU64Encoder()],
-      ["claimableAfter", getI64Encoder()],
       ["specSheetHash", fixEncoderSize(getBytesEncoder(), 32)],
       ["status", getLotStatusEncoder()],
       ["createdAt", getI64Encoder()],
@@ -137,7 +134,6 @@ export function getLotDecoder(): Decoder<Lot> {
     ["purityBasisPoints", getU64Decoder()],
     ["waterM3PerTonneScaled", getU64Decoder()],
     ["carbonKgCo2ePerTonneScaled", getU64Decoder()],
-    ["claimableAfter", getI64Decoder()],
     ["specSheetHash", fixDecoderSize(getBytesDecoder(), 32)],
     ["status", getLotStatusDecoder()],
     ["createdAt", getI64Decoder()],

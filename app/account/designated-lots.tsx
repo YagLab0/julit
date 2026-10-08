@@ -18,9 +18,7 @@ import {
 import { useCluster } from "../components/cluster-context";
 import { Modal } from "../explorer/components/modal";
 import {
-  Chip,
   StatusBadge,
-  dateFmt,
   decimalFmt,
   integerFmt,
   priceFmt,
@@ -57,14 +55,7 @@ function confirmContent(
   lot: DesignatedLot
 ): { title: string; amountLabel: string; body: string; cta: string } {
   const c = dict.designated.confirm[action];
-  const body =
-    action === "redeem"
-      ? lot.status === "disputed"
-        ? dict.designated.confirm.redeem.bodyDisputed
-        : dict.designated.confirm.redeem.bodyFunded
-      : "body" in c
-        ? c.body
-        : "";
+  const body = "body" in c ? c.body : "";
   return {
     title: t(c.title, { lot: lot.lot_id }),
     amountLabel: c.amountLabel,
@@ -75,8 +66,8 @@ function confirmContent(
 
 /**
  * The buyer's inbox: lots designated to the company that still await a
- * buyer decision (listed → fund, funded/disputed → redeem). The list is
- * always readable; only the action area requires the verified wallet.
+ * buyer decision (listed → fund, funded → redeem). The list is always
+ * readable; only the action area requires the verified wallet.
  */
 export function DesignatedLotsCard({
   lots,
@@ -248,18 +239,12 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
   const [confirming, setConfirming] = useState<BuyerLotAction | null>(null);
   const [indexing, setIndexing] = useState(false);
 
-  const claimableAfterUnix = Math.floor(Date.parse(lot.claimable_after) / 1000);
-  // Snapshot at mount — the claim clock flag is honest enough for a page view.
-  const [nowUnixSeconds] = useState(() => Math.floor(Date.now() / 1000));
-
   const verdict = buyerLotVerdict({
     status: lot.status,
     connectedWallet: wallet?.account.address ?? null,
     buyerWallet: lot.buyer_wallet,
     dUsdcBalance,
     priceUsdc: lot.price_usdc,
-    claimableAfterUnix,
-    nowUnixSeconds,
   });
 
   const busy = isSending || indexing;
@@ -456,9 +441,6 @@ function DesignatedLotRow({
             {lot.lot_id}
           </span>
           <StatusBadge status={lot.status} labels={dict.lotStatus} />
-          {verdict.timeoutClaimLive && (
-            <Chip tone="warn">{dict.designated.timeoutClaimLive}</Chip>
-          )}
         </div>
         <Link
           href={`/batch/${lot.pda_address}`}
@@ -481,8 +463,6 @@ function DesignatedLotRow({
           {priceFmt.format(lot.price_usdc)} dUSDC
         </span>
       </p>
-
-      <LotClockNote lot={lot} dict={dict} />
 
       {verdict.actions.length > 0 ? (
         <div className="mt-3 border-t border-border-low pt-3">
@@ -586,9 +566,6 @@ function LotActionDialog({
                 : `${priceFmt.format(ctx.dUsdcBalance)} dUSDC`}
             </ConfirmRow>
           )}
-          <ConfirmRow label={dict.designated.rows.deadline}>
-            {dateFmt.format(new Date(lot.claimable_after))}
-          </ConfirmRow>
         </dl>
 
         <p className="mt-4 text-xs leading-relaxed text-muted">
@@ -636,39 +613,6 @@ function ConfirmRow({
       <dt className="text-muted">{label}</dt>
       <dd className="font-medium text-foreground">{children}</dd>
     </div>
-  );
-}
-
-/** The claim clock line under each pending lot. */
-function LotClockNote({
-  lot,
-  dict,
-}: {
-  lot: DesignatedLot;
-  dict: AccountDict;
-}) {
-  const deadline = dateFmt.format(new Date(lot.claimable_after));
-
-  if (lot.status === "disputed") {
-    return (
-      <p className="mt-1 text-[11px] text-muted">
-        {dict.designated.clock.disputed}
-      </p>
-    );
-  }
-
-  if (lot.status === "funded") {
-    return (
-      <p className="mt-1 text-[11px] text-muted">
-        {t(dict.designated.clock.funded, { deadline })}
-      </p>
-    );
-  }
-
-  return (
-    <p className="mt-1 text-[11px] text-muted">
-      {t(dict.designated.clock.listed, { deadline })}
-    </p>
   );
 }
 

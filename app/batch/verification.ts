@@ -23,7 +23,6 @@ export type IndexedLot = Pick<
   | "origin_id"
   | "mint_address"
   | "status"
-  | "claimable_after"
   | "spec_sheet_sha256"
 > & {
   volume_tonnes: string | number;
@@ -46,7 +45,6 @@ export type OnChainLot = {
     purityBasisPoints: bigint;
     waterM3PerTonneScaled: bigint;
     carbonKgCo2ePerTonneScaled: bigint;
-    claimableAfter: bigint;
     specSheetHash: ReadonlyUint8Array;
     status: number;
   };
@@ -64,7 +62,6 @@ export type ContrastField =
   | "purity"
   | "water"
   | "carbon"
-  | "claimableAfter"
   | "specSheetHash"
   | "status";
 
@@ -76,9 +73,7 @@ export type RecordContrast =
 const ONCHAIN_STATUS: Readonly<Record<number, IndexedLotStatus>> = {
   [OnChainLotStatus.Listed]: "listed",
   [OnChainLotStatus.Funded]: "funded",
-  [OnChainLotStatus.Disputed]: "disputed",
   [OnChainLotStatus.Redeemed]: "redeemed",
-  [OnChainLotStatus.Claimed]: "claimed",
   [OnChainLotStatus.Cancelled]: "cancelled",
 };
 
@@ -105,13 +100,6 @@ export function scaledDecimal(
 function bytesToHexLower(bytes: ReadonlyUint8Array): string | null {
   if (bytes.length !== 32) return null;
   return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-/** Indexed timestamptz -> unix seconds, or null when unparseable. */
-function unixSeconds(value: string): bigint | null {
-  const ms = Date.parse(value);
-  if (Number.isNaN(ms)) return null;
-  return BigInt(Math.trunc(ms / 1000));
 }
 
 /**
@@ -159,8 +147,6 @@ export function contrastLotRecord(input: {
     account.data.carbonKgCo2ePerTonneScaled
   )
     fields.push("carbon");
-  if (unixSeconds(indexed.claimable_after) !== account.data.claimableAfter)
-    fields.push("claimableAfter");
   if (
     bytesToHexLower(account.data.specSheetHash) !==
     indexed.spec_sheet_sha256.toLowerCase()

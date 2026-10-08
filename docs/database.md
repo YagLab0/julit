@@ -37,12 +37,10 @@ The database uses lowercase statuses mirroring the on-chain `LotStatus` enum:
 
 - `listed`: the lot exists on-chain with its Digital Title in escrow; no funding yet.
 - `funded`: the designated buyer deposited the full `price_usdc` into the lot PDA's USDC escrow; `fund_tx_signature` is required.
-- `disputed`: the buyer froze a funded lot; `dispute_tx_signature` is required and the claim clock pauses. v1 has no on-chain resolution or refund — the only exits are buyer-signed redemption or an agreed path implemented later.
 - `redeemed`: the buyer confirmed receipt; the NFT burned and escrowed USDC released to the producer minus the protocol fee; `redeem_tx_signature` is required.
-- `claimed`: the producer collected escrowed funds after `claimable_after` because the buyer never confirmed; `claim_tx_signature` is required.
 - `cancelled`: the producer withdrew the lot before any funding; `cancel_tx_signature` is required.
 
-Funding, redemption, timeout claims, disputes and cancellation are real USDC escrow movements on Devnet — not simulated settlement. The state checks validate a snapshot, not blockchain history. The programme must enforce instruction permissions, status transitions and escrow custody; the API must verify the current PDA rather than trust a requested status, signer, digest, or transaction signature. Server-side cache rebuilding remains possible.
+A `funded` lot has a single exit — buyer-signed redemption (ADR-0021). There is no timeout claim, dispute state, or refund path on-chain. Funding, redemption and cancellation are real USDC escrow movements on Devnet — not simulated settlement. The state checks validate a snapshot, not blockchain history. The programme must enforce instruction permissions, status transitions and escrow custody; the API must verify the current PDA rather than trust a requested status, signer, digest, or transaction signature. Server-side cache rebuilding remains possible.
 
 The producer's lot spec sheet is declared at lot creation as `spec_sheet_sha256`. The declaration is attributed to the producer, not an independent attestation.
 

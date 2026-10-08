@@ -16,8 +16,6 @@ export type LotFormValues = {
   priceUsdc: string;
   /** Designated buyer wallet — mandatory, must hold an accepted contract. */
   buyerWallet: string;
-  /** `datetime-local` value; producer may claim escrowed funds after it. */
-  claimableAfter: string;
   /** SHA-256 hex of the lot spec sheet uploaded to the API. */
   specSheetSha256: string;
 };
@@ -45,8 +43,6 @@ export type LotFormContext = {
   producerSpecs: ProducerSpecs;
   /** Wallets of buyers holding an accepted contract with the producer. */
   contractedBuyers: string[];
-  /** Unix seconds now, injected so tests stay deterministic. */
-  nowUnixSeconds: number;
 };
 
 /** Exact decimal-string payload for the create_lot instruction. */
@@ -65,8 +61,6 @@ export type CreateLotPayload = {
   priceUsdcScaled: string;
   producerWallet: string;
   buyerWallet: string;
-  /** Unix seconds (i64 decimal string). */
-  claimableAfterUnix: string;
   specSheetSha256: string;
 };
 
@@ -143,13 +137,6 @@ export function validateLotForm(
     errors.buyerWallet = messages.buyerIsProducer;
   }
 
-  const claimableMs = Date.parse(values.claimableAfter);
-  if (!values.claimableAfter || Number.isNaN(claimableMs)) {
-    errors.claimableAfter = messages.claimableRequired;
-  } else if (Math.floor(claimableMs / 1000) <= ctx.nowUnixSeconds) {
-    errors.claimableAfter = messages.claimableFuture;
-  }
-
   const specHash = values.specSheetSha256.trim().toLowerCase();
   if (!HEX_64_RE.test(specHash)) {
     errors.specSheetSha256 = messages.specRequired;
@@ -167,7 +154,6 @@ export function validateLotForm(
           priceUsdcScaled: price!.toString(),
           producerWallet: ctx.producerWallet,
           buyerWallet,
-          claimableAfterUnix: Math.floor(claimableMs / 1000).toString(),
           specSheetSha256: specHash,
         }
       : null;

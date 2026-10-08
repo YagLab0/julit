@@ -24,9 +24,7 @@ function unscale(value: bigint, decimals: number): string {
 const LOT_STATUS: Readonly<Record<number, string>> = {
   [LotStatus.Listed]: "listed",
   [LotStatus.Funded]: "funded",
-  [LotStatus.Disputed]: "disputed",
   [LotStatus.Redeemed]: "redeemed",
-  [LotStatus.Claimed]: "claimed",
   [LotStatus.Cancelled]: "cancelled",
 };
 
@@ -42,7 +40,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("lots")
     .select(
-      "pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, claimable_after, spec_sheet_sha256, spec_sheet_path, status, creation_tx_signature, fund_tx_signature, redeem_tx_signature, claim_tx_signature, cancel_tx_signature, dispute_tx_signature, observed_slot, indexed_at"
+      "pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, spec_sheet_sha256, spec_sheet_path, status, creation_tx_signature, fund_tx_signature, redeem_tx_signature, cancel_tx_signature, observed_slot, indexed_at"
     )
     .order("indexed_at", { ascending: false });
 
@@ -191,9 +189,7 @@ export async function POST(request: Request) {
             status: LOT_STATUS[account.data.status] as
               | "listed"
               | "funded"
-              | "disputed"
               | "redeemed"
-              | "claimed"
               | "cancelled",
           }
         : null,
@@ -222,9 +218,6 @@ export async function POST(request: Request) {
         2
       ),
       price_usdc: unscale(lot.priceUsdc, 6),
-      claimable_after: new Date(
-        Number(lot.claimableAfter) * 1000
-      ).toISOString(),
       spec_sheet_sha256: bytesToHex(lot.specSheetHash),
       status: "listed",
       creation_tx_signature: txSignature,

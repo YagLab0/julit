@@ -191,9 +191,7 @@ function buyerStats(
   const s = dict.summary.buyerStats;
   const volume = lots.reduce((acc, l) => acc + Number(l.volume_tonnes || 0), 0);
   const usdc = lots.reduce((acc, l) => acc + Number(l.price_usdc || 0), 0);
-  const inEscrow = lots.filter(
-    (l) => l.status === "funded" || l.status === "disputed"
-  ).length;
+  const inEscrow = lots.filter((l) => l.status === "funded").length;
 
   return [
     {
@@ -229,9 +227,7 @@ function producerStats(lots: ProducerLot[], dict: AccountDict): Stat[] {
   const s = dict.summary.producerStats;
   const volume = lots.reduce((acc, l) => acc + Number(l.volume_tonnes || 0), 0);
   const usdc = lots.reduce((acc, l) => acc + Number(l.price_usdc || 0), 0);
-  const settled = lots.filter(
-    (l) => l.status === "redeemed" || l.status === "claimed"
-  ).length;
+  const settled = lots.filter((l) => l.status === "redeemed").length;
 
   return [
     {

@@ -20,8 +20,7 @@ export type LotAccountFacts = {
   programOwned: boolean;
   producer: string;
   buyer: string;
-  status:
-    "listed" | "funded" | "disputed" | "redeemed" | "claimed" | "cancelled";
+  status: "listed" | "funded" | "redeemed" | "cancelled";
 };
 
 export type VerifyLotCreationInput = {
@@ -98,14 +97,7 @@ export type VerifyLotTransitionInput = {
   /** Lot PDA the caller wants to transition. */
   lotPda: string;
   /** Current index row status — null when the lot is not indexed. */
-  indexedStatus:
-    | "listed"
-    | "funded"
-    | "disputed"
-    | "redeemed"
-    | "claimed"
-    | "cancelled"
-    | null;
+  indexedStatus: "listed" | "funded" | "redeemed" | "cancelled" | null;
   /** Null when the transaction is missing or unconfirmed. */
   transaction: TransitionFacts | null;
   /** Null when the lot account does not exist. */
@@ -198,7 +190,7 @@ export function verifyLotRedemption(
 ): { ok: true } | { ok: false; rejection: LotRejection } {
   return verifyLifecycleTransition(input, {
     expectedStatus: "redeemed",
-    allowedIndex: ["funded", "disputed"],
+    allowedIndex: ["funded"],
     onChainParty: "buyer",
     missingIx:
       "La transacción no contiene una instrucción de confirmación JuLit.",
@@ -208,22 +200,6 @@ export function verifyLotRedemption(
       "Solo la compradora designada puede confirmar la recepción.",
     wrongOnChainStatus: "El lote no quedó liquidado en la cadena.",
     staleIndex: "El lote ya no está pendiente de recepción.",
-  });
-}
-
-export function verifyLotClaim(
-  input: VerifyLotTransitionInput
-): { ok: true } | { ok: false; rejection: LotRejection } {
-  return verifyLifecycleTransition(input, {
-    expectedStatus: "claimed",
-    allowedIndex: ["funded"],
-    onChainParty: "producer",
-    missingIx: "La transacción no contiene un reclamo por timeout JuLit.",
-    wrongLot: "La transacción no reclama este lote.",
-    wrongSigner: "El reclamo no lo firmó tu wallet verificada.",
-    wrongOnChainParty: "Solo la productora del lote puede reclamar el pago.",
-    wrongOnChainStatus: "El lote no quedó reclamado en la cadena.",
-    staleIndex: "El lote ya no está fondeado.",
   });
 }
 

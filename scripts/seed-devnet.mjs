@@ -223,14 +223,12 @@ if (existing.value) {
   const initialize = idl.instructions.find((i) => i.name === "initialize");
   const discriminator = new Uint8Array(initialize.discriminator);
 
-  const data = new Uint8Array(8 + 2 + 32 + 32 + 8 + 8);
+  const data = new Uint8Array(8 + 2 + 32 + 32);
   data.set(discriminator, 0);
   const view = new DataView(data.buffer);
   view.setUint16(8, FEE_BPS, true);
   data.set(getAddressEncoder().encode(address(usdcMint)), 10);
   data.set(getAddressEncoder().encode(admin.address), 42); // treasury = admin
-  view.setBigInt64(74, 86400n, true); // claim_min_secs = 1 day
-  view.setBigInt64(82, 2592000n, true); // claim_max_secs = 30 days
 
   const client = createClient({ url: DEVNET_RPC, payer: admin });
   const result = await client.sendTransaction([

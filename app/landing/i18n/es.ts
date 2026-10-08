@@ -162,7 +162,7 @@ export const es = {
       {
         title: "Liquidación",
         description:
-          "El comprador confirma la recepción: en ese mismo instante la productora cobra el pago depositado y el título queda dado de baja, con un registro permanente y verificable. Y si el comprador no responde, la productora puede cobrarlo vencido el plazo pactado.",
+          "El comprador confirma la recepción: en ese mismo instante la productora cobra el pago depositado y el título queda dado de baja, con un registro permanente y verificable.",
       },
     ],
     scenes: {
@@ -243,7 +243,7 @@ export const es = {
       title: "Cobrás cuando se confirma la entrega.",
       items: [
         "El pago del comprador se libera en el mismo instante en que se confirma la entrega.",
-        "Si el comprador no confirma, cobrás el depósito vencido el plazo pactado.",
+        "El depósito queda custodiado on-chain: ninguna otra parte puede moverlo antes de tu cobro.",
         "Declarás la ficha técnica del lote y su huella queda registrada en la cadena.",
         "El historial del lote queda verificable por cualquiera.",
       ],
@@ -295,7 +295,7 @@ export const es = {
       },
       {
         q: "¿Y si el comprador no confirma la recepción?",
-        a: "La productora puede cobrar el pago depositado una vez vencido el plazo pactado en el lote; la fecha límite queda visible desde el registro.",
+        a: "El pago queda custodiado en la garantía hasta que el comprador confirme: no hay otra vía de liberación. Las contingencias se resuelven en el contrato comercial entre las empresas.",
       },
       {
         q: "¿Cuánto cobra JuLit?",

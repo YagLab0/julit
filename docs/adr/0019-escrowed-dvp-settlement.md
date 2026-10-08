@@ -1,5 +1,7 @@
 # Settlement escrows the payment; redemption releases it
 
+Partially superseded by [ADR-0021](./0021-buyer-only-settlement.md): Timeout Claim, Claimable After and Dispute no longer exist; buyer redemption is the sole settlement path.
+
 Supersedes [ADR-0002](./0002-completion-is-simulated-settlement.md) (simulated settlement) and the pay-first flow proposed in the pivot plan. Refines [ADR-0014](./0014-atomic-dvp-settlement.md): the Digital Title never leaves escrow to the buyer — it is burned inside escrow at release.
 
 ## Context

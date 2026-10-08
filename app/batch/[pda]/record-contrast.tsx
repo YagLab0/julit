@@ -30,7 +30,6 @@ const FIELD_LABELS: Record<ContrastField, string> = {
   purity: "pureza",
   water: "huella hídrica",
   carbon: "huella de carbono",
-  claimableAfter: "fecha de reclamo",
   specSheetHash: "ficha técnica del lote",
   status: "estado",
 };

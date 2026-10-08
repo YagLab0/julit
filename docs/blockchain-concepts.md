@@ -2,8 +2,10 @@
 
 The concepts the demo relies on, mapped to where they live. Companion
 references: [GLOSSARY](../GLOSSARY.md) for domain language,
-[end-to-end-flow](./end-to-end-flow.md) for the user journey, and
-[ADR-0019](./adr/0019-escrowed-dvp-settlement.md) for the settlement design.
+[end-to-end-flow](./end-to-end-flow.md) for the user journey,
+[ADR-0019](./adr/0019-escrowed-dvp-settlement.md) for the settlement
+design, and [ADR-0021](./adr/0021-buyer-only-settlement.md) for the
+buyer-only settlement path.
 
 ## Solana account model
 
@@ -16,12 +18,11 @@ read cache — the ledger is the authority.
 
 Deterministic, keyless addresses derived from seeds + the program id:
 
-- `Config` — `[b"config"]`: singleton with admin, `fee_bps`, `usdc_mint`,
-  `treasury`, and the claim window bounds.
+- `Config` — `[b"config"]`: singleton with admin, `fee_bps`, `usdc_mint`
+  and `treasury`.
 - `Lot` — `[b"lot", producer_wallet, lot_id]`: the lot's full record
-  (metrics, price, designated buyer, `claimable_after`, `spec_sheet_hash`,
-  status). The producer wallet is a seed, so each producer has its own
-  lot namespace.
+  (metrics, price, designated buyer, `spec_sheet_hash`, status). The
+  producer wallet is a seed, so each producer has its own lot namespace.
 - `mint` — `[b"mint", lot]`: the Digital Title mint, bound to its lot.
 
 PDAs have no private key, so only the program can sign for them. Every
@@ -48,39 +49,37 @@ Metadata is immutable (`is_mutable(false)`, update authority = Lot PDA).
 
 The title represents a **contractual right over the lot** — not the cargo
 itself and not automatic legal title. It is deliberately non-transferable:
-minted into escrow, never held by a wallet, and **burned** at Redemption,
-Timeout Claim, or Cancellation. Transfer-in-transit attacks are impossible
+minted into escrow, never held by a wallet, and **burned** at Redemption
+or Cancellation. Transfer-in-transit attacks are impossible
 by construction — no Token-2022 extension is needed.
 
 ## Atomic settlement (delivery-vs-payment)
 
 Solana transactions are atomic: every instruction succeeds or the whole
-transaction reverts. `redeem_lot` and `claim_timeout` use this to fuse two
+transaction reverts. `redeem_lot` uses this to fuse two
 effects that must never separate — burning the Digital Title and releasing
 the escrowed USDC (`price − fee` to the producer, `fee` to treasury).
 
-This removes settlement risk without trusting either party:
-
-- the buyer's payment cannot be released without their confirmation
-  (`redeem_lot` requires the designated buyer's signature),
-- the producer cannot be held hostage forever — after `claimable_after`
-  the clock replaces the buyer's signature (`claim_timeout`).
+This removes settlement risk without trusting a custodian: the buyer's
+payment cannot be released without their confirmation — `redeem_lot`
+requires the designated buyer's signature. The deliberate trade-off
+(ADR-0021): a funded escrow has no other exit, so if the buyer never
+confirms the funds stay locked. Producer protection against an
+unresponsive buyer lives off-chain, in the commercial contract.
 
 ## State machine
 
-`listed → funded → {redeemed | claimed}`, with `funded → disputed`
-(frozen) and `listed → cancelled`. Enforced on-chain: `fund_lot` requires
-`Listed`, `redeem_lot` requires `Funded | Disputed`, `claim_timeout`
-requires `Funded` — a dispute therefore freezes the timeout. There is no
-on-chain refund path in v1: a disputed lot exits only via the buyer
-redeeming.
+`listed → funded → redeemed`, with `listed → cancelled` as the only
+branch. Enforced on-chain: `fund_lot` requires `Listed`, `redeem_lot`
+requires `Funded`, `cancel_lot` requires `Listed`. There is no on-chain
+timeout, dispute, or refund path.
 
 ## Signers and constraints
 
 Anchor account constraints express the trust model declaratively:
 
-- role checks: only `lot.buyer` funds/disputes/redeems; only
-  `lot.producer` claims/cancels;
+- role checks: only `lot.buyer` funds/redeems; only `lot.producer`
+  cancels;
 - canonical derivation: `associated_token::mint/authority` constraints
   guarantee every token account is the expected ATA;
 - settlement mint pinned to `config.usdc_mint`;

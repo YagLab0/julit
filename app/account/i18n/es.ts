@@ -17,9 +17,7 @@ export const es = {
   lotStatus: {
     listed: "Publicado",
     funded: "Fondeado",
-    disputed: "En disputa",
     redeemed: "Liquidado",
-    claimed: "Cobrado",
     cancelled: "Cancelado",
   },
   contractStatus: {
@@ -119,7 +117,7 @@ export const es = {
   },
   portfolio: {
     eyebrow: "Portafolio de Lotes Adquiridos",
-    sub: "Historial de lotes liquidados o cobrados por la productora en escrow Devnet.",
+    sub: "Historial de lotes liquidados a la productora en escrow Devnet.",
     volumeLabel: "Volumen total",
     investedLabel: "Inversión total",
     settlementLabel: "Liquidación",
@@ -142,29 +140,24 @@ export const es = {
       fund: {
         title: "Comprar {lot} con escrow",
         amountLabel: "Precio del lote",
-        body: "Depositás el precio total en el escrow del lote. Se libera a la productora cuando confirmes la recepción; si no confirmás antes del límite, la productora puede cobrarlo.",
+        body: "Depositás el precio total en el escrow del lote. Se libera a la productora cuando confirmes la recepción.",
         cta: "Firmar y depositar",
       },
       redeem: {
         title: "Confirmar recepción de {lot}",
         amountLabel: "Monto en escrow",
-        bodyFunded:
-          "Liberás el pago custodiado a la productora (menos la comisión del protocolo) y el Título Digital se da de baja. Es la confirmación de que recibiste el cargamento.",
-        bodyDisputed:
-          "El lote está en disputa: liberar el pago custodiado es la resolución on-chain a favor de la productora. El Título Digital se da de baja.",
+        body: "Liberás el pago custodiado a la productora (menos la comisión del protocolo) y el Título Digital se da de baja. Es la confirmación de que recibiste el cargamento.",
         cta: "Firmar y liberar pago",
       },
     },
     rows: {
       producer: "Productora",
       balance: "Tu saldo dUSDC",
-      deadline: "Límite de recepción",
       fee: "Comisión del protocolo",
       producerPayout: "Pago a la productora",
       balanceLoading: "Verificando…",
       balanceError: "No se pudo leer",
     },
-    timeoutClaimLive: "La productora ya puede cobrar",
     walletBlocked:
       "Conectá la wallet verificada de tu empresa para operar este lote.",
     fundBlocker: {
@@ -172,13 +165,6 @@ export const es = {
       insufficient: "Saldo dUSDC insuficiente para el precio del lote.",
       balance: "Tenés {balance} dUSDC.",
       readError: "No se pudo leer tu saldo dUSDC. Recargá la página.",
-    },
-    clock: {
-      disputed:
-        "Disputa abierta: el cobro por timeout de la productora está congelado.",
-      funded:
-        "Si no confirmás antes del {deadline}, la productora puede cobrar el escrow.",
-      listed: "Tenés que confirmar la recepción antes del {deadline}.",
     },
     toasts: {
       connectWallet: "Conectá la wallet verificada para firmar.",
@@ -358,9 +344,6 @@ export const es = {
       buyerHintAvailable: "Solo esta empresa podrá fondear el escrow del lote.",
       buyerHintEmpty: "No tenés compradores con contrato aceptado.",
       buyerPlaceholder: "Elegí un comprador…",
-      claimableLabel: "Reclamable desde",
-      claimableHint:
-        "Si el comprador no confirma la recepción antes de esta fecha, podés reclamar los fondos del escrow.",
       specLabel: "Ficha técnica del lote (PDF)",
       specHint:
         "Se guarda direccionado por contenido; el SHA-256 queda declarado en el lote.",
@@ -395,9 +378,6 @@ export const es = {
       buyerNotContracted:
         "El comprador debe tener un contrato aceptado con tu empresa.",
       buyerIsProducer: "El comprador no puede ser tu propia productora.",
-      claimableRequired:
-        "Ingresá la fecha límite a partir de la cual podés reclamar el escrow.",
-      claimableFuture: "La fecha de reclamo debe ser futura.",
       specRequired:
         "Subí la ficha técnica del lote (PDF) para obtener su SHA-256.",
     },
@@ -448,9 +428,9 @@ export const es = {
       alertsLabel: "Alertas Operativas",
       alertsUnitOne: "alerta",
       alertsUnitOther: "alertas",
-      alertsDisputes: "Disputas activas",
+      alertsWallet: "Wallet sin verificar",
       alertsNormal: "Operación normal",
-      alertsDisputesHint: "Revisar lotes en disputa para mediación",
+      alertsWalletHint: "Vinculá y verificá la wallet del administrador",
       alertsNormalHint: "Sin incidentes ni retrasos críticos",
     },
     treasury: {
@@ -498,10 +478,9 @@ export const es = {
     taskCenter: {
       eyebrow: "Supervisión Operativa",
       title: "Centro de Gestión de Tareas y Lotes",
-      desc: "Filtros por estado de liquidación, mediación de disputas y verificación on-chain de entregas.",
+      desc: "Filtros por estado de liquidación y verificación on-chain de entregas.",
       lotsSummary: "{filtered} de {total} lotes",
       tabs: {
-        disputed: "En Disputa",
         funded: "Fondeados",
         listed: "Publicados",
         redeemed: "Liquidados",
@@ -516,15 +495,12 @@ export const es = {
       emptyDescFiltered: "Probá ajustando o limpiando los filtros para ver otros resultados.",
       emptyDescInitial: "Todavía no se han indexado lotes con este estado en el protocolo.",
       resetFilters: "Restablecer filtros",
-      superviseDispute: "Supervisar Disputa",
       inspect: "Inspeccionar",
       passportLink: "Pasaporte ↗",
       thVolumePurity: "Volumen & Pureza",
       thPrice: "Precio USDC",
       thFee: "Comisión JuLit (1%)",
       thParties: "Partes Involucradas",
-      disputeAlert: "Disputa activa: el comprador reportó disconformidad en la entrega. El temporizador de Timeout Claim está congelado.",
-      viewMediation: "Ver mediación",
     },
     companies: {
       eyebrow: "Ecosistema JuLit",
@@ -563,20 +539,9 @@ export const es = {
       view3dMap: "Ver en mapa 3D ↗",
     },
     lotInspection: {
-      title: "Inspección y Mediación del Lote",
+      title: "Inspección del Lote",
       originPrefix: "Origen:",
       indexedOn: "Indexado el",
-      disputeMediationTitle: "Panel de Mediación de Disputa",
-      disputeMediationBody:
-        "El comprador ({buyer}) abrió una disputa comercial para este lote. El temporizador on-chain de Timeout Claim ha quedado en pausa, evitando que el productor retire los fondos sin conformidad de entrega.",
-      adminRecommendationsTitle:
-        "Recomendaciones operativas para el Administrador:",
-      adminRec1:
-        "1. Solicitar el informe de recepción o discrepancy report al comprador.",
-      adminRec2:
-        "2. Cotejar los certificados de pureza y volumen con el productor.",
-      adminRec3:
-        "3. Una vez alcanzado el acuerdo comercial, el comprador debe confirmar la recepción en la dApp para liberar el escrow y los fees al protocolo.",
       settlementTitle: "Desglose Financiero de Liquidación (DvP)",
       totalPrice: "Precio Total",
       protocolFee: "Comisión Protocolo (1%)",
@@ -592,7 +557,6 @@ export const es = {
       mintNft: "Mint del Digital Title NFT",
       fundTx: "Transacción de Fondeo",
       redeemTx: "Transacción de Liquidación",
-      disputeTx: "Transacción de Disputa",
       explorerBtn: "Explorer ↗",
       pdaLabel: "Dirección PDA en Solana",
       lotInfo: "Información General",
@@ -611,10 +575,6 @@ export const es = {
       purity: "Pureza Química",
       waterFootprint: "Huella Hídrica",
       carbonFootprint: "Huella de Carbono",
-      disputeAlertTitle: "Disputa Activa Registrada",
-      disputeAlertDesc:
-        "El comprador reportó disconformidad antes de la confirmación de entrega. Los fondos permanecen bloqueados en la cuenta PDA.",
-      disputeTxSignature: "Firma de congelamiento:",
       closeBtn: "Cerrar",
     },
     createCompanyModal: {

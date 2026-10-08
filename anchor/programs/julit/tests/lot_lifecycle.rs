@@ -1,4 +1,4 @@
-use anchor_lang::{AnchorDeserialize, AnchorSerialize, InstructionData, ToAccountMetas};
+use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
 use julit::{accounts, instruction, Config, Lot, LotStatus};
 use litesvm::LiteSVM;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
@@ -90,8 +90,6 @@ fn initialize(svm: &mut LiteSVM, payer: &Keypair, usdc_mint: Pubkey, treasury: P
             fee_bps: 50,
             usdc_mint,
             treasury,
-            claim_min_secs: 60,
-            claim_max_secs: 60 * 60 * 24 * 365,
         }
         .data(),
     };
@@ -117,7 +115,6 @@ fn create_lot_ix(
     lot_id: &str,
     price: u64,
     buyer: Pubkey,
-    claimable_after: i64,
     purity_bps: u64,
 ) -> (Instruction, Pubkey, Pubkey) {
     let (lot, _) = Pubkey::find_program_address(
@@ -158,7 +155,6 @@ fn create_lot_ix(
             carbon_kg_co2e_per_tonne_scaled: 10_000,
             price_usdc: price,
             buyer,
-            claimable_after,
             spec_sheet_hash: [7u8; 32],
             metadata_uri: String::new(),
         }
@@ -270,36 +266,6 @@ fn redeem_lot_ix(
     }
 }
 
-fn claim_timeout_ix(
-    producer: &Pubkey,
-    lot: &Pubkey,
-    treasury: &Pubkey,
-    usdc_mint: &Pubkey,
-) -> Instruction {
-    let (config, _) = config_pda();
-    let mint = title_mint(lot);
-    Instruction {
-        program_id: julit::ID,
-        accounts: accounts::ClaimTimeout {
-            lot: *lot,
-            config,
-            producer: *producer,
-            escrow_usdc: ata(lot, usdc_mint),
-            escrow_title: ata(lot, &mint),
-            mint,
-            treasury: *treasury,
-            producer_usdc: ata(producer, usdc_mint),
-            treasury_usdc: ata(treasury, usdc_mint),
-            usdc_mint: *usdc_mint,
-            token_program: spl_token::ID,
-            associated_token_program: spl_associated_token_account::ID,
-            system_program: solana_sdk::system_program::ID,
-        }
-        .to_account_metas(None),
-        data: instruction::ClaimTimeout {}.data(),
-    }
-}
-
 fn cancel_lot_ix(producer: &Pubkey, lot: &Pubkey) -> Instruction {
     let mint = title_mint(lot);
     Instruction {
@@ -316,28 +282,6 @@ fn cancel_lot_ix(producer: &Pubkey, lot: &Pubkey) -> Instruction {
     }
 }
 
-/// Writes `Disputed` straight into the lot account: no instruction can reach
-/// that state anymore, but legacy disputed lots still exercise the redeem and
-/// claim_timeout guards.
-fn mark_disputed(svm: &mut LiteSVM, lot: &Pubkey) {
-    let mut account = svm.get_account(lot).unwrap();
-    let mut decoded = Lot::deserialize(&mut &account.data[8..]).unwrap();
-    decoded.status = LotStatus::Disputed;
-    let mut bytes = account.data[..8].to_vec();
-    decoded.serialize(&mut bytes).unwrap();
-    account.data = bytes;
-    svm.set_account(*lot, account).unwrap();
-}
-
-/// Moves the Clock sysvar past `lot.claimable_after`.
-fn warp_past_claim_deadline(svm: &mut LiteSVM, lot: &Pubkey) {
-    let data = svm.get_account(lot).unwrap().data;
-    let decoded = Lot::deserialize(&mut &data[8..]).unwrap();
-    let mut clock = svm.get_sysvar::<solana_sdk::clock::Clock>();
-    clock.unix_timestamp = decoded.claimable_after + 1;
-    svm.set_sysvar(&clock);
-}
-
 /// Shared setup: config + a listed lot priced at `price`, funded buyer ATA.
 /// Returns (buyer keypair, lot pda).
 fn listed_lot(
@@ -350,14 +294,12 @@ fn listed_lot(
     let buyer = Keypair::new();
     svm.airdrop(&buyer.pubkey(), LAMPORTS_PER_SOL).unwrap();
     provision_buyer(svm, payer, usdc_mint, &buyer.pubkey(), buyer_balance);
-    let now = svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp;
     let (ix, lot, _) = create_lot_ix(
         &payer.pubkey(),
         usdc_mint,
         "LOT-FUND",
         price,
         buyer.pubkey(),
-        now + 86_400,
         9_960,
     );
     send(
@@ -504,29 +446,6 @@ fn redeem_lot_burns_title_and_splits_escrow() {
 }
 
 #[test]
-fn redeem_lot_works_from_disputed() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
-
-    mark_disputed(&mut svm, &lot);
-    send(
-        &mut svm,
-        vec![redeem_lot_ix(
-            &buyer.pubkey(),
-            &lot,
-            &payer.pubkey(),
-            &treasury.pubkey(),
-            &usdc_mint,
-        )],
-        &[&payer, &buyer],
-    );
-
-    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
-    assert!(decoded.status == LotStatus::Redeemed);
-}
-
-#[test]
 fn redeem_lot_rejects_wrong_buyer() {
     let (mut svm, payer) = svm();
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
@@ -604,99 +523,6 @@ fn redeem_lot_rejects_double_redeem() {
 }
 
 #[test]
-fn claim_timeout_releases_to_producer_after_deadline() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
-
-    warp_past_claim_deadline(&mut svm, &lot);
-    send(
-        &mut svm,
-        vec![claim_timeout_ix(
-            &payer.pubkey(),
-            &lot,
-            &treasury.pubkey(),
-            &usdc_mint,
-        )],
-        &[&payer],
-    );
-
-    assert_eq!(token_balance(&svm, &ata(&payer.pubkey(), &usdc_mint)), 398_000_000);
-    assert_eq!(token_balance(&svm, &ata(&treasury.pubkey(), &usdc_mint)), 2_000_000);
-    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 0);
-
-    let mint = title_mint(&lot);
-    let mint_state =
-        spl_token::state::Mint::unpack(&svm.get_account(&mint).unwrap().data).unwrap();
-    assert_eq!(mint_state.supply, 0);
-
-    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
-    assert!(decoded.status == LotStatus::Claimed);
-}
-
-#[test]
-fn claim_timeout_rejects_before_deadline() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
-
-    let err = send_err(
-        &mut svm,
-        vec![claim_timeout_ix(
-            &payer.pubkey(),
-            &lot,
-            &treasury.pubkey(),
-            &usdc_mint,
-        )],
-        &[&payer],
-    );
-    assert!(err.contains("ClaimTooEarly") || err.contains("601"), "{err}");
-}
-
-#[test]
-fn claim_timeout_rejects_disputed_lot() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
-
-    mark_disputed(&mut svm, &lot);
-    warp_past_claim_deadline(&mut svm, &lot);
-
-    let err = send_err(
-        &mut svm,
-        vec![claim_timeout_ix(
-            &payer.pubkey(),
-            &lot,
-            &treasury.pubkey(),
-            &usdc_mint,
-        )],
-        &[&payer],
-    );
-    assert!(err.contains("LotNotFunded") || err.contains("601"), "{err}");
-}
-
-#[test]
-fn claim_timeout_rejects_wrong_signer() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
-
-    warp_past_claim_deadline(&mut svm, &lot);
-    // The buyer cannot trigger the producer's claim path.
-    let err = send_err(
-        &mut svm,
-        vec![claim_timeout_ix(
-            &buyer.pubkey(),
-            &lot,
-            &treasury.pubkey(),
-            &usdc_mint,
-        )],
-        &[&payer, &buyer],
-    );
-    assert!(err.contains("WrongProducer") || err.contains("601"), "{err}");
-}
-
-#[test]
 fn initialize_and_create_lot_mints_title_into_escrow() {
     let (mut svm, payer) = svm();
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
@@ -713,14 +539,12 @@ fn initialize_and_create_lot_mints_title_into_escrow() {
     assert_eq!(config.treasury, treasury);
 
     let buyer = Keypair::new().pubkey();
-    let now = svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp;
     let (ix, lot_pda, mint) = create_lot_ix(
         &payer.pubkey(),
         &usdc_mint,
         "LOT-001",
         400_000_000,
         buyer,
-        now + 86_400,
         9_960,
     );
     send(
@@ -763,14 +587,12 @@ fn create_lot_rejects_buyer_is_producer() {
     let (mut svm, payer) = svm();
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
     initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
-    let now = svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp;
     let (ix, _, _) = create_lot_ix(
         &payer.pubkey(),
         &usdc_mint,
         "LOT-BAD",
         1_000_000,
         payer.pubkey(),
-        now + 86_400,
         9_960,
     );
     let err = send_err(&mut svm, vec![ix], &[&payer]);
@@ -778,38 +600,16 @@ fn create_lot_rejects_buyer_is_producer() {
 }
 
 #[test]
-fn create_lot_rejects_claim_window_out_of_bounds() {
-    let (mut svm, payer) = svm();
-    let usdc_mint = create_usdc_mint(&mut svm, &payer);
-    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
-    let now = svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp;
-    // min is 60s: 30s from now must fail.
-    let (ix, _, _) = create_lot_ix(
-        &payer.pubkey(),
-        &usdc_mint,
-        "LOT-T",
-        1_000_000,
-        Keypair::new().pubkey(),
-        now + 30,
-        9_960,
-    );
-    let err = send_err(&mut svm, vec![ix], &[&payer]);
-    assert!(err.contains("ClaimWindowOutOfBounds") || err.contains("600"), "{err}");
-}
-
-#[test]
 fn create_lot_rejects_non_battery_grade() {
     let (mut svm, payer) = svm();
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
     initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
-    let now = svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp;
     let (ix, _, _) = create_lot_ix(
         &payer.pubkey(),
         &usdc_mint,
         "LOT-P",
         1_000_000,
         Keypair::new().pubkey(),
-        now + 86_400,
         9_400,
     );
     let err = send_err(&mut svm, vec![ix], &[&payer]);

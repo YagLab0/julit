@@ -141,8 +141,6 @@ describe("GET /api/admin/treasury", () => {
       treasury: address(TREASURY_PUBKEY),
       feeBps: 100,
       usdcMint: address(USDC_MINT),
-      claimMinSecs: 3600n,
-      claimMaxSecs: 86400n,
       bump: 255,
     });
 
@@ -188,8 +186,6 @@ describe("GET /api/admin/treasury", () => {
       treasury: address(TREASURY_PUBKEY),
       feeBps: 100,
       usdcMint: address(USDC_MINT),
-      claimMinSecs: 3600n,
-      claimMaxSecs: 86400n,
       bump: 255,
     });
 
@@ -227,13 +223,13 @@ describe("GET /api/admin/treasury", () => {
                 },
                 {
                   lot_id: "LOT-002",
-                  pda_address: "PdaClaimed2222222222222222222222222222222",
-                  status: "claimed",
+                  pda_address: "PdaRedeemed2222222222222222222222222222222",
+                  status: "redeemed",
                   volume_tonnes: 80,
                   price_usdc: 120000,
                   producer_wallet: "Prod2",
                   buyer_wallet: "Buyer2",
-                  claim_tx_signature: "SigClaim222",
+                  redeem_tx_signature: "SigRedeem222",
                   indexed_at: "2026-10-07T12:00:00Z",
                 },
               ],
@@ -265,8 +261,6 @@ describe("GET /api/admin/treasury", () => {
       fee_bps: 100,
       fee_percentage: 1,
       usdc_mint: USDC_MINT,
-      claim_min_secs: 3600,
-      claim_max_secs: 86400,
       bump: 255,
     });
 
@@ -408,8 +402,6 @@ describe("POST /api/admin/treasury", () => {
       treasury: address(TREASURY_PUBKEY),
       feeBps: 100,
       usdcMint: address(USDC_MINT),
-      claimMinSecs: 3600n,
-      claimMaxSecs: 86400n,
       bump: 255,
     });
 

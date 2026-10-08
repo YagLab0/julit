@@ -44,15 +44,13 @@ function TxLink({ label, signature }: { label: string; signature: string }) {
 type TimelineEvent = {
   label: string;
   signature: string;
-  tone: "neutral" | "dispute" | "settled" | "cancelled";
+  tone: "neutral" | "settled" | "cancelled";
 };
 
 /**
  * The lot's lifecycle as the index observed it, in on-chain order:
- * creation (the Digital Title minted into escrow), funding, an optional
- * dispute flag, and exactly one terminal event — redemption, timeout
- * claim, or cancellation. A lot that is disputed and later redeemed
- * shows both events.
+ * creation (the Digital Title minted into escrow), funding, and exactly
+ * one terminal event — redemption or cancellation.
  */
 function lifecycleTimeline(lot: PassportLot): TimelineEvent[] {
   const events: TimelineEvent[] = [
@@ -68,22 +66,10 @@ function lifecycleTimeline(lot: PassportLot): TimelineEvent[] {
       signature: lot.fund_tx_signature,
       tone: "neutral",
     });
-  if (lot.dispute_tx_signature)
-    events.push({
-      label: "Disputa — pago congelado por la compradora",
-      signature: lot.dispute_tx_signature,
-      tone: "dispute",
-    });
   if (lot.redeem_tx_signature)
     events.push({
       label: "Liquidación — recepción confirmada, escrow liberado",
       signature: lot.redeem_tx_signature,
-      tone: "settled",
-    });
-  if (lot.claim_tx_signature)
-    events.push({
-      label: "Cobro por timeout — la productora reclamó el escrow",
-      signature: lot.claim_tx_signature,
       tone: "settled",
     });
   if (lot.cancel_tx_signature)
@@ -97,7 +83,6 @@ function lifecycleTimeline(lot: PassportLot): TimelineEvent[] {
 
 const TONE_DOT: Record<TimelineEvent["tone"], string> = {
   neutral: "bg-muted",
-  dispute: "bg-amber-500",
   settled: "bg-emerald-500",
   cancelled: "bg-foreground/40",
 };
@@ -199,11 +184,8 @@ export default async function LotPassportPage({
                 </span>
               </p>
               <p>
-                Reclamable por la productora desde el{" "}
-                <span className="text-foreground/75">
-                  {dateFmt.format(new Date(lot.claimable_after))}
-                </span>{" "}
-                si el comprador no confirma la recepción.
+                El escrow se libera solo cuando la compradora confirma la
+                recepción del lote.
               </p>
               <p className="flex flex-wrap gap-x-4 gap-y-1">
                 <a

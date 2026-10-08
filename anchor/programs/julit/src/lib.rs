@@ -18,21 +18,13 @@ pub mod julit {
 
     /// Creates the protocol Config PDA. Admin is the signer; `usdc_mint` is a
     /// parameter so devnet dUSDC and mainnet USDC differ only by config.
-    /// `claim_min_secs`/`claim_max_secs` bound the per-lot `claimable_after`
-    /// window declared at `create_lot`.
     pub fn initialize(
         ctx: Context<Initialize>,
         fee_bps: u16,
         usdc_mint: Pubkey,
         treasury: Pubkey,
-        claim_min_secs: i64,
-        claim_max_secs: i64,
     ) -> Result<()> {
         require!(fee_bps <= 10_000, LotError::InvalidFeeBps);
-        require!(
-            claim_min_secs > 0 && claim_min_secs < claim_max_secs,
-            LotError::InvalidClaimWindow
-        );
         require!(treasury != Pubkey::default(), LotError::InvalidTreasury);
 
         let config = &mut ctx.accounts.config;
@@ -40,15 +32,13 @@ pub mod julit {
         config.fee_bps = fee_bps;
         config.usdc_mint = usdc_mint;
         config.treasury = treasury;
-        config.claim_min_secs = claim_min_secs;
-        config.claim_max_secs = claim_max_secs;
         config.bump = ctx.bumps.config;
         Ok(())
     }
 
     /// Updates the protocol take rate. Only the Config admin may call it; the
-    /// fee is read at settlement, so it applies to every future Redemption and
-    /// Timeout Claim regardless of when the lot was created or funded.
+    /// fee is read at settlement, so it applies to every future Redemption
+    /// regardless of when the lot was created or funded.
     pub fn set_fee_bps(ctx: Context<UpdateConfig>, fee_bps: u16) -> Result<()> {
         require!(fee_bps <= 10_000, LotError::InvalidFeeBps);
         ctx.accounts.config.fee_bps = fee_bps;
@@ -58,7 +48,7 @@ pub mod julit {
     /// Registers a lot and mints its Digital Title into escrow. The title is a
     /// Metaplex NonFungible whose update authority is the Lot PDA; it never
     /// leaves the escrow — it is burned there by `redeem_lot` or
-    /// `claim_timeout`, so transfer-in-transit is impossible by construction.
+    /// `cancel_lot`, so transfer-in-transit is impossible by construction.
     ///
     /// Metrics arrive pre-scaled: purity in basis points, water/carbon x100,
     /// price in USDC base units (6 decimals).
@@ -72,7 +62,6 @@ pub mod julit {
         carbon_kg_co2e_per_tonne_scaled: u64,
         price_usdc: u64,
         buyer: Pubkey,
-        claimable_after: i64,
         spec_sheet_hash: [u8; 32],
         metadata_uri: String,
     ) -> Result<()> {
@@ -99,15 +88,7 @@ pub mod julit {
             LotError::MetadataUriTooLong
         );
 
-        let config = &ctx.accounts.config;
         let now = Clock::get()?.unix_timestamp;
-        let window = claimable_after
-            .checked_sub(now)
-            .ok_or(LotError::ClaimWindowOutOfBounds)?;
-        require!(
-            window >= config.claim_min_secs && window <= config.claim_max_secs,
-            LotError::ClaimWindowOutOfBounds
-        );
 
         let lot = &mut ctx.accounts.lot;
         lot.lot_id = lot_id.clone();
@@ -120,7 +101,6 @@ pub mod julit {
         lot.water_m3_per_tonne_scaled = water_m3_per_tonne_scaled;
         lot.carbon_kg_co2e_per_tonne_scaled = carbon_kg_co2e_per_tonne_scaled;
         lot.price_usdc = price_usdc;
-        lot.claimable_after = claimable_after;
         lot.spec_sheet_hash = spec_sheet_hash;
         lot.status = LotStatus::Listed;
         lot.created_at = now;
@@ -198,8 +178,7 @@ pub mod julit {
 
     /// The designated buyer deposits exactly the lot's `price_usdc` into the
     /// lot-owned escrow. The funds stay locked until `redeem_lot` releases
-    /// them to the producer or `claim_timeout` returns control of the claim
-    /// to the producer. Only the buyer recorded at creation may sign, and
+    /// them to the producer. Only the buyer recorded at creation may sign, and
     /// only a `Listed` lot accepts funding — double funding is impossible.
     pub fn fund_lot(ctx: Context<FundLot>) -> Result<()> {
         let lot = &mut ctx.accounts.lot;
@@ -223,16 +202,12 @@ pub mod julit {
 
     /// The buyer confirms physical receipt. Atomically burns the Digital
     /// Title inside escrow, releases the escrowed USDC to the producer minus
-    /// the take rate, and pays the treasury its fee. Callable from `Funded`
-    /// and `Disputed` — the buyer's release is the on-chain shape of an
-    /// off-chain resolution in the producer's favor.
+    /// the take rate, and pays the treasury its fee. Callable only from
+    /// `Funded` — it is the single settlement path of a funded lot.
     pub fn redeem_lot(ctx: Context<RedeemLot>) -> Result<()> {
         let lot_info = ctx.accounts.lot.to_account_info();
         let lot = &mut ctx.accounts.lot;
-        require!(
-            lot.status == LotStatus::Funded || lot.status == LotStatus::Disputed,
-            LotError::LotNotFunded
-        );
+        require!(lot.status == LotStatus::Funded, LotError::LotNotFunded);
         let price = lot.price_usdc;
         let producer_key = lot.producer;
         let lot_id_bytes = lot.lot_id.as_bytes().to_vec();
@@ -274,64 +249,11 @@ pub mod julit {
         Ok(())
     }
 
-    /// The producer collects when the buyer never confirmed nor disputed
-    /// before `claimable_after`. Same release shape as `redeem_lot`: the
-    /// Digital Title is burned and the escrow pays out minus the take
-    /// rate — the clock signed instead of the buyer. A dispute freezes
-    /// this path: `Disputed` lots cannot be claimed.
-    pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
-        let lot_info = ctx.accounts.lot.to_account_info();
-        let lot = &mut ctx.accounts.lot;
-        require!(lot.status == LotStatus::Funded, LotError::LotNotFunded);
-        require!(
-            Clock::get()?.unix_timestamp >= lot.claimable_after,
-            LotError::ClaimTooEarly
-        );
-        let price = lot.price_usdc;
-        let producer_key = lot.producer;
-        let lot_id_bytes = lot.lot_id.as_bytes().to_vec();
-        let bump = [lot.bump];
-        let signer_seeds: &[&[u8]] = &[
-            b"lot",
-            producer_key.as_ref(),
-            lot_id_bytes.as_slice(),
-            &bump,
-        ];
-        let signer = &[signer_seeds];
-
-        token::burn(
-            CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                Burn {
-                    mint: ctx.accounts.mint.to_account_info(),
-                    from: ctx.accounts.escrow_title.to_account_info(),
-                    authority: lot_info.clone(),
-                },
-                signer,
-            ),
-            1,
-        )?;
-
-        release_escrow(
-            &ctx.accounts.token_program.to_account_info(),
-            &lot_info,
-            &ctx.accounts.escrow_usdc.to_account_info(),
-            &ctx.accounts.producer_usdc.to_account_info(),
-            &ctx.accounts.treasury_usdc.to_account_info(),
-            signer,
-            price,
-            ctx.accounts.config.fee_bps,
-        )?;
-
-        lot.status = LotStatus::Claimed;
-        Ok(())
-    }
-
     /// The producer cancels a reservation the buyer never funded:
     /// `Listed → Cancelled`. The Digital Title is burned inside its
     /// escrow — a cancelled reservation can never settle. Once `Funded`
     /// cancellation is impossible: committed funds only exit through
-    /// `redeem_lot`, `claim_timeout`, or a frozen `Disputed` state.
+    /// `redeem_lot`.
     pub fn cancel_lot(ctx: Context<CancelLot>) -> Result<()> {
         let lot_info = ctx.accounts.lot.to_account_info();
         let lot = &mut ctx.accounts.lot;
@@ -653,83 +575,6 @@ pub struct RedeemLot<'info> {
 }
 
 #[derive(Accounts)]
-pub struct ClaimTimeout<'info> {
-    /// The lot being claimed; the PDA seeds prove the account is the real one.
-    #[account(
-        mut,
-        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
-        bump = lot.bump,
-    )]
-    pub lot: Account<'info, Lot>,
-
-    #[account(seeds = [b"config"], bump = config.bump)]
-    pub config: Account<'info, Config>,
-
-    /// Only the lot's producer may claim an unresponsive buyer's escrow.
-    #[account(
-        mut,
-        constraint = producer.key() == lot.producer @ LotError::WrongProducer
-    )]
-    pub producer: Signer<'info>,
-
-    /// The lot-owned escrow holding the deposit; drained by this instruction.
-    #[account(
-        mut,
-        associated_token::mint = usdc_mint,
-        associated_token::authority = lot,
-    )]
-    pub escrow_usdc: Account<'info, TokenAccount>,
-
-    /// The escrow holding the Digital Title; its single token is burned.
-    #[account(
-        mut,
-        associated_token::mint = mint,
-        associated_token::authority = lot,
-    )]
-    pub escrow_title: Account<'info, TokenAccount>,
-
-    /// The Digital Title mint; burn reduces its supply to zero.
-    #[account(
-        mut,
-        constraint = mint.key() == lot.mint @ LotError::WrongTitleMint
-    )]
-    pub mint: Account<'info, Mint>,
-
-    /// The protocol treasury; only its address derives the fee ATA.
-    /// CHECK: constrained to `config.treasury`.
-    #[account(constraint = treasury.key() == config.treasury @ LotError::WrongTreasury)]
-    pub treasury: UncheckedAccount<'info>,
-
-    /// The producer's USDC ATA — the claim destination.
-    #[account(
-        init_if_needed,
-        payer = producer,
-        associated_token::mint = usdc_mint,
-        associated_token::authority = producer,
-    )]
-    pub producer_usdc: Account<'info, TokenAccount>,
-
-    /// The treasury's USDC ATA — the fee destination.
-    #[account(
-        init_if_needed,
-        payer = producer,
-        associated_token::mint = usdc_mint,
-        associated_token::authority = treasury,
-    )]
-    pub treasury_usdc: Account<'info, TokenAccount>,
-
-    /// Settlement mint; constrained to the Config's `usdc_mint`.
-    #[account(
-        constraint = usdc_mint.key() == config.usdc_mint @ LotError::WrongUsdcMint
-    )]
-    pub usdc_mint: Account<'info, Mint>,
-
-    pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
 pub struct CancelLot<'info> {
     /// The lot being cancelled; the PDA seeds prove the account is the real one.
     #[account(
@@ -770,13 +615,11 @@ pub struct Config {
     pub fee_bps: u16,
     pub usdc_mint: Pubkey,
     pub treasury: Pubkey,
-    pub claim_min_secs: i64,
-    pub claim_max_secs: i64,
     pub bump: u8,
 }
 
 impl Config {
-    pub const SPACE: usize = 8 + 32 + 2 + 32 + 32 + 8 + 8 + 1;
+    pub const SPACE: usize = 8 + 32 + 2 + 32 + 32 + 1;
 }
 
 #[account]
@@ -791,7 +634,6 @@ pub struct Lot {
     pub purity_basis_points: u64,
     pub water_m3_per_tonne_scaled: u64,
     pub carbon_kg_co2e_per_tonne_scaled: u64,
-    pub claimable_after: i64,
     pub spec_sheet_hash: [u8; 32],
     pub status: LotStatus,
     pub created_at: i64,
@@ -804,7 +646,6 @@ impl Lot {
         + 4 + MAX_ORIGIN_ID_BYTES // origin_id
         + 32 * 3 // producer, buyer, mint
         + 8 * 5 // price + 4 metrics
-        + 8 // claimable_after
         + 32 // spec_sheet_hash
         + 1 // status
         + 8 // created_at
@@ -815,9 +656,7 @@ impl Lot {
 pub enum LotStatus {
     Listed,
     Funded,
-    Disputed,
     Redeemed,
-    Claimed,
     Cancelled,
 }
 
@@ -839,10 +678,6 @@ pub enum LotError {
     InvalidFeeBps,
     #[msg("Invalid treasury address")]
     InvalidTreasury,
-    #[msg("claim_min_secs must be > 0 and < claim_max_secs")]
-    InvalidClaimWindow,
-    #[msg("claimable_after is outside the configured claim window")]
-    ClaimWindowOutOfBounds,
     #[msg("Metadata URI exceeds 200 bytes")]
     MetadataUriTooLong,
     #[msg("Mint is not the configured settlement mint")]
@@ -853,7 +688,7 @@ pub enum LotError {
     WrongBuyer,
     #[msg("Lot is not open for funding")]
     LotNotListed,
-    #[msg("Lot is not funded or disputed")]
+    #[msg("Lot is not funded")]
     LotNotFunded,
     #[msg("Mint is not this lot's Digital Title")]
     WrongTitleMint,
@@ -861,8 +696,6 @@ pub enum LotError {
     WrongProducer,
     #[msg("Account is not the configured treasury")]
     WrongTreasury,
-    #[msg("claimable_after has not been reached")]
-    ClaimTooEarly,
     #[msg("Arithmetic overflow")]
     MathOverflow,
     #[msg("Account is not the configured admin")]

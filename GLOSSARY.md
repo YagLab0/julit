@@ -29,7 +29,7 @@ The chemical purity, water footprint and carbon footprint of a producer's operat
 _Avoid_: Per-lot spec input, buyer-contracted spec
 
 **Digital Title**:
-The Metaplex NFT (supply 1) minted into the lot's escrow at creation, representing the contractual right over the lot. It is a digital representation of that right, not automatic legal title — and it never leaves escrow: it is burned at Redemption, Timeout Claim or Cancellation.
+The Metaplex NFT (supply 1) minted into the lot's escrow at creation, representing the contractual right over the lot. It is a digital representation of that right, not automatic legal title — and it never leaves escrow: it is burned at Redemption or Cancellation.
 _Avoid_: Legal title, transferable receipt, warehouse receipt
 
 **Escrow**:
@@ -45,7 +45,7 @@ The buyer's act of depositing the lot's full price into escrow via `fund_lot`. I
 _Avoid_: Settlement, payment received
 
 **Redemption**:
-The buyer's on-chain confirmation of physical receipt, executed via `redeem_lot`: it burns the Digital Title and releases the escrowed USDC to the producer minus the Take Rate. Callable on `funded` and `disputed` lots — the buyer's release is the on-chain shape of an off-chain resolution.
+The buyer's on-chain confirmation of physical receipt, executed via `redeem_lot`: it burns the Digital Title and releases the escrowed USDC to the producer minus the Take Rate. Callable only on `funded` lots — it is the sole settlement path after funding (ADR-0021).
 _Avoid_: Delivery confirmation only, burn without payment
 
 **Physical Delivery**:
@@ -53,27 +53,15 @@ The off-chain transport and reception of a lot's cargo, confirmed on-chain by Re
 _Avoid_: On-chain delivery
 
 **Take Rate**:
-The protocol fee in basis points deducted from the escrow release on Redemption or Timeout Claim and routed to treasury; it is never charged on Funding or Cancellation.
+The protocol fee in basis points deducted from the escrow release on Redemption and routed to treasury; it is never charged on Funding or Cancellation.
 _Avoid_: Commission on deposit, listing fee
-
-**Claimable After**:
-The per-lot timestamp declared at creation, bounded by the Config's claim window, after which the producer may claim the escrowed funds if the buyer has not redeemed.
-_Avoid_: Expiry, global timeout
-
-**Timeout Claim**:
-The producer's unilateral claim of the escrowed USDC via `claim_timeout` once Claimable After has passed; it burns the Digital Title, applies the Take Rate, and marks the lot `claimed`. Blocked while the lot is `disputed`.
-_Avoid_: Refund, expiry cancel
-
-**Dispute**:
-A flag a buyer could once raise on a funded lot via `raise_dispute`, freezing the Timeout Claim. The instruction is removed — no new disputes can open — but lots already `disputed` keep their freeze and resolve only through Redemption (release to the producer). Resolution of those happens off-chain under the commercial contract; there is no on-chain refund path.
-_Avoid_: Arbitration, chargeback, refund
 
 **Cancellation**:
 The producer's unilateral cancellation of a lot in `listed` state via `cancel_lot`, burning the escrowed Digital Title. Available only before Funding.
 _Avoid_: Expiry, dispute
 
 **Lot Status**:
-The lifecycle state of a lot: `listed` → `funded` → `redeemed`, with branches `disputed` (legacy, no longer reachable), `claimed` (timeout), and `cancelled` (pre-funding).
+The lifecycle state of a lot: `listed` → `funded` → `redeemed`, with `cancelled` as the only branch (pre-funding). A funded lot settles exclusively through Redemption — there is no timeout or dispute path (ADR-0021).
 _Avoid_: Settled, paid, completed
 
 **Lot Spec Sheet**:
@@ -81,7 +69,7 @@ The producer-declared technical document (PDF) for a lot, whose SHA-256 is recor
 _Avoid_: Plant certificate, audit certificate
 
 **Passport**:
-The public record of a lot's lifecycle: its digital title, funding, redemption or claim transactions, declared metrics, and spec sheet reference. It is not an official EU battery passport or a guarantee of regulatory compliance.
+The public record of a lot's lifecycle: its digital title, funding, redemption or cancellation transactions, declared metrics, and spec sheet reference. It is not an official EU battery passport or a guarantee of regulatory compliance.
 _Avoid_: Audit certificate, QR code, official EU certification
 
 **Lot Price**:

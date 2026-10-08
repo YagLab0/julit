@@ -136,12 +136,8 @@ export function AdminDashboard({
   const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
   const [isRegisterOriginOpen, setIsRegisterOriginOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "disputed" | "funded" | "listed" | "redeemed" | "all"
-  >(() => {
-    // Default to disputed if there are any active disputes to attend to
-    const hasDisputes = initialLots.some((l) => l.status === "disputed");
-    return hasDisputes ? "disputed" : "all";
-  });
+    "funded" | "listed" | "redeemed" | "all"
+  >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [originFilter, setOriginFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "volume" | "price">("newest");
@@ -208,26 +204,20 @@ export function AdminDashboard({
   const settledVolumeLce =
     stats?.lots?.settledVolumeTonnes ??
     lots
-      .filter((l) => l.status === "redeemed" || l.status === "claimed")
+      .filter((l) => l.status === "redeemed")
       .reduce((acc, l) => acc + Number(l.volume_tonnes || 0), 0);
 
-  const inEscrowLots = lots.filter(
-    (l) => l.status === "funded" || l.status === "disputed"
-  );
+  const inEscrowLots = lots.filter((l) => l.status === "funded");
   const escrowCount = stats?.lots?.byStatus
-    ? (stats.lots.byStatus.funded || 0) + (stats.lots.byStatus.disputed || 0)
+    ? stats.lots.byStatus.funded || 0
     : inEscrowLots.length;
 
   const escrowedValueUsdc =
     stats?.lots?.escrowedValueUsdc ??
     inEscrowLots.reduce((acc, l) => acc + Number(l.price_usdc || 0), 0);
 
-  const disputedLots = lots.filter((l) => l.status === "disputed");
-  const disputedCount =
-    stats?.lots?.byStatus?.disputed ?? disputedLots.length;
-
-  // Alerts summary: disputed lots + whether admin wallet is unverified
-  const alertsCount = disputedCount + (company.walletVerifiedAt ? 0 : 1);
+  // Alerts summary: whether the admin wallet is unverified
+  const alertsCount = company.walletVerifiedAt ? 0 : 1;
 
   // ESG averages calculated across protocol lots with environmental figures
   const lotsWithWater = lots.filter(
@@ -357,21 +347,14 @@ export function AdminDashboard({
           value={String(alertsCount)}
           unit={alertsCount === 1 ? tAdmin.kpis.alertsUnitOne : tAdmin.kpis.alertsUnitOther}
           badge={
-            disputedCount > 0 ? tAdmin.kpis.alertsDisputes : tAdmin.kpis.alertsNormal
+            alertsCount > 0 ? tAdmin.kpis.alertsWallet : tAdmin.kpis.alertsNormal
           }
-          badgeVariant={disputedCount > 0 ? "warning" : "success"}
+          badgeVariant={alertsCount > 0 ? "warning" : "success"}
           hint={
-            disputedCount > 0
-              ? tAdmin.kpis.alertsDisputesHint
+            alertsCount > 0
+              ? tAdmin.kpis.alertsWalletHint
               : tAdmin.kpis.alertsNormalHint
           }
-          onClick={() => {
-            if (disputedCount > 0) {
-              setActiveTab("disputed");
-              const el = document.getElementById("task-center");
-              if (el) el.scrollIntoView({ behavior: "smooth" });
-            }
-          }}
         />
       </section>
 
@@ -672,15 +655,8 @@ export function AdminDashboard({
           </div>
         </div>
 
-        {/* Pestañas por estado (disputed, funded, listed, redeemed, all) */}
+        {/* Pestañas por estado (funded, listed, redeemed, all) */}
         <div className="mt-6 flex flex-wrap items-center gap-2 border-b border-border-low pb-3">
-          <StatusTabButton
-            active={activeTab === "disputed"}
-            onClick={() => setActiveTab("disputed")}
-            label={tAdmin.taskCenter.tabs.disputed}
-            count={lots.filter((l) => l.status === "disputed").length}
-            isAlertTab
-          />
           <StatusTabButton
             active={activeTab === "funded"}
             onClick={() => setActiveTab("funded")}
@@ -697,11 +673,7 @@ export function AdminDashboard({
             active={activeTab === "redeemed"}
             onClick={() => setActiveTab("redeemed")}
             label={tAdmin.taskCenter.tabs.redeemed}
-            count={
-              lots.filter(
-                (l) => l.status === "redeemed" || l.status === "claimed"
-              ).length
-            }
+            count={lots.filter((l) => l.status === "redeemed").length}
           />
           <StatusTabButton
             active={activeTab === "all"}
@@ -801,16 +773,11 @@ export function AdminDashboard({
                 Number(lot.price_usdc || 0),
                 100
               );
-              const isDisputed = lot.status === "disputed";
 
               return (
                 <div
                   key={lot.pda_address || lot.lot_id}
-                  className={`flex flex-col gap-3 rounded-2xl border p-4 transition ${
-                    isDisputed
-                      ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/60"
-                      : "border-border-low bg-card hover:border-border hover:bg-secondary/40"
-                  }`}
+                  className="flex flex-col gap-3 rounded-2xl border border-border-low bg-card p-4 transition hover:border-border hover:bg-secondary/40"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -827,13 +794,9 @@ export function AdminDashboard({
                       <button
                         type="button"
                         onClick={() => setSelectedLot(lot)}
-                        className={`rounded-full px-3 py-1 text-xs font-semibold transition active:scale-[0.97] cursor-pointer ${
-                          isDisputed
-                            ? "bg-amber-600 text-white hover:bg-amber-700"
-                            : "btn-secondary"
-                        }`}
+                        className="btn-secondary rounded-full px-3 py-1 text-xs font-semibold"
                       >
-                        {isDisputed ? tAdmin.taskCenter.superviseDispute : tAdmin.taskCenter.inspect}
+                        {tAdmin.taskCenter.inspect}
                       </button>
 
                       <Link
@@ -895,23 +858,6 @@ export function AdminDashboard({
                       </p>
                     </div>
                   </div>
-
-                  {/* Disputed lot alert banner */}
-                  {isDisputed && (
-                    <div className="mt-1 flex items-center justify-between rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
-                      <span className="flex items-center gap-2">
-                        <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
-                        {tAdmin.taskCenter.disputeAlert}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLot(lot)}
-                        className="font-semibold underline hover:no-underline ml-2"
-                      >
-                        {tAdmin.taskCenter.viewMediation}
-                      </button>
-                    </div>
-                  )}
                 </div>
               );
             })
@@ -1330,13 +1276,11 @@ function StatusTabButton({
   onClick,
   label,
   count,
-  isAlertTab = false,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
-  isAlertTab?: boolean;
 }) {
   return (
     <button
@@ -1344,22 +1288,14 @@ function StatusTabButton({
       onClick={onClick}
       className={`cursor-pointer flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition active:scale-[0.97] ${
         active
-          ? isAlertTab && count > 0
-            ? "bg-amber-600 text-white"
-            : "bg-primary text-primary-foreground"
-          : isAlertTab && count > 0
-            ? "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20"
-            : "bg-secondary text-muted hover:bg-accent hover:text-foreground"
+          ? "bg-primary text-primary-foreground"
+          : "bg-secondary text-muted hover:bg-accent hover:text-foreground"
       }`}
     >
       <span>{label}</span>
       <span
         className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-          active
-            ? "bg-white/20 text-white"
-            : isAlertTab && count > 0
-              ? "bg-amber-600 text-white"
-              : "bg-card text-muted"
+          active ? "bg-white/20 text-white" : "bg-card text-muted"
         }`}
       >
         {count}
@@ -1392,7 +1328,6 @@ function LotInspectionDialog({
     [dict.numLocale]
   );
   const settlement = calculateLotSettlement(Number(lot.price_usdc || 0), 100);
-  const isDisputed = lot.status === "disputed";
   const lotOriginName =
     origins.find((o) => o.id === lot.origin_id)?.name ||
     originName(lot.origin_id) ||
@@ -1433,29 +1368,6 @@ function LotInspectionDialog({
             ✕
           </button>
         </div>
-
-        {/* Dispute Resolution Panel if lot is disputed */}
-        {isDisputed && (
-          <div className="mt-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-950 dark:text-amber-200">
-            <div className="flex items-center gap-2 font-bold text-sm text-amber-800 dark:text-amber-300">
-              <span className="size-2 rounded-full bg-amber-500 animate-ping" />
-              {tLot.disputeMediationTitle}
-            </div>
-            <p className="mt-2 leading-relaxed">
-              {t(tLot.disputeMediationBody, {
-                buyer: lot.buyer_name || lot.buyer_wallet,
-              })}
-            </p>
-            <div className="mt-3 rounded-xl bg-card/80 p-3 text-[11px] space-y-1.5 border border-amber-500/20">
-              <p className="font-semibold text-foreground">
-                {tLot.adminRecommendationsTitle}
-              </p>
-              <p className="text-muted">{tLot.adminRec1}</p>
-              <p className="text-muted">{tLot.adminRec2}</p>
-              <p className="text-muted">{tLot.adminRec3}</p>
-            </div>
-          </div>
-        )}
 
         {/* Settlement Financial Breakdown */}
         <div className="mt-4 rounded-2xl bg-secondary p-4">
@@ -1598,27 +1510,6 @@ function LotInspectionDialog({
               </div>
               <a
                 href={getExplorerUrl(`/tx/${lot.redeem_tx_signature}`, cluster)}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-secondary py-1 text-[11px]"
-              >
-                {tLot.explorerBtn}
-              </a>
-            </div>
-          )}
-
-          {lot.dispute_tx_signature && (
-            <div className="flex items-center justify-between rounded-xl bg-amber-500/10 px-3 py-2">
-              <div>
-                <p className="text-[10px] text-amber-800 dark:text-amber-300">
-                  {tLot.disputeTx}
-                </p>
-                <p className="font-mono text-xs text-foreground">
-                  {ellipsify(lot.dispute_tx_signature, 10)}
-                </p>
-              </div>
-              <a
-                href={getExplorerUrl(`/tx/${lot.dispute_tx_signature}`, cluster)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn-secondary py-1 text-[11px]"

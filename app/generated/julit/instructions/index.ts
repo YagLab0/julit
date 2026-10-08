@@ -7,7 +7,6 @@
  */
 
 export * from "./cancelLot";
-export * from "./claimTimeout";
 export * from "./createLot";
 export * from "./fundLot";
 export * from "./initialize";

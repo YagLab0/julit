@@ -10,10 +10,6 @@ import {
 const BUYER = "C1ienteTesaEnergy3333333333333333333333333";
 const OTHER = "OtraWa11et222222222222222222222222222222";
 
-const NOW = Math.floor(Date.parse("2026-10-06T12:00:00Z") / 1000);
-const FUTURE = NOW + 30 * 24 * 3600;
-const PAST = NOW - 3600;
-
 function check(overrides: Partial<Parameters<typeof buyerLotVerdict>[0]> = {}) {
   return buyerLotVerdict({
     status: "listed",
@@ -21,8 +17,6 @@ function check(overrides: Partial<Parameters<typeof buyerLotVerdict>[0]> = {}) {
     buyerWallet: BUYER,
     dUsdcBalance: 20_000,
     priceUsdc: 12_000,
-    claimableAfterUnix: FUTURE,
-    nowUnixSeconds: NOW,
     ...overrides,
   });
 }
@@ -58,46 +52,17 @@ describe("buyerLotVerdict", () => {
   });
 
   describe("funded", () => {
-    it("offers redeem only — there is no dispute path", () => {
+    it("offers redeem only — it is the sole settlement path", () => {
       expect(check({ status: "funded" }).actions).toEqual(["redeem"]);
-    });
-
-    it("flags the Timeout Claim as live once claimable_after passes", () => {
-      expect(
-        check({ status: "funded", claimableAfterUnix: PAST }).timeoutClaimLive
-      ).toBe(true);
-      expect(
-        check({ status: "funded", claimableAfterUnix: FUTURE }).timeoutClaimLive
-      ).toBe(false);
-      expect(
-        check({
-          status: "funded",
-          claimableAfterUnix: NOW,
-          nowUnixSeconds: NOW,
-        }).timeoutClaimLive
-      ).toBe(true);
-    });
-  });
-
-  describe("disputed", () => {
-    it("offers redeem only — the buyer's release resolves the dispute", () => {
-      expect(check({ status: "disputed" }).actions).toEqual(["redeem"]);
-    });
-
-    it("keeps the Timeout Claim frozen even past claimable_after", () => {
-      expect(
-        check({ status: "disputed", claimableAfterUnix: PAST }).timeoutClaimLive
-      ).toBe(false);
     });
   });
 
   describe("terminal states", () => {
-    it("offers nothing on redeemed, claimed or cancelled lots", () => {
-      for (const status of ["redeemed", "claimed", "cancelled"] as const) {
+    it("offers nothing on redeemed or cancelled lots", () => {
+      for (const status of ["redeemed", "cancelled"] as const) {
         const v = check({ status });
         expect(v.actions).toEqual([]);
         expect(v.fundBlocker).toBeNull();
-        expect(v.timeoutClaimLive).toBe(false);
       }
     });
   });
@@ -113,17 +78,6 @@ describe("buyerLotVerdict", () => {
       const v = check({ connectedWallet: OTHER });
       expect(v.actions).toEqual([]);
       expect(v.walletBlocked).toBe(true);
-    });
-
-    it("keeps the claim clock visible without the designated wallet", () => {
-      const v = check({
-        status: "funded",
-        claimableAfterUnix: PAST,
-        connectedWallet: OTHER,
-      });
-      expect(v.actions).toEqual([]);
-      expect(v.walletBlocked).toBe(true);
-      expect(v.timeoutClaimLive).toBe(true);
     });
 
     it("does not flag walletBlocked on terminal statuses", () => {
@@ -232,7 +186,7 @@ describe("computeTreasuryLedger", () => {
     expect(ledger.items).toEqual([]);
   });
 
-  it("computes accurate fee ledger for redeemed and claimed lots only", () => {
+  it("computes accurate fee ledger for redeemed lots only", () => {
     const ledger = computeTreasuryLedger(
       [
         {
@@ -267,17 +221,6 @@ describe("computeTreasuryLedger", () => {
           indexed_at: "2026-10-03T00:00:00Z",
         },
         {
-          lot_id: "LOT-004",
-          pda_address: "Pda4444444444444444444444444444444444444444",
-          status: "claimed",
-          volume_tonnes: 80,
-          price_usdc: 120_000,
-          producer_wallet: "Prod2",
-          buyer_wallet: "Buyer2",
-          claim_tx_signature: "SigClaim444",
-          indexed_at: "2026-10-04T00:00:00Z",
-        },
-        {
           lot_id: "LOT-005",
           pda_address: "Pda5555555555555555555555555555555555555555",
           status: "cancelled",
@@ -291,13 +234,13 @@ describe("computeTreasuryLedger", () => {
       100 // 1%
     );
 
-    expect(ledger.settledLotsCount).toBe(2);
-    expect(ledger.totalSettledVolumeTonnes).toBe(280);
-    expect(ledger.totalSettledValueUsdc).toBe(440_000);
-    // 1% of 440,000 = 4,400
-    expect(ledger.totalFeesCollectedUsdc).toBe(4400);
+    expect(ledger.settledLotsCount).toBe(1);
+    expect(ledger.totalSettledVolumeTonnes).toBe(200);
+    expect(ledger.totalSettledValueUsdc).toBe(320_000);
+    // 1% of 320,000 = 3,200
+    expect(ledger.totalFeesCollectedUsdc).toBe(3200);
 
-    expect(ledger.items).toHaveLength(2);
+    expect(ledger.items).toHaveLength(1);
     expect(ledger.items[0]).toEqual({
       lotId: "LOT-003",
       pdaAddress: "Pda3333333333333333333333333333333333333333",
@@ -311,20 +254,6 @@ describe("computeTreasuryLedger", () => {
       buyerWallet: "Buyer1",
       txSignature: "SigRedeem333",
       settledAt: "2026-10-03T00:00:00Z",
-    });
-    expect(ledger.items[1]).toEqual({
-      lotId: "LOT-004",
-      pdaAddress: "Pda4444444444444444444444444444444444444444",
-      status: "claimed",
-      volumeTonnes: 80,
-      priceUsdc: 120_000,
-      feeBps: 100,
-      feeUsdc: 1200,
-      producerPayoutUsdc: 118_800,
-      producerWallet: "Prod2",
-      buyerWallet: "Buyer2",
-      txSignature: "SigClaim444",
-      settledAt: "2026-10-04T00:00:00Z",
     });
   });
 });
