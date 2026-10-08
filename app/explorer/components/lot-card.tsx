@@ -59,7 +59,7 @@ export function LotCard({ lot }: { lot: Lot }) {
           href={getExplorerUrl(`/address/${lot.pda_address}`)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[11px] font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+          className="text-[11px] font-semibold text-brand-700 underline underline-offset-2"
         >
           Ver en Explorer
         </a>

@@ -1,10 +1,7 @@
 "use client";
 
-import { address } from "@solana/kit";
 import { useCluster } from "../components/cluster-context";
-import { useBalance } from "../lib/hooks/use-balance";
-import { lamportsToSolString } from "../lib/lamports";
-import { ellipsify, getExplorerUrl } from "../lib/explorer";
+import { getExplorerUrl } from "../lib/explorer";
 import { useAccountDict } from "./i18n/context";
 import { t } from "./i18n";
 
@@ -18,7 +15,6 @@ export function WalletHero({
   className?: string;
 }) {
   const { cluster } = useCluster();
-  const balance = useBalance(address(walletAddress));
   const dict = useAccountDict();
 
   const clusterLabel =
@@ -49,26 +45,19 @@ export function WalletHero({
         </a>
       </div>
 
-      <p className="mt-8 font-mono text-5xl font-bold tabular-nums tracking-tight">
-        {balance.lamports != null ? lamportsToSolString(balance.lamports) : "—"}
-        <span className="ml-2 text-xl font-semibold opacity-70">SOL</span>
+      <p className="mt-8 text-2xl font-bold tracking-tight">
+        {walletVerifiedAt
+          ? dict.walletHero.verifiedLine
+          : dict.walletHero.registeredLine}
       </p>
-      <p className="mt-2 font-mono text-xs opacity-70">
-        {ellipsify(walletAddress, 8)}
+      <p className="mt-2 break-all font-mono text-xs opacity-70">
+        {walletAddress}
       </p>
 
-      <div className="mt-auto grid grid-cols-3 gap-3 border-t border-primary-foreground/15 pt-4 text-[11px]">
+      <div className="mt-auto grid grid-cols-2 gap-3 border-t border-primary-foreground/15 pt-4 text-[11px]">
         <div>
           <p className="opacity-70">{dict.walletHero.network}</p>
           <p className="mt-0.5 font-semibold">{clusterLabel}</p>
-        </div>
-        <div>
-          <p className="opacity-70">{dict.walletHero.state}</p>
-          <p className="mt-0.5 font-semibold">
-            {walletVerifiedAt
-              ? dict.walletHero.stateVerified
-              : dict.walletHero.stateRegistered}
-          </p>
         </div>
         <div>
           <p className="opacity-70">{dict.walletHero.since}</p>

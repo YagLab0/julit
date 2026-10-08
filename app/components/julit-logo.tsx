@@ -2,12 +2,7 @@
 export function JuLitMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden className={className}>
-      <rect
-        width="32"
-        height="32"
-        rx="8"
-        className="fill-brand-700 dark:fill-brand-500"
-      />
+      <rect width="32" height="32" rx="8" className="fill-brand-700" />
       <path
         d="M16 4 26 10v12l-10 6-10-6V10Z"
         strokeWidth="1.4"

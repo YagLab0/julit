@@ -25,7 +25,7 @@ export function OriginReference({ origin }: { origin: Origin }) {
         href={origin.source_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-1 inline-block text-brand-700 dark:text-brand-400 underline underline-offset-2"
+        className="mt-1 inline-block text-brand-700 underline underline-offset-2"
       >
         {origin.source_label}
       </a>

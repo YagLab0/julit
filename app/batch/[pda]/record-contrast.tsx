@@ -46,8 +46,8 @@ function ContrastCard({
 }) {
   const classes =
     tone === "good"
-      ? "border-emerald-300 bg-emerald-50/60 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
-      : "border-amber-300 bg-amber-50/60 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200";
+      ? "border-emerald-300 bg-emerald-50/60 text-emerald-900"
+      : "border-amber-300 bg-amber-50/60 text-amber-900";
   return (
     <div className={`mt-2 rounded-xl border px-4 py-4 ${classes}`}>
       <p className="text-xs font-semibold">{title}</p>

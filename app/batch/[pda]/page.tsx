@@ -35,7 +35,7 @@ function TxLink({ label, signature }: { label: string; signature: string }) {
       href={getExplorerUrl(`/tx/${signature}`, "devnet")}
       target="_blank"
       rel="noopener noreferrer"
-      className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+      className="font-semibold text-brand-700 underline underline-offset-2"
     >
       {label} <span className="font-mono">{ellipsify(signature)}</span>
     </a>
@@ -123,7 +123,7 @@ export default async function LotPassportPage({
   const mintUrl = getExplorerUrl(`/address/${lot.mint_address}`, "devnet");
 
   return (
-    <div className="light min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <header className="mx-auto max-w-2xl px-6 py-4">
         <Link href="/explorer" className="text-sm font-bold tracking-tight">
           JuLit
@@ -168,7 +168,7 @@ export default async function LotPassportPage({
                     href={certificate}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                    className="font-semibold text-brand-700 underline underline-offset-2"
                   >
                     Certificado de planta (PDF)
                   </a>
@@ -215,7 +215,7 @@ export default async function LotPassportPage({
                   href={mintUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                  className="font-semibold text-brand-700 underline underline-offset-2"
                 >
                   Título Digital{" "}
                   <span className="font-mono">
@@ -246,7 +246,7 @@ export default async function LotPassportPage({
                   href={addressUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-400"
+                  className="font-semibold text-brand-700 underline underline-offset-2"
                 >
                   Dirección en Explorer
                 </a>
