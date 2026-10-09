@@ -107,7 +107,7 @@ We don't replace bank credit. We give a safe option to the companies that can't 
 
 ## 7. Status & Limits
 
-- **Live on Devnet:** the buyer-confirmed flow — list, fund, confirm — has run on Solana Devnet with test money. The version with shipping evidence (`mark_shipped`), `refund_lot` and `claim_timeout` is tested in LiteSVM and pending redeploy. **TODO:** update after redeploy.
+- **Live on Devnet:** the full lot lifecycle — list, fund, shipping evidence (`mark_shipped`), buyer confirmation, `refund_lot` and `claim_timeout` — is deployed on Solana Devnet with test money.
 - **Tested:** the Anchor program is tested with LiteSVM, and the app with Vitest.
 
 ### Known limits
