@@ -5,8 +5,8 @@ import { verifyLotCancellation } from "../verify";
 /**
  * Moves the index to `cancelled` after the producer's cancel_lot
  * transaction confirms on Devnet. Only `listed` rows may transition —
- * funded lots can never be cancelled; escrowed funds exit only via
- * redeem, claim, or a frozen dispute.
+ * funded lots can never be cancelled; escrowed funds exit via redeem,
+ * refund after ship_by, or a producer claim after the confirm window.
  */
 export async function POST(request: Request) {
   return transitionLot(request, {

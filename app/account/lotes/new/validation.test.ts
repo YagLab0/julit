@@ -13,6 +13,16 @@ const BUYER = "C1ienteTesaEnergy3333333333333333333333333";
 const BUYER_B = "UncontractedBuyer88888888888888888888888";
 const SPEC = "ab".repeat(32);
 
+const NOW_SECS = 1_800_000_000;
+
+/** datetime-local value for an epoch second — the form's
+ *  toLocalInputValue mirror (local time, minute precision). */
+function localInput(epochSecs: number): string {
+  const d = new Date(epochSecs * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const CTX: LotFormContext = {
   producerWallet: PRODUCER,
   originId: "pena_blanca",
@@ -22,13 +32,19 @@ const CTX: LotFormContext = {
     carbonKgCo2ePerTonne: "8200.00",
   },
   contractedBuyers: [BUYER],
+  nowSecs: NOW_SECS,
 };
+
+/** datetime-local value 30 days after NOW_SECS. */
+const SHIP_BY = localInput(NOW_SECS + 30 * 86400);
 
 const VALID: LotFormValues = {
   lotId: "LIT-2026-PBL-05",
   volumeTonnes: "420",
   priceUsdc: "12000.123456",
   buyerWallet: BUYER,
+  shipBy: SHIP_BY,
+  confirmWindowSecs: "604800",
   specSheetSha256: SPEC,
 };
 
@@ -57,6 +73,8 @@ describe("validateLotForm", () => {
       priceUsdcScaled: "12000123456",
       producerWallet: PRODUCER,
       buyerWallet: BUYER,
+      shipBy: String(NOW_SECS + 30 * 86400),
+      confirmWindowSecs: "604800",
       specSheetSha256: SPEC,
     });
   });
@@ -153,6 +171,56 @@ describe("validateLotForm", () => {
       expect(
         check({ buyerWallet: "0OIl-not-base58" }).errors.buyerWallet
       ).toBeTruthy();
+    });
+  });
+
+  describe("shipBy", () => {
+    it("is mandatory", () => {
+      expect(check({ shipBy: "" }).errors.shipBy).toBeTruthy();
+    });
+    it("rejects unparseable values", () => {
+      expect(check({ shipBy: "not-a-date" }).errors.shipBy).toBeTruthy();
+    });
+    it("rejects deadlines in the past", () => {
+      expect(
+        check({ shipBy: localInput(NOW_SECS - 60) }).errors.shipBy
+      ).toBeTruthy();
+    });
+    it("rejects deadlines beyond 180 days", () => {
+      expect(
+        check({ shipBy: localInput(NOW_SECS + 181 * 86400) }).errors.shipBy
+      ).toBeTruthy();
+    });
+    it("accepts exactly 180 days out", () => {
+      expect(
+        check({ shipBy: localInput(NOW_SECS + 180 * 86400) }).errors.shipBy
+      ).toBeUndefined();
+    });
+    it("emits unix seconds in the payload", () => {
+      expect(
+        check({ shipBy: localInput(NOW_SECS + 3600) }).payload?.shipBy
+      ).toBe(String(NOW_SECS + 3600));
+    });
+  });
+
+  describe("confirmWindowSecs", () => {
+    it("rejects empty and malformed values", () => {
+      for (const confirmWindowSecs of ["", "abc", "7.5", "-60"]) {
+        expect(
+          check({ confirmWindowSecs }).errors.confirmWindowSecs
+        ).toBeTruthy();
+      }
+    });
+    it("rejects windows below 60 seconds and above 90 days", () => {
+      for (const confirmWindowSecs of ["59", "7776001"]) {
+        expect(
+          check({ confirmWindowSecs }).errors.confirmWindowSecs
+        ).toBeTruthy();
+      }
+    });
+    it("accepts the bounds", () => {
+      expect(check({ confirmWindowSecs: "60" }).errors).toEqual({});
+      expect(check({ confirmWindowSecs: "7776000" }).errors).toEqual({});
     });
   });
 

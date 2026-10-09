@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useEffect, type CSSProperties, type ReactNode } from "react";
+import {
+  useMemo,
+  useState,
+  useEffect,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 import type { AccountCompany } from "../account-client";
 import type { AdminCompany, AdminLot, ProtocolStats } from "../account-data";
@@ -70,7 +76,8 @@ const DEFAULT_ORIGINS: Origin[] = [
     code: "PBL",
     salar: "Salar de Peña Blanca",
     producer: "Sales del Altiplano S.A.",
-    shareholders: "Altiplano Holding 60 % · Fondo Puna 25 % · Minera Jujeña 15 %",
+    shareholders:
+      "Altiplano Holding 60 % · Fondo Puna 25 % · Minera Jujeña 15 %",
     longitude: -66.70248,
     latitude: -23.46293,
     capacity_tpa: 42500,
@@ -130,7 +137,9 @@ export function AdminDashboard({
   const [stats] = useState<ProtocolStats | null>(initialStats);
   const [companies, setCompanies] = useState<AdminCompany[]>(initialCompanies);
   const [origins, setOrigins] = useState<Origin[]>(() =>
-    initialOrigins && initialOrigins.length > 0 ? initialOrigins : DEFAULT_ORIGINS
+    initialOrigins && initialOrigins.length > 0
+      ? initialOrigins
+      : DEFAULT_ORIGINS
   );
   const [isRegisterCompanyOpen, setIsRegisterCompanyOpen] = useState(false);
   const [isRegisterOriginOpen, setIsRegisterOriginOpen] = useState(false);
@@ -203,12 +212,14 @@ export function AdminDashboard({
   const settledVolumeLce =
     stats?.lots?.settledVolumeTonnes ??
     lots
-      .filter((l) => l.status === "redeemed")
+      .filter((l) => l.status === "redeemed" || l.status === "claimed")
       .reduce((acc, l) => acc + Number(l.volume_tonnes || 0), 0);
 
-  const inEscrowLots = lots.filter((l) => l.status === "funded");
+  const inEscrowLots = lots.filter(
+    (l) => l.status === "funded" || l.status === "shipped"
+  );
   const escrowCount = stats?.lots?.byStatus
-    ? stats.lots.byStatus.funded || 0
+    ? (stats.lots.byStatus.funded || 0) + (stats.lots.byStatus.shipped || 0)
     : inEscrowLots.length;
 
   const escrowedValueUsdc =
@@ -221,7 +232,12 @@ export function AdminDashboard({
 
     // Status tab filter
     if (activeTab !== "all") {
-      result = result.filter((l) => l.status === activeTab);
+      result =
+        activeTab === "redeemed"
+          ? result.filter(
+              (l) => l.status === "redeemed" || l.status === "claimed"
+            )
+          : result.filter((l) => l.status === activeTab);
     }
 
     // Origin selector filter
@@ -234,7 +250,9 @@ export function AdminDashboard({
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((l) => {
         const idMatch = l.lot_id.toLowerCase().includes(q);
-        const originMatch = (originName(l.origin_id) || "").toLowerCase().includes(q);
+        const originMatch = (originName(l.origin_id) || "")
+          .toLowerCase()
+          .includes(q);
         const producerMatch =
           (l.producer_name || "").toLowerCase().includes(q) ||
           l.producer_wallet.toLowerCase().includes(q);
@@ -276,7 +294,7 @@ export function AdminDashboard({
           icon={ICON_USDC}
           label={tAdmin.kpis.feesLabel}
           value={`$${priceFmt.format(feesUsdc)}`}
-          unit="USDC"
+          unit="dUSDC"
           badge={tAdmin.kpis.feesBadge}
           hint={tAdmin.kpis.feesHint}
         />
@@ -288,7 +306,9 @@ export function AdminDashboard({
           label={tAdmin.kpis.volumeLabel}
           value={numFmt.format(totalVolumeLce)}
           unit={tAdmin.kpis.volumeUnit}
-          badge={t(tAdmin.kpis.volumeBadge, { settled: numFmt.format(settledVolumeLce) })}
+          badge={t(tAdmin.kpis.volumeBadge, {
+            settled: numFmt.format(settledVolumeLce),
+          })}
           hint={tAdmin.kpis.volumeHint}
         />
 
@@ -299,7 +319,7 @@ export function AdminDashboard({
           label={tAdmin.kpis.escrowLabel}
           value={String(escrowCount)}
           unit={tAdmin.kpis.escrowUnit}
-          badge={`$${priceFmt.format(escrowedValueUsdc)} USDC`}
+          badge={`$${priceFmt.format(escrowedValueUsdc)} dUSDC`}
           hint={tAdmin.kpis.escrowHint}
         />
       </section>
@@ -388,12 +408,16 @@ export function AdminDashboard({
           {/* Treasury Metrics Grid */}
           <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <p className="text-[11px] text-muted">{tAdmin.treasury.solLabel}</p>
+              <p className="text-[11px] text-muted">
+                {tAdmin.treasury.solLabel}
+              </p>
               <p className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
                 {treasuryData
                   ? numFmt.format(treasuryData.balances.sol.sol)
                   : "—"}
-                <span className="ml-1 text-xs font-normal text-muted">{tAdmin.treasury.solUnit}</span>
+                <span className="ml-1 text-xs font-normal text-muted">
+                  {tAdmin.treasury.solUnit}
+                </span>
               </p>
               <p className="mt-0.5 text-[10px] text-muted">
                 {treasuryData
@@ -403,13 +427,17 @@ export function AdminDashboard({
             </div>
 
             <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <p className="text-[11px] text-muted">{tAdmin.treasury.usdcLabel}</p>
+              <p className="text-[11px] text-muted">
+                {tAdmin.treasury.usdcLabel}
+              </p>
               <p className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
                 $
                 {treasuryData
                   ? priceFmt.format(treasuryData.balances.usdc.ui_amount)
                   : priceFmt.format(feesUsdc)}
-                <span className="ml-1 text-xs font-normal text-muted">{tAdmin.treasury.usdcUnit}</span>
+                <span className="ml-1 text-xs font-normal text-muted">
+                  {tAdmin.treasury.usdcUnit}
+                </span>
               </p>
               <p className="mt-0.5 text-[10px] text-muted">
                 {tAdmin.treasury.usdcHint}
@@ -417,10 +445,14 @@ export function AdminDashboard({
             </div>
 
             <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <p className="text-[11px] text-muted">{tAdmin.treasury.feeRateLabel}</p>
+              <p className="text-[11px] text-muted">
+                {tAdmin.treasury.feeRateLabel}
+              </p>
               <p className="mt-1 font-mono text-lg font-bold text-foreground">
-                100 bps{" "}
-                <span className="text-xs font-normal text-muted">(1,00%)</span>
+                {treasuryData?.config.fee_bps ?? 100} bps{" "}
+                <span className="text-xs font-normal text-muted">
+                  ({(treasuryData?.config.fee_percentage ?? 1).toFixed(2)}%)
+                </span>
               </p>
               <p className="mt-0.5 text-[10px] text-muted">
                 {tAdmin.treasury.feeRateHint}
@@ -428,7 +460,9 @@ export function AdminDashboard({
             </div>
 
             <div className="rounded-2xl border border-border-low bg-card p-3.5">
-              <p className="text-[11px] text-muted">{tAdmin.treasury.adminAuthorityLabel}</p>
+              <p className="text-[11px] text-muted">
+                {tAdmin.treasury.adminAuthorityLabel}
+              </p>
               <div className="mt-1 flex items-center gap-1.5">
                 <span
                   className={`size-2 rounded-full ${
@@ -449,7 +483,6 @@ export function AdminDashboard({
             </div>
           </div>
         </div>
-
       </section>
 
       {/* 3. CENTRO DE GESTIÓN DE TAREAS Y LOTES */}
@@ -498,7 +531,11 @@ export function AdminDashboard({
             active={activeTab === "redeemed"}
             onClick={() => setActiveTab("redeemed")}
             label={tAdmin.taskCenter.tabs.redeemed}
-            count={lots.filter((l) => l.status === "redeemed").length}
+            count={
+              lots.filter(
+                (l) => l.status === "redeemed" || l.status === "claimed"
+              ).length
+            }
           />
           <StatusTabButton
             active={activeTab === "all"}
@@ -578,7 +615,9 @@ export function AdminDashboard({
                   ? tAdmin.taskCenter.emptyDescFiltered
                   : tAdmin.taskCenter.emptyDescInitial}
               </p>
-              {(searchQuery || originFilter !== "all" || activeTab !== "all") && (
+              {(searchQuery ||
+                originFilter !== "all" ||
+                activeTab !== "all") && (
                 <button
                   type="button"
                   onClick={() => {
@@ -596,7 +635,7 @@ export function AdminDashboard({
             filteredLots.map((lot) => {
               const settlement = calculateLotSettlement(
                 Number(lot.price_usdc || 0),
-                100
+                lot.fee_bps ?? treasuryData?.config.fee_bps ?? 100
               );
 
               return (
@@ -650,7 +689,9 @@ export function AdminDashboard({
                   {/* Metrics and details row */}
                   <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 sm:gap-4 border-t border-border-low pt-3">
                     <div>
-                      <p className="text-[11px] text-muted">{tAdmin.taskCenter.thVolumePurity}</p>
+                      <p className="text-[11px] text-muted">
+                        {tAdmin.taskCenter.thVolumePurity}
+                      </p>
                       <p className="mt-0.5 font-semibold text-foreground">
                         {numFmt.format(Number(lot.volume_tonnes || 0))} t Li₂CO₃
                         <span className="ml-1 text-[11px] font-normal text-muted">
@@ -660,21 +701,27 @@ export function AdminDashboard({
                     </div>
 
                     <div>
-                      <p className="text-[11px] text-muted">{tAdmin.taskCenter.thPrice}</p>
+                      <p className="text-[11px] text-muted">
+                        {tAdmin.taskCenter.thPrice}
+                      </p>
                       <p className="mt-0.5 font-semibold text-foreground font-mono">
-                        ${priceFmt.format(Number(lot.price_usdc || 0))} USDC
+                        ${priceFmt.format(Number(lot.price_usdc || 0))} dUSDC
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-[11px] text-muted">{tAdmin.taskCenter.thFee}</p>
+                      <p className="text-[11px] text-muted">
+                        {tAdmin.taskCenter.thFee}
+                      </p>
                       <p className="mt-0.5 font-semibold text-brand-700 font-mono">
-                        ${priceFmt.format(settlement.feeUsdc)} USDC
+                        ${priceFmt.format(settlement.feeUsdc)} dUSDC
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-[11px] text-muted">{tAdmin.taskCenter.thParties}</p>
+                      <p className="text-[11px] text-muted">
+                        {tAdmin.taskCenter.thParties}
+                      </p>
                       <p className="mt-0.5 truncate text-[11px] text-foreground">
                         <span className="font-medium">Prod:</span>{" "}
                         {lot.producer_name || ellipsify(lot.producer_wallet, 4)}{" "}
@@ -702,9 +749,7 @@ export function AdminDashboard({
             <h2 className="mt-1 text-xl font-bold tracking-tight text-foreground">
               {tAdmin.companies.title}
             </h2>
-            <p className="mt-0.5 text-xs text-muted">
-              {tAdmin.companies.desc}
-            </p>
+            <p className="mt-0.5 text-xs text-muted">{tAdmin.companies.desc}</p>
           </div>
           <button
             type="button"
@@ -719,32 +764,48 @@ export function AdminDashboard({
         {/* Resumen de participantes */}
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-2xl border border-border-low bg-secondary/50 p-3.5">
-            <p className="text-[11px] text-muted">{tAdmin.companies.kpiTotal}</p>
+            <p className="text-[11px] text-muted">
+              {tAdmin.companies.kpiTotal}
+            </p>
             <p className="mt-0.5 font-mono text-xl font-bold text-foreground">
               {companies.length}
             </p>
-            <p className="text-[10px] text-muted">{tAdmin.companies.kpiTotalHint}</p>
+            <p className="text-[10px] text-muted">
+              {tAdmin.companies.kpiTotalHint}
+            </p>
           </div>
           <div className="rounded-2xl border border-border-low bg-secondary/50 p-3.5">
-            <p className="text-[11px] text-muted">{tAdmin.companies.kpiProducers}</p>
+            <p className="text-[11px] text-muted">
+              {tAdmin.companies.kpiProducers}
+            </p>
             <p className="mt-0.5 font-mono text-xl font-bold text-brand-700">
               {companies.filter((c) => c.company_type === "producer").length}
             </p>
-            <p className="text-[10px] text-muted">{tAdmin.companies.kpiProducersHint}</p>
+            <p className="text-[10px] text-muted">
+              {tAdmin.companies.kpiProducersHint}
+            </p>
           </div>
           <div className="rounded-2xl border border-border-low bg-secondary/50 p-3.5">
-            <p className="text-[11px] text-muted">{tAdmin.companies.kpiBuyers}</p>
+            <p className="text-[11px] text-muted">
+              {tAdmin.companies.kpiBuyers}
+            </p>
             <p className="mt-0.5 font-mono text-xl font-bold text-emerald-700">
               {companies.filter((c) => c.company_type === "buyer").length}
             </p>
-            <p className="text-[10px] text-muted">{tAdmin.companies.kpiBuyersHint}</p>
+            <p className="text-[10px] text-muted">
+              {tAdmin.companies.kpiBuyersHint}
+            </p>
           </div>
           <div className="rounded-2xl border border-border-low bg-secondary/50 p-3.5">
-            <p className="text-[11px] text-muted">{tAdmin.companies.kpiWallets}</p>
+            <p className="text-[11px] text-muted">
+              {tAdmin.companies.kpiWallets}
+            </p>
             <p className="mt-0.5 font-mono text-xl font-bold text-foreground">
               {companies.filter((c) => Boolean(c.wallet_address)).length}
             </p>
-            <p className="text-[10px] text-muted">{tAdmin.companies.kpiWalletsHint}</p>
+            <p className="text-[10px] text-muted">
+              {tAdmin.companies.kpiWalletsHint}
+            </p>
           </div>
         </div>
 
@@ -815,11 +876,14 @@ export function AdminDashboard({
                       )}
                       <span>
                         {tAdmin.companies.registeredOn}{" "}
-                        {new Date(c.created_at).toLocaleDateString(dict.numLocale, {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {new Date(c.created_at).toLocaleDateString(
+                          dict.numLocale,
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )}
                       </span>
                     </div>
                   </div>
@@ -879,9 +943,7 @@ export function AdminDashboard({
             <h2 className="mt-1 text-xl font-bold tracking-tight text-foreground">
               {tAdmin.origins.title}
             </h2>
-            <p className="mt-0.5 text-xs text-muted">
-              {tAdmin.origins.desc}
-            </p>
+            <p className="mt-0.5 text-xs text-muted">{tAdmin.origins.desc}</p>
           </div>
           <button
             type="button"
@@ -900,27 +962,42 @@ export function AdminDashboard({
             <p className="mt-0.5 font-mono text-xl font-bold text-foreground">
               {origins.length}
             </p>
-            <p className="text-[10px] text-muted">{tAdmin.origins.kpiTotalHint}</p>
-          </div>
-          <div className="rounded-2xl border border-border-low bg-secondary/50 p-3.5">
-            <p className="text-[11px] text-muted">{tAdmin.origins.kpiCapacity}</p>
-            <p className="mt-0.5 font-mono text-xl font-bold text-brand-700">
-              {numFmt.format(origins.reduce((acc, o) => acc + (o.capacity_tpa || 0), 0))} t
+            <p className="text-[10px] text-muted">
+              {tAdmin.origins.kpiTotalHint}
             </p>
-            <p className="text-[10px] text-muted">{tAdmin.origins.kpiCapacityHint}</p>
           </div>
           <div className="rounded-2xl border border-border-low bg-secondary/50 p-3.5">
-            <p className="text-[11px] text-muted">{tAdmin.origins.kpiElevation}</p>
+            <p className="text-[11px] text-muted">
+              {tAdmin.origins.kpiCapacity}
+            </p>
+            <p className="mt-0.5 font-mono text-xl font-bold text-brand-700">
+              {numFmt.format(
+                origins.reduce((acc, o) => acc + (o.capacity_tpa || 0), 0)
+              )}{" "}
+              t
+            </p>
+            <p className="text-[10px] text-muted">
+              {tAdmin.origins.kpiCapacityHint}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border-low bg-secondary/50 p-3.5">
+            <p className="text-[11px] text-muted">
+              {tAdmin.origins.kpiElevation}
+            </p>
             <p className="mt-0.5 font-mono text-xl font-bold text-foreground">
               {numFmt.format(
                 Math.round(
-                  origins.filter((o) => o.altitude_m).reduce((acc, o) => acc + (o.altitude_m || 0), 0) /
+                  origins
+                    .filter((o) => o.altitude_m)
+                    .reduce((acc, o) => acc + (o.altitude_m || 0), 0) /
                     (origins.filter((o) => o.altitude_m).length || 1)
                 )
               )}{" "}
               <span className="text-xs font-normal text-muted">msnm</span>
             </p>
-            <p className="text-[10px] text-muted">{tAdmin.origins.kpiElevationHint}</p>
+            <p className="text-[10px] text-muted">
+              {tAdmin.origins.kpiElevationHint}
+            </p>
           </div>
         </div>
 
@@ -964,21 +1041,29 @@ export function AdminDashboard({
 
                 <div className="mt-4 pt-3 border-t border-border-low grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <p className="text-[10px] text-muted">{tAdmin.origins.capacityLabel}</p>
+                    <p className="text-[10px] text-muted">
+                      {tAdmin.origins.capacityLabel}
+                    </p>
                     <p className="font-mono font-semibold text-foreground">
                       {numFmt.format(o.capacity_tpa)} t
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted">{tAdmin.origins.altitudeLabel}</p>
+                    <p className="text-[10px] text-muted">
+                      {tAdmin.origins.altitudeLabel}
+                    </p>
                     <p className="font-mono font-semibold text-foreground">
                       {o.altitude_m ? `${numFmt.format(o.altitude_m)} m` : "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted">{tAdmin.origins.waterLabel}</p>
+                    <p className="text-[10px] text-muted">
+                      {tAdmin.origins.waterLabel}
+                    </p>
                     <p className="font-mono font-semibold text-brand-700">
-                      {o.water_m3_per_tonne ? `${numFmt.format(o.water_m3_per_tonne)} m³/t` : "—"}
+                      {o.water_m3_per_tonne
+                        ? `${numFmt.format(o.water_m3_per_tonne)} m³/t`
+                        : "—"}
                     </p>
                   </div>
                 </div>
@@ -1152,7 +1237,10 @@ function LotInspectionDialog({
       }),
     [dict.numLocale]
   );
-  const settlement = calculateLotSettlement(Number(lot.price_usdc || 0), 100);
+  const settlement = calculateLotSettlement(
+    Number(lot.price_usdc || 0),
+    lot.fee_bps ?? 100
+  );
   const lotOriginName =
     origins.find((o) => o.id === lot.origin_id)?.name ||
     originName(lot.origin_id) ||
@@ -1164,9 +1252,7 @@ function LotInspectionDialog({
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
     >
-      <div
-        className="animate-modal-in flex flex-col w-full max-w-2xl max-h-[90vh] rounded-3xl bg-card border border-border p-6 shadow-2xl overflow-y-auto"
-      >
+      <div className="animate-modal-in flex flex-col w-full max-w-2xl max-h-[90vh] rounded-3xl bg-card border border-border p-6 shadow-2xl overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-low pb-4">
           <div>
@@ -1203,19 +1289,19 @@ function LotInspectionDialog({
             <div>
               <p className="text-[11px] text-muted">{tLot.totalPrice}</p>
               <p className="mt-0.5 font-mono text-sm font-bold text-foreground">
-                ${priceFmt.format(Number(lot.price_usdc || 0))} USDC
+                ${priceFmt.format(Number(lot.price_usdc || 0))} dUSDC
               </p>
             </div>
             <div>
               <p className="text-[11px] text-muted">{tLot.protocolFee}</p>
               <p className="mt-0.5 font-mono text-sm font-bold text-brand-700">
-                ${priceFmt.format(settlement.feeUsdc)} USDC
+                ${priceFmt.format(settlement.feeUsdc)} dUSDC
               </p>
             </div>
             <div>
               <p className="text-[11px] text-muted">{tLot.netProducer}</p>
               <p className="mt-0.5 font-mono text-sm font-bold text-foreground">
-                ${priceFmt.format(settlement.producerPayoutUsdc)} USDC
+                ${priceFmt.format(settlement.producerPayoutUsdc)} dUSDC
               </p>
             </div>
           </div>
@@ -1235,9 +1321,7 @@ function LotInspectionDialog({
             </p>
             <button
               type="button"
-              onClick={() =>
-                onCopy(lot.producer_wallet, tLot.producerTitle)
-              }
+              onClick={() => onCopy(lot.producer_wallet, tLot.producerTitle)}
               className="mt-2 text-[10px] font-semibold text-brand-700 hover:underline"
             >
               {tLot.copyWallet}
@@ -1256,9 +1340,7 @@ function LotInspectionDialog({
             </p>
             <button
               type="button"
-              onClick={() =>
-                onCopy(lot.buyer_wallet, tLot.buyerTitle)
-              }
+              onClick={() => onCopy(lot.buyer_wallet, tLot.buyerTitle)}
               className="mt-2 text-[10px] font-semibold text-brand-700 hover:underline"
             >
               {tLot.copyWallet}
@@ -1399,7 +1481,6 @@ const ICON_ESCROW = (
   </svg>
 );
 
-
 const ICON_SEARCH = (
   <svg
     viewBox="0 0 24 24"
@@ -1475,9 +1556,7 @@ function CreateCompanyDialog({
             <h2 className="text-base font-bold text-foreground">
               {tComp.title}
             </h2>
-            <p className="text-xs text-muted">
-              {tComp.desc}
-            </p>
+            <p className="text-xs text-muted">{tComp.desc}</p>
           </div>
           <button
             type="button"
@@ -1491,7 +1570,10 @@ function CreateCompanyDialog({
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           {/* Nombre de la Empresa */}
           <div>
-            <label htmlFor="comp-name" className="text-xs font-semibold text-foreground">
+            <label
+              htmlFor="comp-name"
+              className="text-xs font-semibold text-foreground"
+            >
               {tComp.nameLabel}
             </label>
             <input
@@ -1508,7 +1590,10 @@ function CreateCompanyDialog({
           {/* Email y Contraseña */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="comp-email" className="text-xs font-semibold text-foreground">
+              <label
+                htmlFor="comp-email"
+                className="text-xs font-semibold text-foreground"
+              >
                 {tComp.emailLabel}
               </label>
               <input
@@ -1522,7 +1607,10 @@ function CreateCompanyDialog({
               />
             </div>
             <div>
-              <label htmlFor="comp-pass" className="text-xs font-semibold text-foreground">
+              <label
+                htmlFor="comp-pass"
+                className="text-xs font-semibold text-foreground"
+              >
                 {tComp.passwordLabel}
               </label>
               <input
@@ -1538,7 +1626,10 @@ function CreateCompanyDialog({
 
           {/* Wallet Solana */}
           <div>
-            <label htmlFor="comp-wallet" className="text-xs font-semibold text-foreground">
+            <label
+              htmlFor="comp-wallet"
+              className="text-xs font-semibold text-foreground"
+            >
               {tComp.walletLabel}
             </label>
             <input
@@ -1551,9 +1642,11 @@ function CreateCompanyDialog({
             />
           </div>
 
-
           {error && (
-            <p role="alert" className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-2.5">
+            <p
+              role="alert"
+              className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-2.5"
+            >
               {error}
             </p>
           )}
@@ -1632,7 +1725,9 @@ function CreateOriginDialog({
           longitude: parseFloat(longitude),
           capacity_tpa: parseInt(capacityTpa, 10),
           altitude_m: altitudeM ? parseInt(altitudeM, 10) : null,
-          water_m3_per_tonne: waterFootprint ? parseFloat(waterFootprint) : null,
+          water_m3_per_tonne: waterFootprint
+            ? parseFloat(waterFootprint)
+            : null,
           note: note.trim(),
           source_label: sourceLabel.trim(),
           source_url: sourceUrl.trim(),
@@ -1678,9 +1773,7 @@ function CreateOriginDialog({
             <h2 className="text-base font-bold text-foreground">
               {tModal.title}
             </h2>
-            <p className="text-xs text-muted">
-              {tModal.desc}
-            </p>
+            <p className="text-xs text-muted">{tModal.desc}</p>
           </div>
           <button
             type="button"
@@ -1699,7 +1792,10 @@ function CreateOriginDialog({
             </p>
 
             <div>
-              <label htmlFor="orig-prod" className="text-xs font-semibold text-foreground">
+              <label
+                htmlFor="orig-prod"
+                className="text-xs font-semibold text-foreground"
+              >
                 {tModal.producerLabel}
               </label>
               <input
@@ -1715,7 +1811,10 @@ function CreateOriginDialog({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="orig-email" className="text-xs font-semibold text-foreground">
+                <label
+                  htmlFor="orig-email"
+                  className="text-xs font-semibold text-foreground"
+                >
                   {tModal.emailLabel}
                 </label>
                 <input
@@ -1729,7 +1828,10 @@ function CreateOriginDialog({
                 />
               </div>
               <div>
-                <label htmlFor="orig-pass" className="text-xs font-semibold text-foreground">
+                <label
+                  htmlFor="orig-pass"
+                  className="text-xs font-semibold text-foreground"
+                >
                   {tModal.passwordLabel}
                 </label>
                 <input
@@ -1744,7 +1846,10 @@ function CreateOriginDialog({
             </div>
 
             <div>
-              <label htmlFor="orig-wallet" className="text-xs font-semibold text-foreground">
+              <label
+                htmlFor="orig-wallet"
+                className="text-xs font-semibold text-foreground"
+              >
                 {tModal.walletLabel}
               </label>
               <input
@@ -1758,7 +1863,10 @@ function CreateOriginDialog({
             </div>
 
             <div>
-              <label htmlFor="orig-share" className="text-xs font-semibold text-foreground">
+              <label
+                htmlFor="orig-share"
+                className="text-xs font-semibold text-foreground"
+              >
                 {tModal.shareholdersLabel}
               </label>
               <input
@@ -1779,7 +1887,10 @@ function CreateOriginDialog({
             </p>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label htmlFor="orig-purity" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-purity"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.purityLabel}
                 </label>
                 <input
@@ -1794,7 +1905,10 @@ function CreateOriginDialog({
                 />
               </div>
               <div>
-                <label htmlFor="orig-water" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-water"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.specWaterLabel}
                 </label>
                 <input
@@ -1808,7 +1922,10 @@ function CreateOriginDialog({
                 />
               </div>
               <div>
-                <label htmlFor="orig-carbon" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-carbon"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.carbonLabel}
                 </label>
                 <input
@@ -1831,7 +1948,10 @@ function CreateOriginDialog({
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
-                <label htmlFor="orig-name" className="text-xs font-semibold text-foreground">
+                <label
+                  htmlFor="orig-name"
+                  className="text-xs font-semibold text-foreground"
+                >
                   {tModal.nameLabel}
                 </label>
                 <input
@@ -1845,7 +1965,10 @@ function CreateOriginDialog({
                 />
               </div>
               <div>
-                <label htmlFor="orig-code" className="text-xs font-semibold text-foreground">
+                <label
+                  htmlFor="orig-code"
+                  className="text-xs font-semibold text-foreground"
+                >
                   {tModal.codeLabel}
                 </label>
                 <input
@@ -1863,7 +1986,10 @@ function CreateOriginDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="orig-lat" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-lat"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.latLabel}
                 </label>
                 <input
@@ -1879,7 +2005,10 @@ function CreateOriginDialog({
                 />
               </div>
               <div>
-                <label htmlFor="orig-lng" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-lng"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.lngLabel}
                 </label>
                 <input
@@ -1898,7 +2027,10 @@ function CreateOriginDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="orig-cap" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-cap"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.capacityLabel}
                 </label>
                 <input
@@ -1913,7 +2045,10 @@ function CreateOriginDialog({
                 />
               </div>
               <div>
-                <label htmlFor="orig-alt" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-alt"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.altitudeLabel}
                 </label>
                 <input
@@ -1932,7 +2067,10 @@ function CreateOriginDialog({
           {/* Notas y Fuente */}
           <div className="space-y-3">
             <div>
-              <label htmlFor="orig-note" className="text-[10px] font-semibold text-muted">
+              <label
+                htmlFor="orig-note"
+                className="text-[10px] font-semibold text-muted"
+              >
                 {tModal.noteLabel}
               </label>
               <input
@@ -1946,7 +2084,10 @@ function CreateOriginDialog({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="orig-source" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-source"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.sourceLabel}
                 </label>
                 <input
@@ -1959,7 +2100,10 @@ function CreateOriginDialog({
                 />
               </div>
               <div>
-                <label htmlFor="orig-url" className="text-[10px] font-semibold text-muted">
+                <label
+                  htmlFor="orig-url"
+                  className="text-[10px] font-semibold text-muted"
+                >
                   {tModal.sourceUrlLabel}
                 </label>
                 <input
@@ -1975,7 +2119,10 @@ function CreateOriginDialog({
           </div>
 
           {error && (
-            <p role="alert" className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-2.5">
+            <p
+              role="alert"
+              className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-2.5"
+            >
               {error}
             </p>
           )}

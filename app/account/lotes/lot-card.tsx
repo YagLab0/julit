@@ -106,7 +106,7 @@ export function LotGridCard({
             <span className="text-xl font-bold tracking-tight">
               {integerFmt.format(lot.price_usdc)}
             </span>
-            <span className="ml-1 text-[11px] text-muted">USDC/t</span>
+            <span className="ml-1 text-[11px] text-muted">dUSDC</span>
           </p>
         </div>
 

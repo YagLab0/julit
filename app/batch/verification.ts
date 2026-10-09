@@ -75,6 +75,9 @@ const ONCHAIN_STATUS: Readonly<Record<number, IndexedLotStatus>> = {
   [OnChainLotStatus.Funded]: "funded",
   [OnChainLotStatus.Redeemed]: "redeemed",
   [OnChainLotStatus.Cancelled]: "cancelled",
+  [OnChainLotStatus.Shipped]: "shipped",
+  [OnChainLotStatus.Refunded]: "refunded",
+  [OnChainLotStatus.Claimed]: "claimed",
 };
 
 /**

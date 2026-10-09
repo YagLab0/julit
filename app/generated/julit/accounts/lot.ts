@@ -25,6 +25,8 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   getU64Decoder,
@@ -77,6 +79,16 @@ export type Lot = {
   status: LotStatus;
   createdAt: bigint;
   bump: number;
+  /** Take rate frozen from Config inside `fund_lot`; 0 while Listed. */
+  feeBps: number;
+  /** Unix ts deadline for the producer to post shipping evidence. */
+  shipBy: bigint;
+  /** Seconds the buyer has to confirm receipt after `shipped_at`. */
+  confirmWindowSecs: bigint;
+  /** Unix ts of `mark_shipped`; 0 until shipped. */
+  shippedAt: bigint;
+  /** SHA-256 of the bill of lading / shipping document; zeroed until shipped. */
+  blHash: ReadonlyUint8Array;
 };
 
 export type LotArgs = {
@@ -94,6 +106,16 @@ export type LotArgs = {
   status: LotStatusArgs;
   createdAt: number | bigint;
   bump: number;
+  /** Take rate frozen from Config inside `fund_lot`; 0 while Listed. */
+  feeBps: number;
+  /** Unix ts deadline for the producer to post shipping evidence. */
+  shipBy: number | bigint;
+  /** Seconds the buyer has to confirm receipt after `shipped_at`. */
+  confirmWindowSecs: number | bigint;
+  /** Unix ts of `mark_shipped`; 0 until shipped. */
+  shippedAt: number | bigint;
+  /** SHA-256 of the bill of lading / shipping document; zeroed until shipped. */
+  blHash: ReadonlyUint8Array;
 };
 
 /** Gets the encoder for {@link LotArgs} account data. */
@@ -115,6 +137,11 @@ export function getLotEncoder(): Encoder<LotArgs> {
       ["status", getLotStatusEncoder()],
       ["createdAt", getI64Encoder()],
       ["bump", getU8Encoder()],
+      ["feeBps", getU16Encoder()],
+      ["shipBy", getI64Encoder()],
+      ["confirmWindowSecs", getI64Encoder()],
+      ["shippedAt", getI64Encoder()],
+      ["blHash", fixEncoderSize(getBytesEncoder(), 32)],
     ]),
     (value) => ({ ...value, discriminator: LOT_DISCRIMINATOR }),
   );
@@ -138,6 +165,11 @@ export function getLotDecoder(): Decoder<Lot> {
     ["status", getLotStatusDecoder()],
     ["createdAt", getI64Decoder()],
     ["bump", getU8Decoder()],
+    ["feeBps", getU16Decoder()],
+    ["shipBy", getI64Decoder()],
+    ["confirmWindowSecs", getI64Decoder()],
+    ["shippedAt", getI64Decoder()],
+    ["blHash", fixDecoderSize(getBytesDecoder(), 32)],
   ]);
 }
 

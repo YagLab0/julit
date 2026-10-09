@@ -11,7 +11,7 @@ import { bytesToHex } from "../../lib/server/spec-sheets";
 import { createSolanaClient } from "../../lib/solana-client";
 import { createClient } from "../../lib/supabase/server";
 import { createServiceClient } from "../../lib/supabase/service";
-import { verifyLotCreation } from "./verify";
+import { verifyLotCreation, type LotIndexStatus } from "./verify";
 
 /** Exact decimal string from a scaled integer (no float math). */
 function unscale(value: bigint, decimals: number): string {
@@ -26,6 +26,9 @@ const LOT_STATUS: Readonly<Record<number, string>> = {
   [LotStatus.Funded]: "funded",
   [LotStatus.Redeemed]: "redeemed",
   [LotStatus.Cancelled]: "cancelled",
+  [LotStatus.Shipped]: "shipped",
+  [LotStatus.Refunded]: "refunded",
+  [LotStatus.Claimed]: "claimed",
 };
 
 export async function GET(request: Request) {
@@ -40,7 +43,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("lots")
     .select(
-      "pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, spec_sheet_sha256, spec_sheet_path, status, creation_tx_signature, fund_tx_signature, redeem_tx_signature, cancel_tx_signature, observed_slot, indexed_at"
+      "pda_address, lot_id, producer_wallet, buyer_wallet, origin_id, mint_address, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, spec_sheet_sha256, spec_sheet_path, status, ship_by, confirm_window_secs, fee_bps, shipped_at, bl_hash, creation_tx_signature, fund_tx_signature, redeem_tx_signature, cancel_tx_signature, ship_tx_signature, refund_tx_signature, claim_tx_signature, observed_slot, indexed_at"
     )
     .order("indexed_at", { ascending: false });
 
@@ -186,11 +189,7 @@ export async function POST(request: Request) {
             programOwned: account.programAddress === JULIT_PROGRAM_ADDRESS,
             producer: account.data.producer,
             buyer: account.data.buyer,
-            status: LOT_STATUS[account.data.status] as
-              | "listed"
-              | "funded"
-              | "redeemed"
-              | "cancelled",
+            status: LOT_STATUS[account.data.status] as LotIndexStatus,
           }
         : null,
   });
@@ -219,6 +218,8 @@ export async function POST(request: Request) {
       ),
       price_usdc: unscale(lot.priceUsdc, 6),
       spec_sheet_sha256: bytesToHex(lot.specSheetHash),
+      ship_by: new Date(Number(lot.shipBy) * 1000).toISOString(),
+      confirm_window_secs: Number(lot.confirmWindowSecs),
       status: "listed",
       creation_tx_signature: txSignature,
       observed_slot: Number(tx!.slot),

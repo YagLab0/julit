@@ -8,7 +8,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-The buyer pays only when the lithium arrives, and the producer knows the money is already there. JuLit locks the buyer's USDC in a Solana program and releases it to the producer when the buyer confirms delivery.
+The buyer pays only when the lithium arrives, and the producer knows the money is already there. JuLit locks the buyer's USDC in a Solana program and releases it to the producer when the buyer confirms delivery — or refunds the buyer if the lot never ships.
 
 Pitch deck: [`public/pitch-en.html`](public/pitch-en.html) ([PDF](public/pitch-en.pdf)) · Spanish: [`public/pitch.html`](public/pitch.html) · Script: [`public/pitch-script-en.pdf`](public/pitch-script-en.pdf)
 
@@ -42,8 +42,9 @@ A payment box that opens only on delivery:
 
 1. **Register** — We (the JuLit admin) register each producer with its production data, like lithium purity. Every lot from that producer uses the same data.
 2. **Contract** — Producer and buyer sign a contract in JuLit. The producer creates a lot for that buyer (`create_lot`).
-3. **Deposit** — The buyer puts the money, in USDC, into the box (`fund_lot`). The funds sit in a program-owned account: nobody can take them — not even us.
-4. **Delivery** — The lithium arrives, the buyer checks it and confirms (`redeem_lot`). In that same transaction, the producer gets paid.
+3. **Deposit** — The buyer puts the money, in USDC, into the box (`fund_lot`). The funds sit in a program-owned account and the program only releases them by its rules: to the producer on confirmation or timeout claim, or back to the buyer as a refund. The protocol fee is frozen into the lot at this point.
+4. **Delivery** — The producer ships and records the hash of the shipping document on-chain (`mark_shipped`). The lithium arrives, the buyer checks it and confirms (`redeem_lot`). In that same transaction, the producer gets paid.
+5. **Fallbacks** — If the producer never ships, the buyer takes a full refund after `ship_by` (`refund_lot`). If the buyer stays silent after shipping, the producer claims the payment once the confirm window expires (`claim_timeout`).
 
 Yes, the buyer pays first. But without a bank, small buyers already pay first. With JuLit, that money is protected.
 
@@ -51,20 +52,38 @@ Yes, the buyer pays first. But without a bank, small buyers already pay first. W
 
 ## 4. How It Works On-Chain
 
-Each lot is a Program-Derived Address (PDA) that owns its USDC vault and a Digital Title token (Metaplex). The title never leaves the escrow; it is burned when the payment is released.
+Each lot is a Program-Derived Address (PDA) that owns its USDC vault and a Digital Title token (Metaplex). The title never leaves the escrow; it is burned on every terminal transition (`redeem_lot`, `claim_timeout`, `refund_lot`, `cancel_lot`).
+
+### Lifecycle
 
 ```mermaid
 stateDiagram-v2
     [*] --> Listed: create_lot\n(Producer lists a lot for one buyer)
     Listed --> Cancelled: cancel_lot\n(Producer cancels before funding)
-    Listed --> Funded: fund_lot\n(Buyer deposits the full USDC price)
-    Funded --> Redeemed: redeem_lot\n(Buyer confirms delivery: title burned, USDC released)
+    Listed --> Funded: fund_lot\n(Buyer deposits the full USDC price, before ship_by)
+    Funded --> Shipped: mark_shipped\n(Producer records bl_hash, before ship_by)
+    Funded --> Redeemed: redeem_lot\n(Buyer confirms: price − fee to producer, title burned)
+    Shipped --> Redeemed: redeem_lot\n(Buyer confirms receipt)
+    Funded --> Refunded: refund_lot\n(After ship_by, never shipped: full price back, no fee)
+    Shipped --> Claimed: claim_timeout\n(After shipped_at + confirm_window_secs: price − fee to producer)
 ```
+
+- `ship_by` (≤ 180 days ahead) and `confirm_window_secs` (60 s – 90 days) are commercial terms fixed at lot creation; the buyer accepts them by funding.
+- `bl_hash` is the sha256 of the bill of lading / shipping document, recorded on-chain as shipping evidence.
 
 ### Deployed Program (Solana Devnet)
 
 - **Program ID:** [`BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky`](https://explorer.solana.com/address/BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky?cluster=devnet)
 - **Money:** a project-owned test USDC mint (dUSDC). No real funds.
+
+### On-chain proof (devnet)
+
+Program `BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky`:
+
+- **TODO:** link a `fund_lot` transaction on Solana Explorer.
+- **TODO:** link a `redeem_lot` transaction on Solana Explorer.
+- **TODO:** link the live app URL.
+- **TODO:** document how to get test dUSDC (see `scripts/seed-devnet.mjs`).
 
 ---
 
@@ -78,7 +97,7 @@ We use Solana because it is fast, and each transaction costs less than one cent.
 
 We earn only when the payment is released.
 
-- **1% fee**, charged only when the box releases the money to the producer. The fee is stored on-chain in the program's `Config` and set by the admin (`set_fee_bps`, currently 100 bps on Devnet).
+- **1% fee**, charged only when the box releases the money to the producer. The fee is capped on-chain at `MAX_FEE_BPS` = 200 (2%); the current rate is 100 bps, stored in `Config` and set by the admin (`set_fee_bps`). The fee is frozen into each lot when the buyer funds it (`lot.fee_bps`), so later admin changes never affect funded lots.
 - **Creating a lot and depositing are free.**
 - **Why they pay:** the producer ships knowing the money is already locked; the buyer's money is protected until delivery.
 
@@ -88,9 +107,17 @@ We don't replace bank credit. We give a safe option to the companies that can't 
 
 ## 7. Status & Limits
 
-- **Live on Devnet:** the full flow — contract, lot, deposit, confirm, payment — runs on Solana Devnet with test money.
+- **Live on Devnet:** the buyer-confirmed flow — list, fund, confirm — has run on Solana Devnet with test money. The version with shipping evidence (`mark_shipped`), `refund_lot` and `claim_timeout` is tested in LiteSVM and pending redeploy. **TODO:** update after redeploy.
 - **Tested:** the Anchor program is tested with LiteSVM, and the app with Vitest.
-- **Limit — the chain can't see lithium:** the blockchain proves that records were not changed. It cannot check the cargo. Today the buyer checks it before confirming.
+
+### Known limits
+
+- **Disputes are off-chain.** Quality or quantity disputes are not resolved on-chain: after shipping, the buyer can only confirm or let the confirm window expire. Disputes fall to the off-chain commercial contract; a multisig arbiter (Squads) is on the roadmap.
+- **Lot metrics are producer-declared.** Purity, water and carbon metrics and the spec sheet are declared by the producer; the program only range-checks purity. Lab attestation (e.g. Solana Attestation Service) is on the roadmap.
+- **`bl_hash` proves commitment, not authenticity.** It proves which shipping document the producer committed to, not that the document is genuine.
+- **Test money only.** Settlement uses a project-owned test mint (dUSDC) on devnet; no real funds move. Mainnet would configure Circle USDC in `Config`.
+- **Single-key admin today.** Admin, treasury and program upgrade authority are single keys; moving them to a Squads multisig is planned before mainnet. `initialize` is not yet restricted to the upgrade authority (the devnet `Config` is already initialized).
+- **Regulatory review pending.** Settlement in USDC must be coordinated with Argentine export FX rules (Decreto 609/2019, BCRA); legal review pending.
 
 ---
 

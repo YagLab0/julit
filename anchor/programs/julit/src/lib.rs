@@ -11,6 +11,10 @@ declare_id!("BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky");
 pub const MAX_LOT_ID_BYTES: usize = 32;
 pub const MAX_ORIGIN_ID_BYTES: usize = 32;
 pub const MAX_URI_BYTES: usize = 200;
+pub const MAX_FEE_BPS: u16 = 200;
+pub const MIN_CONFIRM_WINDOW_SECS: i64 = 60;
+pub const MAX_CONFIRM_WINDOW_SECS: i64 = 90 * 24 * 60 * 60;
+pub const MAX_SHIP_WINDOW_SECS: i64 = 180 * 24 * 60 * 60;
 
 #[program]
 pub mod julit {
@@ -24,7 +28,7 @@ pub mod julit {
         usdc_mint: Pubkey,
         treasury: Pubkey,
     ) -> Result<()> {
-        require!(fee_bps <= 10_000, LotError::InvalidFeeBps);
+        require!(fee_bps <= MAX_FEE_BPS, LotError::InvalidFeeBps);
         require!(treasury != Pubkey::default(), LotError::InvalidTreasury);
 
         let config = &mut ctx.accounts.config;
@@ -37,18 +41,24 @@ pub mod julit {
     }
 
     /// Updates the protocol take rate. Only the Config admin may call it; the
-    /// fee is read at settlement, so it applies to every future Redemption
-    /// regardless of when the lot was created or funded.
+    /// fee is frozen per lot at funding, so changes only affect lots funded
+    /// afterwards — a lot already `Funded` always settles at its frozen rate.
     pub fn set_fee_bps(ctx: Context<UpdateConfig>, fee_bps: u16) -> Result<()> {
-        require!(fee_bps <= 10_000, LotError::InvalidFeeBps);
+        require!(fee_bps <= MAX_FEE_BPS, LotError::InvalidFeeBps);
         ctx.accounts.config.fee_bps = fee_bps;
         Ok(())
     }
 
     /// Registers a lot and mints its Digital Title into escrow. The title is a
     /// Metaplex NonFungible whose update authority is the Lot PDA; it never
-    /// leaves the escrow — it is burned there by `redeem_lot` or
-    /// `cancel_lot`, so transfer-in-transit is impossible by construction.
+    /// leaves the escrow — it is burned there by `redeem_lot`, `refund_lot`,
+    /// `claim_timeout` or `cancel_lot`, so transfer-in-transit is impossible
+    /// by construction.
+    ///
+    /// `ship_by` is the unix timestamp deadline for the producer to post
+    /// shipping evidence via `mark_shipped`; `confirm_window_secs` is how long
+    /// the buyer has to confirm receipt after `shipped_at` before the producer
+    /// may settle via `claim_timeout`.
     ///
     /// Metrics arrive pre-scaled: purity in basis points, water/carbon x100,
     /// price in USDC base units (6 decimals).
@@ -62,6 +72,8 @@ pub mod julit {
         carbon_kg_co2e_per_tonne_scaled: u64,
         price_usdc: u64,
         buyer: Pubkey,
+        ship_by: i64,
+        confirm_window_secs: i64,
         spec_sheet_hash: [u8; 32],
         metadata_uri: String,
     ) -> Result<()> {
@@ -89,6 +101,19 @@ pub mod julit {
         );
 
         let now = Clock::get()?.unix_timestamp;
+        require!(
+            ship_by > now
+                && ship_by
+                    .checked_sub(now)
+                    .ok_or(LotError::MathOverflow)?
+                    <= MAX_SHIP_WINDOW_SECS,
+            LotError::InvalidShipBy
+        );
+        require!(
+            (MIN_CONFIRM_WINDOW_SECS..=MAX_CONFIRM_WINDOW_SECS)
+                .contains(&confirm_window_secs),
+            LotError::InvalidConfirmWindow
+        );
 
         let lot = &mut ctx.accounts.lot;
         lot.lot_id = lot_id.clone();
@@ -105,6 +130,11 @@ pub mod julit {
         lot.status = LotStatus::Listed;
         lot.created_at = now;
         lot.bump = ctx.bumps.lot;
+        lot.fee_bps = 0;
+        lot.ship_by = ship_by;
+        lot.confirm_window_secs = confirm_window_secs;
+        lot.shipped_at = 0;
+        lot.bl_hash = [0; 32];
 
         let lot_key = lot.key();
         let producer_key = ctx.accounts.producer.key();
@@ -178,11 +208,18 @@ pub mod julit {
 
     /// The designated buyer deposits exactly the lot's `price_usdc` into the
     /// lot-owned escrow. The funds stay locked until `redeem_lot` releases
-    /// them to the producer. Only the buyer recorded at creation may sign, and
-    /// only a `Listed` lot accepts funding — double funding is impossible.
+    /// them to the producer or `refund_lot` returns them to the buyer. Only
+    /// the buyer recorded at creation may sign, and only a `Listed` lot
+    /// accepts funding — double funding is impossible. Funding freezes the
+    /// Config take rate into `lot.fee_bps` and is rejected once `ship_by`
+    /// has passed.
     pub fn fund_lot(ctx: Context<FundLot>) -> Result<()> {
         let lot = &mut ctx.accounts.lot;
         require!(lot.status == LotStatus::Listed, LotError::LotNotListed);
+        require!(
+            Clock::get()?.unix_timestamp < lot.ship_by,
+            LotError::ShippingDeadlinePassed
+        );
 
         token::transfer(
             CpiContext::new(
@@ -196,18 +233,40 @@ pub mod julit {
             lot.price_usdc,
         )?;
 
+        lot.fee_bps = ctx.accounts.config.fee_bps;
         lot.status = LotStatus::Funded;
+        Ok(())
+    }
+
+    /// The producer posts shipping evidence: the sha256 of the bill of
+    /// lading is recorded on-chain and the lot moves `Funded → Shipped`.
+    /// Must happen before `ship_by`; the evidence starts the buyer's
+    /// `confirm_window_secs` clock.
+    pub fn mark_shipped(ctx: Context<MarkShipped>, bl_hash: [u8; 32]) -> Result<()> {
+        let lot = &mut ctx.accounts.lot;
+        require!(lot.status == LotStatus::Funded, LotError::LotNotFunded);
+        let now = Clock::get()?.unix_timestamp;
+        require!(now <= lot.ship_by, LotError::ShippingDeadlinePassed);
+        require!(bl_hash != [0u8; 32], LotError::InvalidBlHash);
+
+        lot.shipped_at = now;
+        lot.bl_hash = bl_hash;
+        lot.status = LotStatus::Shipped;
         Ok(())
     }
 
     /// The buyer confirms physical receipt. Atomically burns the Digital
     /// Title inside escrow, releases the escrowed USDC to the producer minus
-    /// the take rate, and pays the treasury its fee. Callable only from
-    /// `Funded` — it is the single settlement path of a funded lot.
+    /// the take rate frozen at funding, and pays the treasury its fee.
+    /// Callable from `Funded` or `Shipped` — an early confirmation before
+    /// shipping evidence is valid.
     pub fn redeem_lot(ctx: Context<RedeemLot>) -> Result<()> {
         let lot_info = ctx.accounts.lot.to_account_info();
         let lot = &mut ctx.accounts.lot;
-        require!(lot.status == LotStatus::Funded, LotError::LotNotFunded);
+        require!(
+            lot.status == LotStatus::Funded || lot.status == LotStatus::Shipped,
+            LotError::LotNotFunded
+        );
         let price = lot.price_usdc;
         let producer_key = lot.producer;
         let lot_id_bytes = lot.lot_id.as_bytes().to_vec();
@@ -242,10 +301,127 @@ pub mod julit {
             &ctx.accounts.treasury_usdc.to_account_info(),
             signer,
             price,
-            ctx.accounts.config.fee_bps,
+            lot.fee_bps,
         )?;
 
         lot.status = LotStatus::Redeemed;
+        Ok(())
+    }
+
+    /// The buyer recovers the full deposit when the producer never posted
+    /// shipping evidence by `ship_by`: `Funded → Refunded`. The Digital
+    /// Title is burned and the escrow returns the entire `price_usdc` — no
+    /// fee is taken on a refund. A `Shipped` lot can never be refunded: the
+    /// on-chain evidence proves the producer performed.
+    pub fn refund_lot(ctx: Context<RefundLot>) -> Result<()> {
+        let lot_info = ctx.accounts.lot.to_account_info();
+        let lot = &mut ctx.accounts.lot;
+        require!(lot.status == LotStatus::Funded, LotError::LotNotRefundable);
+        require!(
+            Clock::get()?.unix_timestamp > lot.ship_by,
+            LotError::RefundTooEarly
+        );
+        let price = lot.price_usdc;
+        let producer_key = lot.producer;
+        let lot_id_bytes = lot.lot_id.as_bytes().to_vec();
+        let bump = [lot.bump];
+        let signer_seeds: &[&[u8]] = &[
+            b"lot",
+            producer_key.as_ref(),
+            lot_id_bytes.as_slice(),
+            &bump,
+        ];
+        let signer = &[signer_seeds];
+
+        // Burn the Digital Title inside its escrow — it never left the PDA.
+        token::burn(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    from: ctx.accounts.escrow_title.to_account_info(),
+                    authority: lot_info.clone(),
+                },
+                signer,
+            ),
+            1,
+        )?;
+
+        // Full refund: the producer never shipped, so no take rate applies.
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                token::Transfer {
+                    from: ctx.accounts.escrow_usdc.to_account_info(),
+                    to: ctx.accounts.buyer_usdc.to_account_info(),
+                    authority: lot_info,
+                },
+                signer,
+            ),
+            price,
+        )?;
+
+        lot.status = LotStatus::Refunded;
+        Ok(())
+    }
+
+    /// The producer collects when the buyer never confirmed within
+    /// `confirm_window_secs` of `shipped_at`: `Shipped → Claimed`. Same
+    /// release shape as `redeem_lot`: the Digital Title is burned and the
+    /// escrow pays out minus the take rate frozen at funding — the clock
+    /// signs instead of the buyer. Only a `Shipped` lot can be claimed:
+    /// without shipping evidence the symmetric path is `refund_lot`.
+    pub fn claim_timeout(ctx: Context<ClaimTimeout>) -> Result<()> {
+        let lot_info = ctx.accounts.lot.to_account_info();
+        let lot = &mut ctx.accounts.lot;
+        require!(lot.status == LotStatus::Shipped, LotError::LotNotShipped);
+        require!(
+            Clock::get()?.unix_timestamp
+                >= lot
+                    .shipped_at
+                    .checked_add(lot.confirm_window_secs)
+                    .ok_or(LotError::MathOverflow)?,
+            LotError::ClaimTooEarly
+        );
+        let price = lot.price_usdc;
+        let fee_bps = lot.fee_bps;
+        let producer_key = lot.producer;
+        let lot_id_bytes = lot.lot_id.as_bytes().to_vec();
+        let bump = [lot.bump];
+        let signer_seeds: &[&[u8]] = &[
+            b"lot",
+            producer_key.as_ref(),
+            lot_id_bytes.as_slice(),
+            &bump,
+        ];
+        let signer = &[signer_seeds];
+
+        // Burn the Digital Title inside its escrow — it never left the PDA.
+        token::burn(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    from: ctx.accounts.escrow_title.to_account_info(),
+                    authority: lot_info.clone(),
+                },
+                signer,
+            ),
+            1,
+        )?;
+
+        release_escrow(
+            &ctx.accounts.token_program.to_account_info(),
+            &lot_info,
+            &ctx.accounts.escrow_usdc.to_account_info(),
+            &ctx.accounts.producer_usdc.to_account_info(),
+            &ctx.accounts.treasury_usdc.to_account_info(),
+            signer,
+            price,
+            fee_bps,
+        )?;
+
+        lot.status = LotStatus::Claimed;
         Ok(())
     }
 
@@ -253,7 +429,7 @@ pub mod julit {
     /// `Listed → Cancelled`. The Digital Title is burned inside its
     /// escrow — a cancelled reservation can never settle. Once `Funded`
     /// cancellation is impossible: committed funds only exit through
-    /// `redeem_lot`.
+    /// `redeem_lot`, `refund_lot`, or `claim_timeout`.
     pub fn cancel_lot(ctx: Context<CancelLot>) -> Result<()> {
         let lot_info = ctx.accounts.lot.to_account_info();
         let lot = &mut ctx.accounts.lot;
@@ -575,6 +751,158 @@ pub struct RedeemLot<'info> {
 }
 
 #[derive(Accounts)]
+pub struct MarkShipped<'info> {
+    /// The lot being marked as shipped; the PDA seeds prove it is the real one.
+    #[account(
+        mut,
+        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
+        bump = lot.bump,
+    )]
+    pub lot: Account<'info, Lot>,
+
+    /// Only the lot's producer may attach shipping evidence.
+    #[account(constraint = producer.key() == lot.producer @ LotError::WrongProducer)]
+    pub producer: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct RefundLot<'info> {
+    /// The lot being refunded; the PDA seeds prove the account is the real one.
+    #[account(
+        mut,
+        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
+        bump = lot.bump,
+    )]
+    pub lot: Account<'info, Lot>,
+
+    /// Only the designated buyer recovers the deposit after `ship_by`.
+    #[account(
+        mut,
+        constraint = buyer.key() == lot.buyer @ LotError::WrongBuyer
+    )]
+    pub buyer: Signer<'info>,
+
+    /// The buyer's USDC ATA — the refund destination.
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = buyer,
+    )]
+    pub buyer_usdc: Account<'info, TokenAccount>,
+
+    /// The lot-owned escrow holding the deposit; drained by this instruction.
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_usdc: Account<'info, TokenAccount>,
+
+    /// The escrow holding the Digital Title; its single token is burned.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_title: Account<'info, TokenAccount>,
+
+    /// The Digital Title mint; burn reduces its supply to zero.
+    #[account(
+        mut,
+        constraint = mint.key() == lot.mint @ LotError::WrongTitleMint
+    )]
+    pub mint: Account<'info, Mint>,
+
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, Config>,
+
+    /// Settlement mint; constrained to the Config's `usdc_mint`.
+    #[account(
+        constraint = usdc_mint.key() == config.usdc_mint @ LotError::WrongUsdcMint
+    )]
+    pub usdc_mint: Account<'info, Mint>,
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimTimeout<'info> {
+    /// The lot being claimed; the PDA seeds prove the account is the real one.
+    #[account(
+        mut,
+        seeds = [b"lot", lot.producer.as_ref(), lot.lot_id.as_bytes()],
+        bump = lot.bump,
+    )]
+    pub lot: Account<'info, Lot>,
+
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, Config>,
+
+    /// Only the lot's producer may claim an unresponsive buyer's escrow.
+    #[account(
+        mut,
+        constraint = producer.key() == lot.producer @ LotError::WrongProducer
+    )]
+    pub producer: Signer<'info>,
+
+    /// The lot-owned escrow holding the deposit; drained by this instruction.
+    #[account(
+        mut,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_usdc: Account<'info, TokenAccount>,
+
+    /// The escrow holding the Digital Title; its single token is burned.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = lot,
+    )]
+    pub escrow_title: Account<'info, TokenAccount>,
+
+    /// The Digital Title mint; burn reduces its supply to zero.
+    #[account(
+        mut,
+        constraint = mint.key() == lot.mint @ LotError::WrongTitleMint
+    )]
+    pub mint: Account<'info, Mint>,
+
+    /// The protocol treasury; only its address derives the fee ATA.
+    /// CHECK: constrained to `config.treasury`.
+    #[account(constraint = treasury.key() == config.treasury @ LotError::WrongTreasury)]
+    pub treasury: UncheckedAccount<'info>,
+
+    /// The producer's USDC ATA — the claim destination.
+    #[account(
+        init_if_needed,
+        payer = producer,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = producer,
+    )]
+    pub producer_usdc: Account<'info, TokenAccount>,
+
+    /// The treasury's USDC ATA — the fee destination.
+    #[account(
+        init_if_needed,
+        payer = producer,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_usdc: Account<'info, TokenAccount>,
+
+    /// Settlement mint; constrained to the Config's `usdc_mint`.
+    #[account(
+        constraint = usdc_mint.key() == config.usdc_mint @ LotError::WrongUsdcMint
+    )]
+    pub usdc_mint: Account<'info, Mint>,
+
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 pub struct CancelLot<'info> {
     /// The lot being cancelled; the PDA seeds prove the account is the real one.
     #[account(
@@ -638,6 +966,16 @@ pub struct Lot {
     pub status: LotStatus,
     pub created_at: i64,
     pub bump: u8,
+    /// Take rate frozen from Config inside `fund_lot`; 0 while Listed.
+    pub fee_bps: u16,
+    /// Unix ts deadline for the producer to post shipping evidence.
+    pub ship_by: i64,
+    /// Seconds the buyer has to confirm receipt after `shipped_at`.
+    pub confirm_window_secs: i64,
+    /// Unix ts of `mark_shipped`; 0 until shipped.
+    pub shipped_at: i64,
+    /// SHA-256 of the bill of lading / shipping document; zeroed until shipped.
+    pub bl_hash: [u8; 32],
 }
 
 impl Lot {
@@ -649,7 +987,12 @@ impl Lot {
         + 32 // spec_sheet_hash
         + 1 // status
         + 8 // created_at
-        + 1; // bump
+        + 1 // bump
+        + 2 // fee_bps
+        + 8 // ship_by
+        + 8 // confirm_window_secs
+        + 8 // shipped_at
+        + 32; // bl_hash
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
@@ -658,6 +1001,9 @@ pub enum LotStatus {
     Funded,
     Redeemed,
     Cancelled,
+    Shipped,
+    Refunded,
+    Claimed,
 }
 
 #[error_code]
@@ -674,7 +1020,7 @@ pub enum LotError {
     InvalidPrice,
     #[msg("Buyer cannot be the producer")]
     BuyerIsProducer,
-    #[msg("Fee must be at most 10000 bps")]
+    #[msg("Fee must be at most 200 bps")]
     InvalidFeeBps,
     #[msg("Invalid treasury address")]
     InvalidTreasury,
@@ -688,7 +1034,7 @@ pub enum LotError {
     WrongBuyer,
     #[msg("Lot is not open for funding")]
     LotNotListed,
-    #[msg("Lot is not funded")]
+    #[msg("Lot is not funded or shipped")]
     LotNotFunded,
     #[msg("Mint is not this lot's Digital Title")]
     WrongTitleMint,
@@ -700,4 +1046,20 @@ pub enum LotError {
     MathOverflow,
     #[msg("Account is not the configured admin")]
     WrongAdmin,
+    #[msg("Ship-by must be in the future and within 180 days")]
+    InvalidShipBy,
+    #[msg("Confirm window must be between 60 seconds and 90 days")]
+    InvalidConfirmWindow,
+    #[msg("Shipping deadline has passed")]
+    ShippingDeadlinePassed,
+    #[msg("Bill of lading hash cannot be empty")]
+    InvalidBlHash,
+    #[msg("Only a funded, unshipped lot can be refunded")]
+    LotNotRefundable,
+    #[msg("Refund is only available after the ship-by deadline")]
+    RefundTooEarly,
+    #[msg("Lot is not shipped")]
+    LotNotShipped,
+    #[msg("Buyer confirmation window has not elapsed")]
+    ClaimTooEarly,
 }

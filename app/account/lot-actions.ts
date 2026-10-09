@@ -6,7 +6,7 @@ import type { LotStatus } from "../explorer/data/lots";
  * may offer. All policy lives here — the card renders the verdict.
  */
 
-export type BuyerLotAction = "fund" | "redeem";
+export type BuyerLotAction = "fund" | "redeem" | "refund";
 
 /** Why "Comprar con escrow" is offered but cannot run. */
 export type FundBlocker = "checking_balance" | "insufficient_balance";
@@ -32,9 +32,15 @@ export function buyerLotVerdict(input: {
   dUsdcBalance: number | null;
   /** Lot price in display units. */
   priceUsdc: number;
+  /** Ship-by deadline as a unix timestamp in seconds. */
+  shipBySecs: number;
+  /** Current time as a unix timestamp in seconds. */
+  nowSecs: number;
 }): BuyerLotVerdict {
   const actionable =
-    input.status === "listed" || input.status === "funded";
+    input.status === "listed" ||
+    input.status === "funded" ||
+    input.status === "shipped";
 
   const none: BuyerLotVerdict = {
     actions: [],
@@ -62,6 +68,13 @@ export function buyerLotVerdict(input: {
     }
     case "funded":
       return {
+        actions:
+          input.nowSecs > input.shipBySecs ? ["redeem", "refund"] : ["redeem"],
+        fundBlocker: null,
+        walletBlocked: false,
+      };
+    case "shipped":
+      return {
         actions: ["redeem"],
         fundBlocker: null,
         walletBlocked: false,
@@ -69,6 +82,52 @@ export function buyerLotVerdict(input: {
     default:
       return none;
   }
+}
+
+/**
+ * Action-availability seam for the producer's lots: which on-chain
+ * transitions the UI may offer given the lot's index state — ship before
+ * the ship-by deadline, claim after the buyer confirmation window.
+ */
+export type ProducerLotAction = "ship" | "claim";
+
+export type ProducerLotVerdict = {
+  /** Producer actions to render, in display order. */
+  actions: ProducerLotAction[];
+  /** The connected wallet is not the company's verified wallet. */
+  walletBlocked: boolean;
+};
+
+export function producerLotVerdict(input: {
+  status: LotStatus;
+  /** Connected wallet; must equal the company's verified wallet. */
+  connectedWallet: string | null;
+  producerWallet: string;
+  /** Ship-by deadline as a unix timestamp in seconds. */
+  shipBySecs: number;
+  /** mark_shipped timestamp in seconds; null until shipped. */
+  shippedAtSecs: number | null;
+  /** Buyer confirmation window in seconds. */
+  confirmWindowSecs: number;
+  /** Current time as a unix timestamp in seconds. */
+  nowSecs: number;
+}): ProducerLotVerdict {
+  let actions: ProducerLotAction[] = [];
+
+  if (input.status === "funded" && input.nowSecs <= input.shipBySecs) {
+    actions = ["ship"];
+  } else if (
+    input.status === "shipped" &&
+    input.shippedAtSecs !== null &&
+    input.nowSecs >= input.shippedAtSecs + input.confirmWindowSecs
+  ) {
+    actions = ["claim"];
+  }
+
+  if (input.connectedWallet !== input.producerWallet) {
+    return { actions: [], walletBlocked: actions.length > 0 };
+  }
+  return { actions, walletBlocked: false };
 }
 
 /**
@@ -127,14 +186,12 @@ export function verifyAdminWallet(
   const isLinked = Boolean(walletAddress);
   const isVerified = Boolean(walletAddress && walletVerifiedAt);
   const matchesOnChainAdmin = Boolean(
-    isVerified &&
-      onChainConfig?.admin &&
-      walletAddress === onChainConfig.admin
+    isVerified && onChainConfig?.admin && walletAddress === onChainConfig.admin
   );
   const matchesOnChainTreasury = Boolean(
     isVerified &&
-      onChainConfig?.treasury &&
-      walletAddress === onChainConfig.treasury
+    onChainConfig?.treasury &&
+    walletAddress === onChainConfig.treasury
   );
 
   return {
@@ -155,14 +212,17 @@ export type SettledLotRaw = {
   price_usdc: number | string | null;
   producer_wallet: string;
   buyer_wallet: string;
+  /** Protocol take rate frozen at funding; null predates fee freezing. */
+  fee_bps?: number | null;
   redeem_tx_signature?: string | null;
+  claim_tx_signature?: string | null;
   indexed_at: string;
 };
 
 export type TreasuryLedgerItem = {
   lotId: string;
   pdaAddress: string;
-  status: "redeemed";
+  status: "redeemed" | "claimed";
   volumeTonnes: number;
   priceUsdc: number;
   feeBps: number;
@@ -186,7 +246,9 @@ export function computeTreasuryLedger(
   lots: SettledLotRaw[],
   feeBps: number
 ): TreasuryLedger {
-  const settledLots = (lots ?? []).filter((l) => l.status === "redeemed");
+  const settledLots = (lots ?? []).filter(
+    (l) => l.status === "redeemed" || l.status === "claimed"
+  );
 
   let totalSettledVolumeTonnes = 0;
   let totalSettledValueUsdc = 0;
@@ -197,7 +259,8 @@ export function computeTreasuryLedger(
   for (const lot of settledLots) {
     const volume = Number(lot.volume_tonnes || 0);
     const price = Number(lot.price_usdc || 0);
-    const settlement = calculateLotSettlement(price, feeBps);
+    const lotFeeBps = lot.fee_bps ?? feeBps;
+    const settlement = calculateLotSettlement(price, lotFeeBps);
 
     totalSettledVolumeTonnes += volume;
     totalSettledValueUsdc += price;
@@ -206,15 +269,15 @@ export function computeTreasuryLedger(
     items.push({
       lotId: lot.lot_id,
       pdaAddress: lot.pda_address,
-      status: "redeemed",
+      status: lot.status as "redeemed" | "claimed",
       volumeTonnes: volume,
       priceUsdc: price,
-      feeBps,
+      feeBps: lotFeeBps,
       feeUsdc: settlement.feeUsdc,
       producerPayoutUsdc: settlement.producerPayoutUsdc,
       producerWallet: lot.producer_wallet,
       buyerWallet: lot.buyer_wallet,
-      txSignature: lot.redeem_tx_signature ?? null,
+      txSignature: lot.redeem_tx_signature ?? lot.claim_tx_signature ?? null,
       settledAt: lot.indexed_at,
     });
   }

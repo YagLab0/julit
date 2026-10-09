@@ -42,8 +42,23 @@ const INITIAL: LotFormValues = {
   volumeTonnes: "",
   priceUsdc: "",
   buyerWallet: "",
+  shipBy: "",
+  confirmWindowSecs: "604800",
   specSheetSha256: "",
 };
+
+/** Confirmation-window presets, seconds — same order as
+ *  dict.newLot.form.confirmWindowOptions. The on-chain bounds are
+ *  60 s – 90 days. */
+const CONFIRM_WINDOW_PRESETS = [
+  3600, 86400, 259200, 604800, 1209600, 2592000, 5184000, 7776000,
+] as const;
+
+/** Formats a Date for a datetime-local input value. */
+function toLocalInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 type SpecUpload =
   | { status: "idle" }
@@ -71,7 +86,14 @@ export function RegisterLotForm({
   const { send, isSending } = useSendTransaction();
   const dict = useAccountDict();
   const f = dict.newLot.form;
-  const [values, setValues] = useState<LotFormValues>(INITIAL);
+  const [values, setValues] = useState<LotFormValues>(() => ({
+    ...INITIAL,
+    shipBy: toLocalInputValue(new Date(Date.now() + 30 * 86400_000)),
+  }));
+  const [shipByMax] = useState(() =>
+    toLocalInputValue(new Date(Date.now() + 180 * 86400_000))
+  );
+  const [shipByMin] = useState(() => toLocalInputValue(new Date()));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [indexing, setIndexing] = useState(false);
   const [spec, setSpec] = useState<SpecUpload>({ status: "idle" });
@@ -131,6 +153,7 @@ export function RegisterLotForm({
         originId: producer.originId,
         producerSpecs: producer.specs,
         contractedBuyers: buyers.map((b) => b.wallet),
+        nowSecs: Math.floor(Date.now() / 1000),
       },
       dict.newLot.validation
     );
@@ -167,6 +190,8 @@ export function RegisterLotForm({
         carbonKgCo2ePerTonneScaled: BigInt(payload.carbonKgCo2ePerTonneScaled),
         priceUsdc: BigInt(payload.priceUsdcScaled),
         buyer: address(payload.buyerWallet),
+        shipBy: BigInt(payload.shipBy),
+        confirmWindowSecs: BigInt(payload.confirmWindowSecs),
         specSheetHash: hexToBytes(payload.specSheetSha256),
         metadataUri: "",
       });
@@ -320,6 +345,37 @@ export function RegisterLotForm({
               {buyers.map((b) => (
                 <option key={b.wallet} value={b.wallet}>
                   {b.name} · {ellipsify(b.wallet, 4)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label={f.shipByLabel}
+            hint={f.shipByHint}
+            error={errors.shipBy}
+          >
+            <input
+              type="datetime-local"
+              className={INPUT_CLASS}
+              value={values.shipBy}
+              min={shipByMin}
+              max={shipByMax}
+              onChange={(e) => update("shipBy")(e.target.value)}
+            />
+          </Field>
+          <Field
+            label={f.confirmWindowLabel}
+            hint={f.confirmWindowHint}
+            error={errors.confirmWindowSecs}
+          >
+            <select
+              className={INPUT_CLASS}
+              value={values.confirmWindowSecs}
+              onChange={(e) => update("confirmWindowSecs")(e.target.value)}
+            >
+              {CONFIRM_WINDOW_PRESETS.map((secs, i) => (
+                <option key={secs} value={secs}>
+                  {f.confirmWindowOptions[i]}
                 </option>
               ))}
             </select>

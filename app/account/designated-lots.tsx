@@ -14,11 +14,13 @@ import {
   findMintPda,
   getFundLotInstructionAsync,
   getRedeemLotInstructionAsync,
+  getRefundLotInstructionAsync,
 } from "../generated/julit";
 import { useCluster } from "../components/cluster-context";
 import { Modal } from "../explorer/components/modal";
 import {
   StatusBadge,
+  dateFmt,
   decimalFmt,
   integerFmt,
   priceFmt,
@@ -29,6 +31,7 @@ import { originName } from "../lib/origins";
 import { findAssociatedTokenAddress } from "../lib/solana/ata";
 import { fetchProtocolConfig } from "../lib/solana/config";
 import { useSendTransaction } from "../lib/hooks/use-send-transaction";
+import { useNowSecs } from "../lib/hooks/use-now";
 import { useSolanaClient } from "../lib/solana-client-context";
 import { useWallet } from "../lib/wallet/context";
 import {
@@ -224,30 +227,16 @@ function DesignatedLotList({
 }
 
 /**
- * Sign → index → refresh engine for a designated lot's transitions
- * (fund, redeem), shared by the overview rows and the buy
- * action on the buyer's lot grid cards.
+ * Sign → index → refresh engine for a lot transition, shared by the
+ * buyer's designated-lot actions and the producer's ship/claim actions.
  */
-function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
+export function useLotTransition(lotPda: string) {
   const router = useRouter();
-  const { wallet, signer } = useWallet();
+  const { signer } = useWallet();
   const { send, isSending } = useSendTransaction();
   const { getExplorerUrl } = useCluster();
   const dict = useAccountDict();
-  const { settlement, dUsdcBalance, deductBalance } = ctx;
-
-  const [confirming, setConfirming] = useState<BuyerLotAction | null>(null);
   const [indexing, setIndexing] = useState(false);
-
-  const verdict = buyerLotVerdict({
-    status: lot.status,
-    connectedWallet: wallet?.account.address ?? null,
-    buyerWallet: lot.buyer_wallet,
-    dUsdcBalance,
-    priceUsdc: lot.price_usdc,
-  });
-
-  const busy = isSending || indexing;
 
   function explorerAction(txSignature: string) {
     return {
@@ -295,7 +284,7 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lot_pda: lot.pda_address,
+          lot_pda: lotPda,
           tx_signature: txSignature,
         }),
       }).catch(() => null);
@@ -324,7 +313,6 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
         action: explorerAction(txSignature),
       });
       args.onSuccess?.();
-      setConfirming(null);
       router.refresh();
     };
 
@@ -341,6 +329,48 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
     if (ok) onIndexed();
   }
 
+  return { runTransition, isSending, indexing };
+}
+
+/**
+ * Action engine for a designated lot's buyer transitions
+ * (fund, redeem, refund), shared by the overview rows and the buy
+ * action on the buyer's lot grid cards.
+ */
+function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
+  const { wallet } = useWallet();
+  const dict = useAccountDict();
+  const { settlement, dUsdcBalance, deductBalance } = ctx;
+  const { runTransition, isSending, indexing } = useLotTransition(
+    lot.pda_address
+  );
+
+  const [confirming, setConfirming] = useState<BuyerLotAction | null>(null);
+  const nowSecs = useNowSecs();
+
+  const verdict = buyerLotVerdict({
+    status: lot.status,
+    connectedWallet: wallet?.account.address ?? null,
+    buyerWallet: lot.buyer_wallet,
+    dUsdcBalance,
+    priceUsdc: lot.price_usdc,
+    shipBySecs: Math.floor(Date.parse(lot.ship_by) / 1000),
+    nowSecs: nowSecs ?? 0,
+  });
+
+  const busy = isSending || indexing;
+
+  /** Closes the confirm modal once the transition indexes. */
+  function runAndClose(args: Parameters<typeof runTransition>[0]) {
+    return runTransition({
+      ...args,
+      onSuccess: () => {
+        args.onSuccess?.();
+        setConfirming(null);
+      },
+    });
+  }
+
   function requireSettlement(): Settlement | null {
     if (settlement) return settlement;
     toast.error(dict.designated.toasts.settlementError, {
@@ -353,7 +383,7 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
     if (verdict.fundBlocker) return;
     const config = requireSettlement();
     if (!config) return;
-    void runTransition({
+    void runAndClose({
       build: (buyer) =>
         getFundLotInstructionAsync({
           lot: address(lot.pda_address),
@@ -371,7 +401,7 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
   function redeem() {
     const config = requireSettlement();
     if (!config) return;
-    void runTransition({
+    void runAndClose({
       build: async (buyer) => {
         const [mint] = await findMintPda({ lot: address(lot.pda_address) });
         return getRedeemLotInstructionAsync({
@@ -390,6 +420,26 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
     });
   }
 
+  function refund() {
+    const config = requireSettlement();
+    if (!config) return;
+    void runAndClose({
+      build: async (buyer) => {
+        const [mint] = await findMintPda({ lot: address(lot.pda_address) });
+        return getRefundLotInstructionAsync({
+          lot: address(lot.pda_address),
+          buyer,
+          mint,
+          usdcMint: config.usdcMint,
+        });
+      },
+      endpoint: "/api/lots/refund",
+      successTitle: t(dict.designated.toasts.refunded, { lot: lot.lot_id }),
+      successDescription: dict.designated.toasts.refundedDesc,
+      failureTitle: dict.designated.toasts.refundError,
+    });
+  }
+
   return {
     verdict,
     busy,
@@ -397,7 +447,7 @@ function useDesignatedLotActions(lot: DesignatedLot, ctx: LotActionCtx) {
     indexing,
     confirming,
     setConfirming,
-    handlers: { fund, redeem } as Record<BuyerLotAction, () => void>,
+    handlers: { fund, redeem, refund } as Record<BuyerLotAction, () => void>,
   };
 }
 
@@ -425,7 +475,11 @@ function DesignatedLotRow({
           type="button"
           disabled={busy || (action === "fund" && verdict.fundBlocker !== null)}
           onClick={() => setConfirming(action)}
-          className="btn-primary text-xs px-3 py-1.5 cursor-pointer"
+          className={
+            action === "refund"
+              ? "btn-secondary text-xs px-3 py-1.5 cursor-pointer"
+              : "btn-primary text-xs px-3 py-1.5 cursor-pointer"
+          }
         >
           {dict.designated.actions[action]}
         </button>
@@ -463,6 +517,17 @@ function DesignatedLotRow({
           {priceFmt.format(lot.price_usdc)} dUSDC
         </span>
       </p>
+
+      <p className="mt-1 text-xs text-muted">
+        {dict.designated.rows.shipBy}: {dateFmt.format(new Date(lot.ship_by))}
+        {lot.shipped_at &&
+          ` · ${dict.designated.rows.shippedOn}: ${dateFmt.format(new Date(lot.shipped_at))}`}
+      </p>
+      {lot.bl_hash && (
+        <p className="mt-0.5 font-mono text-[11px] text-muted">
+          {dict.designated.rows.blHash}: {ellipsify(lot.bl_hash, 8)}
+        </p>
+      )}
 
       {verdict.actions.length > 0 ? (
         <div className="mt-3 border-t border-border-low pt-3">
@@ -544,18 +609,28 @@ function LotActionDialog({
             <>
               <ConfirmRow label={dict.designated.rows.fee}>
                 {priceFmt.format(
-                  calculateLotFee(lot.price_usdc, ctx.settlement.feeBps)
+                  calculateLotFee(
+                    lot.price_usdc,
+                    lot.fee_bps ?? ctx.settlement.feeBps
+                  )
                 )}{" "}
-                dUSDC ({ctx.settlement.feeBps / 100}%)
+                dUSDC ({(lot.fee_bps ?? ctx.settlement.feeBps) / 100}%)
               </ConfirmRow>
               <ConfirmRow label={dict.designated.rows.producerPayout}>
                 {priceFmt.format(
-                  calculateLotSettlement(lot.price_usdc, ctx.settlement.feeBps)
-                    .producerPayoutUsdc
+                  calculateLotSettlement(
+                    lot.price_usdc,
+                    lot.fee_bps ?? ctx.settlement.feeBps
+                  ).producerPayoutUsdc
                 )}{" "}
                 dUSDC
               </ConfirmRow>
             </>
+          )}
+          {confirming === "refund" && (
+            <ConfirmRow label={dict.designated.rows.refund}>
+              {priceFmt.format(lot.price_usdc)} dUSDC
+            </ConfirmRow>
           )}
           {confirming === "fund" && (
             <ConfirmRow label={dict.designated.rows.balance}>

@@ -44,19 +44,28 @@ export type AccountLot = {
   buyer_wallet: string;
   mint_address: string;
   origin_id: string;
+  ship_by: string;
+  confirm_window_secs: number;
+  fee_bps: number | null;
+  shipped_at: string | null;
+  bl_hash: string | null;
   fund_tx_signature: string | null;
   redeem_tx_signature: string | null;
+  ship_tx_signature: string | null;
+  refund_tx_signature: string | null;
+  claim_tx_signature: string | null;
   indexed_at: string;
 };
 
 /** A designated lot still awaiting a buyer decision. */
 export type DesignatedLot = AccountLot & {
-  status: "listed" | "funded";
+  status: "listed" | "funded" | "shipped";
 };
 
-/** A settled lot: redeemed by the buyer. */
+/** A terminal lot in the buyer's portfolio: redeemed, claimed by the
+ *  producer after the confirmation window, or refunded unshipped. */
 export type AcquiredLot = AccountLot & {
-  status: "redeemed";
+  status: "redeemed" | "claimed" | "refunded";
 };
 
 const CONTRACT_STATUS_STYLES: Record<string, string> = {

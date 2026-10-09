@@ -4,6 +4,7 @@ import {
   calculateLotFee,
   calculateLotSettlement,
   computeTreasuryLedger,
+  producerLotVerdict,
   verifyAdminWallet,
 } from "./lot-actions";
 
@@ -17,6 +18,8 @@ function check(overrides: Partial<Parameters<typeof buyerLotVerdict>[0]> = {}) {
     buyerWallet: BUYER,
     dUsdcBalance: 20_000,
     priceUsdc: 12_000,
+    shipBySecs: 2_000_000_000,
+    nowSecs: 1_000_000_000,
     ...overrides,
   });
 }
@@ -52,14 +55,38 @@ describe("buyerLotVerdict", () => {
   });
 
   describe("funded", () => {
-    it("offers redeem only — it is the sole settlement path", () => {
+    it("offers redeem only while the ship-by deadline is open", () => {
       expect(check({ status: "funded" }).actions).toEqual(["redeem"]);
+    });
+
+    it("adds refund once the ship-by deadline passes", () => {
+      expect(
+        check({
+          status: "funded",
+          shipBySecs: 999_999_999,
+          nowSecs: 1_000_000_000,
+        }).actions
+      ).toEqual(["redeem", "refund"]);
+    });
+  });
+
+  describe("shipped", () => {
+    it("offers redeem — refund is no longer available", () => {
+      expect(
+        check({ status: "shipped", shipBySecs: 0, nowSecs: 1_000_000_000 })
+          .actions
+      ).toEqual(["redeem"]);
     });
   });
 
   describe("terminal states", () => {
-    it("offers nothing on redeemed or cancelled lots", () => {
-      for (const status of ["redeemed", "cancelled"] as const) {
+    it("offers nothing on redeemed, cancelled, refunded or claimed lots", () => {
+      for (const status of [
+        "redeemed",
+        "cancelled",
+        "refunded",
+        "claimed",
+      ] as const) {
         const v = check({ status });
         expect(v.actions).toEqual([]);
         expect(v.fundBlocker).toBeNull();
@@ -85,6 +112,65 @@ describe("buyerLotVerdict", () => {
         check({ status: "redeemed", connectedWallet: null }).walletBlocked
       ).toBe(false);
     });
+  });
+});
+
+describe("producerLotVerdict", () => {
+  const PRODUCER = "ProdWa11et111111111111111111111111111111111";
+
+  function checkProducer(
+    overrides: Partial<Parameters<typeof producerLotVerdict>[0]> = {}
+  ) {
+    return producerLotVerdict({
+      status: "funded",
+      connectedWallet: PRODUCER,
+      producerWallet: PRODUCER,
+      shipBySecs: 2_000_000_000,
+      shippedAtSecs: null,
+      confirmWindowSecs: 604_800,
+      nowSecs: 1_000_000_000,
+      ...overrides,
+    });
+  }
+
+  it("offers ship while the funded lot is inside the ship-by window", () => {
+    expect(checkProducer().actions).toEqual(["ship"]);
+  });
+
+  it("offers nothing once ship-by passes on a funded lot", () => {
+    expect(checkProducer({ shipBySecs: 999_999_999 }).actions).toEqual([]);
+  });
+
+  it("offers claim once the confirmation window elapses", () => {
+    expect(
+      checkProducer({
+        status: "shipped",
+        shippedAtSecs: 999_999_999,
+        nowSecs: 999_999_999 + 604_800,
+      }).actions
+    ).toEqual(["claim"]);
+  });
+
+  it("offers nothing while the confirmation window is still open", () => {
+    expect(
+      checkProducer({
+        status: "shipped",
+        shippedAtSecs: 999_999_999,
+        nowSecs: 999_999_999 + 604_799,
+      }).actions
+    ).toEqual([]);
+  });
+
+  it("flags walletBlocked for a foreign wallet when actions exist", () => {
+    const v = checkProducer({ connectedWallet: OTHER });
+    expect(v.actions).toEqual([]);
+    expect(v.walletBlocked).toBe(true);
+  });
+
+  it("does not flag walletBlocked when no action is available", () => {
+    expect(
+      checkProducer({ status: "listed", connectedWallet: null }).walletBlocked
+    ).toBe(false);
   });
 });
 
@@ -256,5 +342,80 @@ describe("computeTreasuryLedger", () => {
       settledAt: "2026-10-03T00:00:00Z",
     });
   });
-});
 
+  it("counts claimed lots as settled and uses each lot's frozen fee", () => {
+    const ledger = computeTreasuryLedger(
+      [
+        {
+          lot_id: "LOT-010",
+          pda_address: "PdaAA111111111111111111111111111111111111111",
+          status: "redeemed",
+          volume_tonnes: 100,
+          price_usdc: 100_000,
+          fee_bps: 150,
+          producer_wallet: "Prod1",
+          buyer_wallet: "Buyer1",
+          redeem_tx_signature: "SigRedeem010",
+          indexed_at: "2026-10-10T00:00:00Z",
+        },
+        {
+          lot_id: "LOT-011",
+          pda_address: "PdaBB222222222222222222222222222222222222222",
+          status: "claimed",
+          volume_tonnes: 50,
+          price_usdc: 200_000,
+          fee_bps: 50,
+          producer_wallet: "Prod1",
+          buyer_wallet: "Buyer1",
+          claim_tx_signature: "SigClaim011",
+          indexed_at: "2026-10-11T00:00:00Z",
+        },
+        {
+          lot_id: "LOT-012",
+          pda_address: "PdaCC333333333333333333333333333333333333333",
+          status: "refunded",
+          volume_tonnes: 10,
+          price_usdc: 10_000,
+          producer_wallet: "Prod1",
+          buyer_wallet: "Buyer1",
+          indexed_at: "2026-10-12T00:00:00Z",
+        },
+      ],
+      100 // config fee — only a fallback for rows without fee_bps
+    );
+
+    expect(ledger.settledLotsCount).toBe(2);
+    // 1.5% of 100,000 + 0.5% of 200,000
+    expect(ledger.totalFeesCollectedUsdc).toBe(1500 + 1000);
+
+    const claimed = ledger.items.find((i) => i.lotId === "LOT-011");
+    expect(claimed?.status).toBe("claimed");
+    expect(claimed?.feeBps).toBe(50);
+    expect(claimed?.txSignature).toBe("SigClaim011");
+    expect(claimed?.producerPayoutUsdc).toBe(199_000);
+  });
+
+  it("falls back to the config fee for rows without fee_bps", () => {
+    const ledger = computeTreasuryLedger(
+      [
+        {
+          lot_id: "LOT-020",
+          pda_address: "PdaDD444444444444444444444444444444444444444",
+          status: "redeemed",
+          volume_tonnes: 10,
+          price_usdc: 50_000,
+          fee_bps: null,
+          producer_wallet: "Prod1",
+          buyer_wallet: "Buyer1",
+          redeem_tx_signature: "SigRedeem020",
+          indexed_at: "2026-10-20T00:00:00Z",
+        },
+      ],
+      200
+    );
+
+    expect(ledger.items[0]?.feeBps).toBe(200);
+    // 2% of 50,000
+    expect(ledger.totalFeesCollectedUsdc).toBe(1000);
+  });
+});

@@ -38,6 +38,9 @@ const mockStats: ProtocolStats = {
       funded: 1,
       redeemed: 1,
       cancelled: 1,
+      shipped: 0,
+      refunded: 0,
+      claimed: 0,
     },
     totalVolumeTonnes: 380,
     settledVolumeTonnes: 150,
@@ -66,8 +69,16 @@ const mockLots: AdminLot[] = [
     buyer_name: "Comprador Demo",
     mint_address: "Mint111111111111111111111111111111111111",
     origin_id: "pena_blanca",
+    ship_by: "2026-11-07T12:00:00Z",
+    confirm_window_secs: 604800,
+    fee_bps: null,
+    shipped_at: null,
+    bl_hash: null,
     fund_tx_signature: null,
     redeem_tx_signature: null,
+    ship_tx_signature: null,
+    refund_tx_signature: null,
+    claim_tx_signature: null,
     indexed_at: "2026-10-07T12:00:00Z",
   },
   {
@@ -85,8 +96,16 @@ const mockLots: AdminLot[] = [
     buyer_name: "Comprador Demo",
     mint_address: "Mint222222222222222222222222222222222222",
     origin_id: "condor",
+    ship_by: "2026-11-06T12:00:00Z",
+    confirm_window_secs: 604800,
+    fee_bps: 100,
+    shipped_at: null,
+    bl_hash: null,
     fund_tx_signature: "SigFund222",
     redeem_tx_signature: null,
+    ship_tx_signature: null,
+    refund_tx_signature: null,
+    claim_tx_signature: null,
     indexed_at: "2026-10-06T12:00:00Z",
   },
   {
@@ -104,8 +123,16 @@ const mockLots: AdminLot[] = [
     buyer_name: "Comprador Demo",
     mint_address: null,
     origin_id: "pena_blanca",
+    ship_by: "2026-11-05T12:00:00Z",
+    confirm_window_secs: 604800,
+    fee_bps: null,
+    shipped_at: null,
+    bl_hash: null,
     fund_tx_signature: null,
     redeem_tx_signature: null,
+    ship_tx_signature: null,
+    refund_tx_signature: null,
+    claim_tx_signature: null,
     indexed_at: "2026-10-05T12:00:00Z",
   },
   {
@@ -123,8 +150,16 @@ const mockLots: AdminLot[] = [
     buyer_name: "Comprador Demo",
     mint_address: "Mint444444444444444444444444444444444444",
     origin_id: "condor",
+    ship_by: "2026-11-04T12:00:00Z",
+    confirm_window_secs: 604800,
+    fee_bps: 100,
+    shipped_at: "2026-10-05T12:00:00Z",
+    bl_hash: "ab".repeat(32),
     fund_tx_signature: "SigFund444",
     redeem_tx_signature: "SigRedm444",
+    ship_tx_signature: "SigShip444",
+    refund_tx_signature: null,
+    claim_tx_signature: null,
     indexed_at: "2026-10-04T12:00:00Z",
   },
 ];
@@ -164,7 +199,7 @@ describe("AdminDashboard Component", () => {
     expect(html).toContain("Bóveda y Parámetros del Protocolo");
     expect(html).toContain("100 bps");
     expect(html).toContain("Saldo SOL");
-    expect(html).toContain("Saldo USDC");
+    expect(html).toContain("Saldo dUSDC");
   });
 
   it("does not render operational alerts KPI or ESG monitoring card", () => {

@@ -76,24 +76,61 @@ fn config_pda() -> (Pubkey, u8) {
     Pubkey::find_program_address(&[b"config"], &julit::ID)
 }
 
-fn initialize(svm: &mut LiteSVM, payer: &Keypair, usdc_mint: Pubkey, treasury: Pubkey) {
+/// Current unix timestamp of the SVM Clock sysvar.
+fn now(svm: &LiteSVM) -> i64 {
+    svm.get_sysvar::<solana_sdk::clock::Clock>().unix_timestamp
+}
+
+/// Moves the Clock sysvar to `unix_timestamp` — `warp_to_slot` does not move
+/// `unix_timestamp`, so tests that exercise ship-by/confirm windows must set
+/// the sysvar directly. A fresh blockhash keeps resent ixs distinct.
+fn warp_to(svm: &mut LiteSVM, unix_timestamp: i64) {
+    let mut clock = svm.get_sysvar::<solana_sdk::clock::Clock>();
+    clock.unix_timestamp = unix_timestamp;
+    svm.set_sysvar(&clock);
+    svm.expire_blockhash();
+}
+
+fn initialize_ix(
+    admin: &Pubkey,
+    fee_bps: u16,
+    usdc_mint: Pubkey,
+    treasury: Pubkey,
+) -> Instruction {
     let (config, _) = config_pda();
-    let ix = Instruction {
+    Instruction {
         program_id: julit::ID,
         accounts: accounts::Initialize {
             config,
-            admin: payer.pubkey(),
+            admin: *admin,
             system_program: solana_sdk::system_program::ID,
         }
         .to_account_metas(None),
         data: instruction::Initialize {
-            fee_bps: 50,
+            fee_bps,
             usdc_mint,
             treasury,
         }
         .data(),
-    };
+    }
+}
+
+fn initialize(svm: &mut LiteSVM, payer: &Keypair, usdc_mint: Pubkey, treasury: Pubkey) {
+    let ix = initialize_ix(&payer.pubkey(), 50, usdc_mint, treasury);
     send(svm, vec![ix], &[payer]);
+}
+
+fn set_fee_bps_ix(admin: &Pubkey, fee_bps: u16) -> Instruction {
+    let (config, _) = config_pda();
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::UpdateConfig {
+            config,
+            admin: *admin,
+        }
+        .to_account_metas(None),
+        data: instruction::SetFeeBps { fee_bps }.data(),
+    }
 }
 
 fn metadata_pda(mint: &Pubkey) -> Pubkey {
@@ -116,6 +153,8 @@ fn create_lot_ix(
     price: u64,
     buyer: Pubkey,
     purity_bps: u64,
+    ship_by: i64,
+    confirm_window_secs: i64,
 ) -> (Instruction, Pubkey, Pubkey) {
     let (lot, _) = Pubkey::find_program_address(
         &[b"lot", producer.as_ref(), lot_id.as_bytes()],
@@ -155,6 +194,8 @@ fn create_lot_ix(
             carbon_kg_co2e_per_tonne_scaled: 10_000,
             price_usdc: price,
             buyer,
+            ship_by,
+            confirm_window_secs,
             spec_sheet_hash: [7u8; 32],
             metadata_uri: String::new(),
         }
@@ -282,6 +323,74 @@ fn cancel_lot_ix(producer: &Pubkey, lot: &Pubkey) -> Instruction {
     }
 }
 
+fn mark_shipped_ix(producer: &Pubkey, lot: &Pubkey, bl_hash: [u8; 32]) -> Instruction {
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::MarkShipped {
+            lot: *lot,
+            producer: *producer,
+        }
+        .to_account_metas(None),
+        data: instruction::MarkShipped { bl_hash }.data(),
+    }
+}
+
+fn refund_lot_ix(buyer: &Pubkey, lot: &Pubkey, usdc_mint: &Pubkey) -> Instruction {
+    let (config, _) = config_pda();
+    let mint = title_mint(lot);
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::RefundLot {
+            lot: *lot,
+            buyer: *buyer,
+            buyer_usdc: ata(buyer, usdc_mint),
+            escrow_usdc: ata(lot, usdc_mint),
+            escrow_title: ata(lot, &mint),
+            mint,
+            config,
+            usdc_mint: *usdc_mint,
+            token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::RefundLot {}.data(),
+    }
+}
+
+fn claim_timeout_ix(
+    producer: &Pubkey,
+    lot: &Pubkey,
+    treasury: &Pubkey,
+    usdc_mint: &Pubkey,
+) -> Instruction {
+    let (config, _) = config_pda();
+    let mint = title_mint(lot);
+    Instruction {
+        program_id: julit::ID,
+        accounts: accounts::ClaimTimeout {
+            lot: *lot,
+            config,
+            producer: *producer,
+            escrow_usdc: ata(lot, usdc_mint),
+            escrow_title: ata(lot, &mint),
+            mint,
+            treasury: *treasury,
+            producer_usdc: ata(producer, usdc_mint),
+            treasury_usdc: ata(treasury, usdc_mint),
+            usdc_mint: *usdc_mint,
+            token_program: spl_token::ID,
+            associated_token_program: spl_associated_token_account::ID,
+            system_program: solana_sdk::system_program::ID,
+        }
+        .to_account_metas(None),
+        data: instruction::ClaimTimeout {}.data(),
+    }
+}
+
+/// Default ship window for test lots: 30 days from `now`.
+const TEST_SHIP_WINDOW_SECS: i64 = 30 * 24 * 60 * 60;
+/// Default buyer confirm window for test lots: 1 hour.
+const TEST_CONFIRM_WINDOW_SECS: i64 = 3_600;
+
 /// Shared setup: config + a listed lot priced at `price`, funded buyer ATA.
 /// Returns (buyer keypair, lot pda).
 fn listed_lot(
@@ -294,6 +403,7 @@ fn listed_lot(
     let buyer = Keypair::new();
     svm.airdrop(&buyer.pubkey(), LAMPORTS_PER_SOL).unwrap();
     provision_buyer(svm, payer, usdc_mint, &buyer.pubkey(), buyer_balance);
+    let ship_by = now(svm) + TEST_SHIP_WINDOW_SECS;
     let (ix, lot, _) = create_lot_ix(
         &payer.pubkey(),
         usdc_mint,
@@ -301,6 +411,8 @@ fn listed_lot(
         price,
         buyer.pubkey(),
         9_960,
+        ship_by,
+        TEST_CONFIRM_WINDOW_SECS,
     );
     send(
         svm,
@@ -539,6 +651,7 @@ fn initialize_and_create_lot_mints_title_into_escrow() {
     assert_eq!(config.treasury, treasury);
 
     let buyer = Keypair::new().pubkey();
+    let ship_by = now(&svm) + TEST_SHIP_WINDOW_SECS;
     let (ix, lot_pda, mint) = create_lot_ix(
         &payer.pubkey(),
         &usdc_mint,
@@ -546,6 +659,8 @@ fn initialize_and_create_lot_mints_title_into_escrow() {
         400_000_000,
         buyer,
         9_960,
+        ship_by,
+        TEST_CONFIRM_WINDOW_SECS,
     );
     send(
         &mut svm,
@@ -587,6 +702,7 @@ fn create_lot_rejects_buyer_is_producer() {
     let (mut svm, payer) = svm();
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
     initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let ship_by = now(&svm) + TEST_SHIP_WINDOW_SECS;
     let (ix, _, _) = create_lot_ix(
         &payer.pubkey(),
         &usdc_mint,
@@ -594,6 +710,8 @@ fn create_lot_rejects_buyer_is_producer() {
         1_000_000,
         payer.pubkey(),
         9_960,
+        ship_by,
+        TEST_CONFIRM_WINDOW_SECS,
     );
     let err = send_err(&mut svm, vec![ix], &[&payer]);
     assert!(err.contains("BuyerIsProducer") || err.contains("6005"), "{err}");
@@ -604,6 +722,7 @@ fn create_lot_rejects_non_battery_grade() {
     let (mut svm, payer) = svm();
     let usdc_mint = create_usdc_mint(&mut svm, &payer);
     initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let ship_by = now(&svm) + TEST_SHIP_WINDOW_SECS;
     let (ix, _, _) = create_lot_ix(
         &payer.pubkey(),
         &usdc_mint,
@@ -611,6 +730,8 @@ fn create_lot_rejects_non_battery_grade() {
         1_000_000,
         Keypair::new().pubkey(),
         9_400,
+        ship_by,
+        TEST_CONFIRM_WINDOW_SECS,
     );
     let err = send_err(&mut svm, vec![ix], &[&payer]);
     assert!(err.contains("NotBatteryGrade") || err.contains("600"), "{err}");
@@ -706,4 +827,495 @@ fn set_fee_bps_updates_fee_for_admin_only() {
 
     let updated = Config::deserialize(&mut &svm.get_account(&config).unwrap().data[8..]).unwrap();
     assert_eq!(updated.fee_bps, 100);
+}
+
+// ---------------------------------------------------------------------------
+// Frozen fee, shipping evidence, buyer refund, and producer timeout claim.
+// ---------------------------------------------------------------------------
+
+/// Reads `lot.ship_by` straight from the account data.
+fn lot_ship_by(svm: &LiteSVM, lot: &Pubkey) -> i64 {
+    Lot::deserialize(&mut &svm.get_account(lot).unwrap().data[8..])
+        .unwrap()
+        .ship_by
+}
+
+#[test]
+fn initialize_rejects_fee_above_max() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let err = send_err(
+        &mut svm,
+        vec![initialize_ix(
+            &payer.pubkey(),
+            201,
+            usdc_mint,
+            Keypair::new().pubkey(),
+        )],
+        &[&payer],
+    );
+    assert!(err.contains("InvalidFeeBps"), "{err}");
+}
+
+#[test]
+fn set_fee_bps_rejects_above_max() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+
+    let err = send_err(
+        &mut svm,
+        vec![set_fee_bps_ix(&payer.pubkey(), 201)],
+        &[&payer],
+    );
+    assert!(err.contains("InvalidFeeBps"), "{err}");
+}
+
+#[test]
+fn fund_lot_freezes_fee_at_funding() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let treasury = Keypair::new();
+    initialize(&mut svm, &payer, usdc_mint, treasury.pubkey());
+    // Admin raises the take rate to 100 bps before the lot is funded.
+    send(
+        &mut svm,
+        vec![set_fee_bps_ix(&payer.pubkey(), 100)],
+        &[&payer],
+    );
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 800_000_000);
+    send(
+        &mut svm,
+        vec![fund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+
+    // The admin then maxes the fee out — the funded lot must not care.
+    send(
+        &mut svm,
+        vec![set_fee_bps_ix(&payer.pubkey(), 200)],
+        &[&payer],
+    );
+    svm.expire_blockhash();
+
+    send(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+
+    // Frozen at 100 bps: producer gets price − 1%, treasury gets 1%.
+    assert_eq!(token_balance(&svm, &ata(&payer.pubkey(), &usdc_mint)), 396_000_000);
+    assert_eq!(token_balance(&svm, &ata(&treasury.pubkey(), &usdc_mint)), 4_000_000);
+}
+
+#[test]
+fn create_lot_rejects_ship_by_in_past() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+
+    let (ix, _, _) = create_lot_ix(
+        &payer.pubkey(),
+        &usdc_mint,
+        "LOT-PAST",
+        1_000_000,
+        Keypair::new().pubkey(),
+        9_960,
+        now(&svm) - 1,
+        TEST_CONFIRM_WINDOW_SECS,
+    );
+    let err = send_err(&mut svm, vec![ix], &[&payer]);
+    assert!(err.contains("InvalidShipBy"), "{err}");
+}
+
+#[test]
+fn create_lot_rejects_confirm_window_out_of_bounds() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let ship_by = now(&svm) + TEST_SHIP_WINDOW_SECS;
+
+    for (lot_id, window) in [
+        ("LOT-W1", 59),
+        ("LOT-W2", julit::MAX_CONFIRM_WINDOW_SECS + 1),
+    ] {
+        let (ix, _, _) = create_lot_ix(
+            &payer.pubkey(),
+            &usdc_mint,
+            lot_id,
+            1_000_000,
+            Keypair::new().pubkey(),
+            9_960,
+            ship_by,
+            window,
+        );
+        let err = send_err(&mut svm, vec![ix], &[&payer]);
+        assert!(err.contains("InvalidConfirmWindow"), "{lot_id}: {err}");
+        svm.expire_blockhash();
+    }
+}
+
+#[test]
+fn fund_lot_rejects_after_ship_by() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    let ship_by = lot_ship_by(&svm, &lot);
+    warp_to(&mut svm, ship_by + 1);
+    let err = send_err(
+        &mut svm,
+        vec![fund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("ShippingDeadlinePassed"), "{err}");
+}
+
+#[test]
+fn mark_shipped_records_bill_of_lading() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let bl_hash = [42u8; 32];
+    let ts = now(&svm);
+    send(
+        &mut svm,
+        vec![mark_shipped_ix(&payer.pubkey(), &lot, bl_hash)],
+        &[&payer],
+    );
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Shipped);
+    assert_eq!(decoded.bl_hash, bl_hash);
+    assert_eq!(decoded.shipped_at, ts);
+}
+
+#[test]
+fn mark_shipped_rejects_wrong_signer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    // The buyer cannot post the producer's shipping evidence.
+    let err = send_err(
+        &mut svm,
+        vec![mark_shipped_ix(&buyer.pubkey(), &lot, [42u8; 32])],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("WrongProducer"), "{err}");
+}
+
+#[test]
+fn mark_shipped_rejects_empty_hash() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![mark_shipped_ix(&payer.pubkey(), &lot, [0u8; 32])],
+        &[&payer],
+    );
+    assert!(err.contains("InvalidBlHash"), "{err}");
+}
+
+#[test]
+fn mark_shipped_rejects_after_ship_by() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let ship_by = lot_ship_by(&svm, &lot);
+    warp_to(&mut svm, ship_by + 1);
+    let err = send_err(
+        &mut svm,
+        vec![mark_shipped_ix(&payer.pubkey(), &lot, [42u8; 32])],
+        &[&payer],
+    );
+    assert!(err.contains("ShippingDeadlinePassed"), "{err}");
+}
+
+#[test]
+fn mark_shipped_rejects_unfunded_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    initialize(&mut svm, &payer, usdc_mint, Keypair::new().pubkey());
+    let (_buyer, lot) = listed_lot(&mut svm, &payer, &usdc_mint, 400_000_000, 500_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![mark_shipped_ix(&payer.pubkey(), &lot, [42u8; 32])],
+        &[&payer],
+    );
+    assert!(err.contains("LotNotFunded"), "{err}");
+}
+
+#[test]
+fn refund_lot_rejects_before_ship_by() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![refund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("RefundTooEarly"), "{err}");
+}
+
+#[test]
+fn refund_lot_returns_full_price_after_ship_by() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    // Buyer starts with 2× price; funding leaves `price` in their ATA.
+    let (_treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let ship_by = lot_ship_by(&svm, &lot);
+    warp_to(&mut svm, ship_by + 1);
+    send(
+        &mut svm,
+        vec![refund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+
+    // Full refund, no fee: the buyer is made whole, the escrow is empty.
+    assert_eq!(token_balance(&svm, &ata(&buyer.pubkey(), &usdc_mint)), 800_000_000);
+    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 0);
+
+    // The Digital Title is burned — escrow empty, supply zero.
+    let mint = title_mint(&lot);
+    assert_eq!(token_balance(&svm, &ata(&lot, &mint)), 0);
+    let mint_state =
+        spl_token::state::Mint::unpack(&svm.get_account(&mint).unwrap().data).unwrap();
+    assert_eq!(mint_state.supply, 0);
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Refunded);
+}
+
+#[test]
+fn refund_lot_rejects_shipped_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+    send(
+        &mut svm,
+        vec![mark_shipped_ix(&payer.pubkey(), &lot, [42u8; 32])],
+        &[&payer],
+    );
+    svm.expire_blockhash();
+
+    // Even past ship_by, a shipped lot is evidence of performance.
+    let ship_by = lot_ship_by(&svm, &lot);
+    warp_to(&mut svm, ship_by + 1);
+    let err = send_err(
+        &mut svm,
+        vec![refund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("LotNotRefundable"), "{err}");
+}
+
+#[test]
+fn refund_lot_rejects_wrong_signer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (_treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let ship_by = lot_ship_by(&svm, &lot);
+    warp_to(&mut svm, ship_by + 1);
+    // The impostor needs a real USDC ATA so account deserialization passes
+    // and the `buyer.key() == lot.buyer` constraint is what rejects them.
+    let impostor = Keypair::new();
+    provision_buyer(&mut svm, &payer, &usdc_mint, &impostor.pubkey(), 0);
+    let err = send_err(
+        &mut svm,
+        vec![refund_lot_ix(&impostor.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &impostor],
+    );
+    assert!(err.contains("WrongBuyer"), "{err}");
+}
+
+#[test]
+fn redeem_lot_rejects_refunded_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let ship_by = lot_ship_by(&svm, &lot);
+    warp_to(&mut svm, ship_by + 1);
+    send(
+        &mut svm,
+        vec![refund_lot_ix(&buyer.pubkey(), &lot, &usdc_mint)],
+        &[&payer, &buyer],
+    );
+    svm.expire_blockhash();
+
+    let err = send_err(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("LotNotFunded"), "{err}");
+}
+
+#[test]
+fn redeem_lot_settles_shipped_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+    send(
+        &mut svm,
+        vec![mark_shipped_ix(&payer.pubkey(), &lot, [42u8; 32])],
+        &[&payer],
+    );
+    svm.expire_blockhash();
+
+    send(
+        &mut svm,
+        vec![redeem_lot_ix(
+            &buyer.pubkey(),
+            &lot,
+            &payer.pubkey(),
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+
+    // fee_bps = 50 frozen at funding: 2_000_000 fee on a 400_000_000 lot.
+    assert_eq!(token_balance(&svm, &ata(&payer.pubkey(), &usdc_mint)), 398_000_000);
+    assert_eq!(token_balance(&svm, &ata(&treasury.pubkey(), &usdc_mint)), 2_000_000);
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Redeemed);
+}
+
+/// Shared setup: funded lot + posted shipping evidence.
+/// Returns (treasury, buyer, lot).
+fn shipped_lot(
+    svm: &mut LiteSVM,
+    payer: &Keypair,
+    usdc_mint: &Pubkey,
+    price: u64,
+) -> (Keypair, Keypair, Pubkey) {
+    let (treasury, buyer, lot) = funded_lot(svm, payer, usdc_mint, price);
+    send(
+        svm,
+        vec![mark_shipped_ix(&payer.pubkey(), &lot, [42u8; 32])],
+        &[payer],
+    );
+    svm.expire_blockhash();
+    (treasury, buyer, lot)
+}
+
+#[test]
+fn claim_timeout_rejects_before_window() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, _buyer, lot) = shipped_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &payer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer],
+    );
+    assert!(err.contains("ClaimTooEarly"), "{err}");
+}
+
+#[test]
+fn claim_timeout_releases_to_producer_after_window() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, _buyer, lot) = shipped_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    warp_to(&mut svm, decoded.shipped_at + decoded.confirm_window_secs);
+
+    send(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &payer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer],
+    );
+
+    // Frozen 50 bps fee: producer gets price − 0.5%, treasury gets 0.5%.
+    assert_eq!(token_balance(&svm, &ata(&payer.pubkey(), &usdc_mint)), 398_000_000);
+    assert_eq!(token_balance(&svm, &ata(&treasury.pubkey(), &usdc_mint)), 2_000_000);
+    assert_eq!(token_balance(&svm, &ata(&lot, &usdc_mint)), 0);
+
+    // The Digital Title is burned — supply zero.
+    let mint = title_mint(&lot);
+    let mint_state =
+        spl_token::state::Mint::unpack(&svm.get_account(&mint).unwrap().data).unwrap();
+    assert_eq!(mint_state.supply, 0);
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    assert!(decoded.status == LotStatus::Claimed);
+}
+
+#[test]
+fn claim_timeout_rejects_unshipped_lot() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, _buyer, lot) = funded_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let err = send_err(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &payer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer],
+    );
+    assert!(err.contains("LotNotShipped"), "{err}");
+}
+
+#[test]
+fn claim_timeout_rejects_wrong_signer() {
+    let (mut svm, payer) = svm();
+    let usdc_mint = create_usdc_mint(&mut svm, &payer);
+    let (treasury, buyer, lot) = shipped_lot(&mut svm, &payer, &usdc_mint, 400_000_000);
+
+    let decoded = Lot::deserialize(&mut &svm.get_account(&lot).unwrap().data[8..]).unwrap();
+    warp_to(&mut svm, decoded.shipped_at + decoded.confirm_window_secs);
+
+    // The buyer cannot trigger the producer's claim path.
+    let err = send_err(
+        &mut svm,
+        vec![claim_timeout_ix(
+            &buyer.pubkey(),
+            &lot,
+            &treasury.pubkey(),
+            &usdc_mint,
+        )],
+        &[&payer, &buyer],
+    );
+    assert!(err.contains("WrongProducer"), "{err}");
 }

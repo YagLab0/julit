@@ -26,7 +26,7 @@ export const JULIT_ERROR__NOT_BATTERY_GRADE = 0x1773; // 6003
 export const JULIT_ERROR__INVALID_PRICE = 0x1774; // 6004
 /** BuyerIsProducer: Buyer cannot be the producer */
 export const JULIT_ERROR__BUYER_IS_PRODUCER = 0x1775; // 6005
-/** InvalidFeeBps: Fee must be at most 10000 bps */
+/** InvalidFeeBps: Fee must be at most 200 bps */
 export const JULIT_ERROR__INVALID_FEE_BPS = 0x1776; // 6006
 /** InvalidTreasury: Invalid treasury address */
 export const JULIT_ERROR__INVALID_TREASURY = 0x1777; // 6007
@@ -40,7 +40,7 @@ export const JULIT_ERROR__WRONG_METADATA_PROGRAM = 0x177a; // 6010
 export const JULIT_ERROR__WRONG_BUYER = 0x177b; // 6011
 /** LotNotListed: Lot is not open for funding */
 export const JULIT_ERROR__LOT_NOT_LISTED = 0x177c; // 6012
-/** LotNotFunded: Lot is not funded */
+/** LotNotFunded: Lot is not funded or shipped */
 export const JULIT_ERROR__LOT_NOT_FUNDED = 0x177d; // 6013
 /** WrongTitleMint: Mint is not this lot's Digital Title */
 export const JULIT_ERROR__WRONG_TITLE_MINT = 0x177e; // 6014
@@ -52,20 +52,44 @@ export const JULIT_ERROR__WRONG_TREASURY = 0x1780; // 6016
 export const JULIT_ERROR__MATH_OVERFLOW = 0x1781; // 6017
 /** WrongAdmin: Account is not the configured admin */
 export const JULIT_ERROR__WRONG_ADMIN = 0x1782; // 6018
+/** InvalidShipBy: Ship-by must be in the future and within 180 days */
+export const JULIT_ERROR__INVALID_SHIP_BY = 0x1783; // 6019
+/** InvalidConfirmWindow: Confirm window must be between 60 seconds and 90 days */
+export const JULIT_ERROR__INVALID_CONFIRM_WINDOW = 0x1784; // 6020
+/** ShippingDeadlinePassed: Shipping deadline has passed */
+export const JULIT_ERROR__SHIPPING_DEADLINE_PASSED = 0x1785; // 6021
+/** InvalidBlHash: Bill of lading hash cannot be empty */
+export const JULIT_ERROR__INVALID_BL_HASH = 0x1786; // 6022
+/** LotNotRefundable: Only a funded, unshipped lot can be refunded */
+export const JULIT_ERROR__LOT_NOT_REFUNDABLE = 0x1787; // 6023
+/** RefundTooEarly: Refund is only available after the ship-by deadline */
+export const JULIT_ERROR__REFUND_TOO_EARLY = 0x1788; // 6024
+/** LotNotShipped: Lot is not shipped */
+export const JULIT_ERROR__LOT_NOT_SHIPPED = 0x1789; // 6025
+/** ClaimTooEarly: Buyer confirmation window has not elapsed */
+export const JULIT_ERROR__CLAIM_TOO_EARLY = 0x178a; // 6026
 
 export type JulitError =
   | typeof JULIT_ERROR__BUYER_IS_PRODUCER
+  | typeof JULIT_ERROR__CLAIM_TOO_EARLY
+  | typeof JULIT_ERROR__INVALID_BL_HASH
+  | typeof JULIT_ERROR__INVALID_CONFIRM_WINDOW
   | typeof JULIT_ERROR__INVALID_FEE_BPS
   | typeof JULIT_ERROR__INVALID_LOT_ID
   | typeof JULIT_ERROR__INVALID_ORIGIN_ID
   | typeof JULIT_ERROR__INVALID_PRICE
+  | typeof JULIT_ERROR__INVALID_SHIP_BY
   | typeof JULIT_ERROR__INVALID_TREASURY
   | typeof JULIT_ERROR__INVALID_VOLUME
   | typeof JULIT_ERROR__LOT_NOT_FUNDED
   | typeof JULIT_ERROR__LOT_NOT_LISTED
+  | typeof JULIT_ERROR__LOT_NOT_REFUNDABLE
+  | typeof JULIT_ERROR__LOT_NOT_SHIPPED
   | typeof JULIT_ERROR__MATH_OVERFLOW
   | typeof JULIT_ERROR__METADATA_URI_TOO_LONG
   | typeof JULIT_ERROR__NOT_BATTERY_GRADE
+  | typeof JULIT_ERROR__REFUND_TOO_EARLY
+  | typeof JULIT_ERROR__SHIPPING_DEADLINE_PASSED
   | typeof JULIT_ERROR__WRONG_ADMIN
   | typeof JULIT_ERROR__WRONG_BUYER
   | typeof JULIT_ERROR__WRONG_METADATA_PROGRAM
@@ -78,17 +102,25 @@ let julitErrorMessages: Record<JulitError, string> | undefined;
 if (process.env.NODE_ENV !== "production") {
   julitErrorMessages = {
     [JULIT_ERROR__BUYER_IS_PRODUCER]: `Buyer cannot be the producer`,
-    [JULIT_ERROR__INVALID_FEE_BPS]: `Fee must be at most 10000 bps`,
+    [JULIT_ERROR__CLAIM_TOO_EARLY]: `Buyer confirmation window has not elapsed`,
+    [JULIT_ERROR__INVALID_BL_HASH]: `Bill of lading hash cannot be empty`,
+    [JULIT_ERROR__INVALID_CONFIRM_WINDOW]: `Confirm window must be between 60 seconds and 90 days`,
+    [JULIT_ERROR__INVALID_FEE_BPS]: `Fee must be at most 200 bps`,
     [JULIT_ERROR__INVALID_LOT_ID]: `Lot id must be 1-32 bytes`,
     [JULIT_ERROR__INVALID_ORIGIN_ID]: `Origin id must be 1-32 bytes`,
     [JULIT_ERROR__INVALID_PRICE]: `Price must be greater than zero`,
+    [JULIT_ERROR__INVALID_SHIP_BY]: `Ship-by must be in the future and within 180 days`,
     [JULIT_ERROR__INVALID_TREASURY]: `Invalid treasury address`,
     [JULIT_ERROR__INVALID_VOLUME]: `Volume must be at least one tonne`,
-    [JULIT_ERROR__LOT_NOT_FUNDED]: `Lot is not funded`,
+    [JULIT_ERROR__LOT_NOT_FUNDED]: `Lot is not funded or shipped`,
     [JULIT_ERROR__LOT_NOT_LISTED]: `Lot is not open for funding`,
+    [JULIT_ERROR__LOT_NOT_REFUNDABLE]: `Only a funded, unshipped lot can be refunded`,
+    [JULIT_ERROR__LOT_NOT_SHIPPED]: `Lot is not shipped`,
     [JULIT_ERROR__MATH_OVERFLOW]: `Arithmetic overflow`,
     [JULIT_ERROR__METADATA_URI_TOO_LONG]: `Metadata URI exceeds 200 bytes`,
     [JULIT_ERROR__NOT_BATTERY_GRADE]: `Only battery grade (99.50-100.00%) is accepted`,
+    [JULIT_ERROR__REFUND_TOO_EARLY]: `Refund is only available after the ship-by deadline`,
+    [JULIT_ERROR__SHIPPING_DEADLINE_PASSED]: `Shipping deadline has passed`,
     [JULIT_ERROR__WRONG_ADMIN]: `Account is not the configured admin`,
     [JULIT_ERROR__WRONG_BUYER]: `Only the designated buyer may fund this lot`,
     [JULIT_ERROR__WRONG_METADATA_PROGRAM]: `Not the Metaplex Token Metadata program`,

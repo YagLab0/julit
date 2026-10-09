@@ -14,6 +14,7 @@ import type {
   DesignatedLot,
 } from "./account-client";
 import { ORIGIN_COLUMNS, type Origin } from "../explorer/data/origins";
+import { calculateLotFee } from "./lot-actions";
 
 export type ProducerLot = {
   lot_id: string;
@@ -24,14 +25,20 @@ export type ProducerLot = {
   price_usdc: number;
   origin_id: string;
   buyer_wallet: string;
+  mint_address: string | null;
+  ship_by: string;
+  confirm_window_secs: number;
+  fee_bps: number | null;
+  shipped_at: string | null;
+  bl_hash: string | null;
   indexed_at: string;
 };
 
-const DESIGNATED_STATUSES = ["listed", "funded"] as const;
-const HISTORY_STATUSES = ["redeemed"] as const;
+const DESIGNATED_STATUSES = ["listed", "funded", "shipped"] as const;
+const HISTORY_STATUSES = ["redeemed", "claimed", "refunded"] as const;
 
 const LOT_COLUMNS =
-  "lot_id, pda_address, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, mint_address, origin_id, fund_tx_signature, redeem_tx_signature, indexed_at";
+  "lot_id, pda_address, status, volume_tonnes, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, price_usdc, producer_wallet, buyer_wallet, mint_address, origin_id, ship_by, confirm_window_secs, fee_bps, shipped_at, bl_hash, fund_tx_signature, redeem_tx_signature, ship_tx_signature, refund_tx_signature, claim_tx_signature, indexed_at";
 
 type LotRow = Omit<DesignatedLot, "producer_name" | "status"> & {
   status: string;
@@ -50,8 +57,16 @@ export type AdminLot = {
   buyer_wallet: string;
   mint_address: string | null;
   origin_id: string;
+  ship_by: string | null;
+  confirm_window_secs: number | null;
+  fee_bps: number | null;
+  shipped_at: string | null;
+  bl_hash: string | null;
   fund_tx_signature: string | null;
   redeem_tx_signature: string | null;
+  ship_tx_signature: string | null;
+  refund_tx_signature: string | null;
+  claim_tx_signature: string | null;
   indexed_at: string;
   producer_name?: string | null;
   buyer_name?: string | null;
@@ -210,7 +225,7 @@ export const getAccountContext = cache(async (): Promise<AccountContext> => {
     const { data } = await supabase
       .from("lots")
       .select(
-        "lot_id, pda_address, status, volume_tonnes, purity_pct, price_usdc, origin_id, buyer_wallet, indexed_at"
+        "lot_id, pda_address, status, volume_tonnes, purity_pct, price_usdc, origin_id, buyer_wallet, mint_address, ship_by, confirm_window_secs, fee_bps, shipped_at, bl_hash, indexed_at"
       )
       .eq("producer_wallet", company.walletAddress)
       .order("indexed_at", { ascending: false });
@@ -444,6 +459,9 @@ export type ProtocolStats = {
       funded: number;
       redeemed: number;
       cancelled: number;
+      shipped: number;
+      refunded: number;
+      claimed: number;
     };
     totalVolumeTonnes: number;
     settledVolumeTonnes: number;
@@ -472,6 +490,7 @@ export type RawLotStat = {
   status: string;
   volume_tonnes: number | string | null;
   price_usdc: number | string | null;
+  fee_bps?: number | null;
 };
 
 export function calculateProtocolStats(data: {
@@ -503,6 +522,9 @@ export function calculateProtocolStats(data: {
     funded: lots.filter((l) => l.status === "funded").length,
     redeemed: lots.filter((l) => l.status === "redeemed").length,
     cancelled: lots.filter((l) => l.status === "cancelled").length,
+    shipped: lots.filter((l) => l.status === "shipped").length,
+    refunded: lots.filter((l) => l.status === "refunded").length,
+    claimed: lots.filter((l) => l.status === "claimed").length,
   };
 
   let totalVolumeTonnes = 0;
@@ -513,6 +535,7 @@ export function calculateProtocolStats(data: {
   let totalValueUsdc = 0;
   let settledValueUsdc = 0;
   let escrowedValueUsdc = 0;
+  let protocolFeesUsdc = 0;
 
   for (const lot of lots) {
     const vol = Number(lot.volume_tonnes || 0);
@@ -521,20 +544,20 @@ export function calculateProtocolStats(data: {
     totalVolumeTonnes += vol;
     totalValueUsdc += val;
 
-    if (lot.status === "redeemed") {
+    if (lot.status === "redeemed" || lot.status === "claimed") {
       settledVolumeTonnes += vol;
       settledValueUsdc += val;
+      protocolFeesUsdc += calculateLotFee(val, lot.fee_bps ?? 100);
     } else if (lot.status === "listed") {
       listedVolumeTonnes += vol;
-    } else if (lot.status === "funded") {
+    } else if (lot.status === "funded" || lot.status === "shipped") {
       fundedVolumeTonnes += vol;
       escrowedValueUsdc += val;
     }
   }
 
-  // 1% take rate (100 bps)
   const estimatedProtocolFeesUsdc =
-    Math.round(settledValueUsdc * 0.01 * 100) / 100;
+    Math.round(protocolFeesUsdc * 1_000_000) / 1_000_000;
 
   return {
     companies: companyStats,
@@ -564,7 +587,7 @@ export const getProtocolStats = cache(
         .from("companies")
         .select("company_type, wallet_address, wallet_verified_at"),
       service.from("company_contracts").select("status"),
-      service.from("lots").select("status, volume_tonnes, price_usdc"),
+      service.from("lots").select("status, volume_tonnes, price_usdc, fee_bps"),
     ]);
 
     return calculateProtocolStats({

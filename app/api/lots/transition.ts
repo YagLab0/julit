@@ -5,18 +5,22 @@ import {
   JulitInstruction,
   JULIT_PROGRAM_ADDRESS,
   LotStatus,
+  type Lot,
 } from "../../generated/julit";
 import { jsonError, readJsonBody } from "../../lib/server/api";
 import { createSolanaClient } from "../../lib/solana-client";
 import { createClient } from "../../lib/supabase/server";
 import { createServiceClient } from "../../lib/supabase/service";
-import type { VerifyLotTransitionInput } from "./verify";
+import type { LotIndexStatus, VerifyLotTransitionInput } from "./verify";
 
-const LOT_STATUS: Readonly<Record<number, string>> = {
+const LOT_STATUS: Readonly<Record<number, LotIndexStatus>> = {
   [LotStatus.Listed]: "listed",
   [LotStatus.Funded]: "funded",
   [LotStatus.Redeemed]: "redeemed",
   [LotStatus.Cancelled]: "cancelled",
+  [LotStatus.Shipped]: "shipped",
+  [LotStatus.Refunded]: "refunded",
+  [LotStatus.Claimed]: "claimed",
 };
 
 const BASE58_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -34,9 +38,15 @@ type TransitionOptions = {
   txColumn:
     | "fund_tx_signature"
     | "redeem_tx_signature"
-    | "cancel_tx_signature";
+    | "cancel_tx_signature"
+    | "ship_tx_signature"
+    | "refund_tx_signature"
+    | "claim_tx_signature";
   /** Status written on success. */
   nextStatus: string;
+  /** Extra index columns derived from the on-chain account (never the
+   *  request body), written together with the status transition. */
+  extraUpdate?: (lot: Lot) => Record<string, unknown>;
   verify: (
     input: VerifyLotTransitionInput
   ) =>
@@ -182,11 +192,7 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
               account.programAddress === JULIT_PROGRAM_ADDRESS,
             producer: lotData.producer,
             buyer: lotData.buyer,
-            status: LOT_STATUS[lotData.status] as
-              | "listed"
-              | "funded"
-              | "redeemed"
-              | "cancelled",
+            status: LOT_STATUS[lotData.status],
           }
         : null,
   });
@@ -201,6 +207,7 @@ export async function transitionLot(request: Request, opts: TransitionOptions) {
       status: opts.nextStatus,
       [opts.txColumn]: txSignature,
       observed_slot: Number(tx!.slot),
+      ...(opts.extraUpdate ? opts.extraUpdate(lotData!) : {}),
     })
     .eq("pda_address", lotPda)
     .in("status", [...opts.allowedIndex])

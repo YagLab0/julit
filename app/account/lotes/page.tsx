@@ -4,6 +4,7 @@ import { getAccountContext } from "../account-data";
 import { BuyerLotGrid } from "../designated-lots";
 import { getAccountDict } from "../i18n/server";
 import { LotGridCard } from "./lot-card";
+import { ProducerLotAction } from "./producer-actions";
 
 const LOT_ICON = (
   <svg
@@ -76,6 +77,7 @@ export default async function LotesPage() {
     );
   }
 
+  const producerWallet = company.walletAddress;
   return (
     <div className="mt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -97,7 +99,7 @@ export default async function LotesPage() {
         </Link>
       </div>
 
-      {!company.walletAddress ? (
+      {!producerWallet ? (
         <WalletCard
           className="animate-bento-in mt-4"
           walletAddress={company.walletAddress}
@@ -122,7 +124,14 @@ export default async function LotesPage() {
       ) : (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {producerLots.map((lot, i) => (
-            <LotGridCard key={lot.pda_address} lot={lot} index={i} />
+            <LotGridCard
+              key={lot.pda_address}
+              lot={lot}
+              index={i}
+              action={
+                <ProducerLotAction lot={lot} walletAddress={producerWallet} />
+              }
+            />
           ))}
         </div>
       )}

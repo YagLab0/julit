@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   verifyLotCancellation,
+  verifyLotClaim,
   verifyLotCreation,
   verifyLotFunding,
   verifyLotRedemption,
+  verifyLotRefund,
+  verifyLotShipping,
   type VerifyLotCreationInput,
   type VerifyLotTransitionInput,
 } from "./verify";
@@ -287,6 +290,12 @@ describe("verifyLotRedemption", () => {
     expect(verifyLotRedemption(redeemBase())).toEqual({ ok: true });
   });
 
+  it("accepts a confirmed redeem_lot from a shipped index row", () => {
+    expect(
+      verifyLotRedemption(redeemBase({ indexedStatus: "shipped" }))
+    ).toEqual({ ok: true });
+  });
+
   it("rejects a missing or failed transaction", () => {
     expect(verifyLotRedemption(redeemBase({ transaction: null })).ok).toBe(
       false
@@ -452,11 +461,7 @@ describe("verifyLotCancellation", () => {
   });
 
   it("rejects funded and later index states — cancellation is impossible", () => {
-    for (const indexedStatus of [
-      "funded",
-      "redeemed",
-      "cancelled",
-    ] as const) {
+    for (const indexedStatus of ["funded", "redeemed", "cancelled"] as const) {
       const r = verifyLotCancellation(cancelBase({ indexedStatus }));
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.rejection.status).toBe(409);
@@ -474,6 +479,226 @@ describe("verifyLotCancellation", () => {
           producer: PRODUCER,
           buyer: BUYER,
           status: "listed",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+});
+
+function shipBase(
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
+  return fundBase({
+    signerWallet: PRODUCER,
+    indexedStatus: "funded",
+    transaction: {
+      signature: "sig",
+      slot: 100,
+      failed: false,
+      lifecycleInstruction: { lot: LOT_PDA, signer: PRODUCER },
+    },
+    lotAccount: {
+      programOwned: true,
+      producer: PRODUCER,
+      buyer: BUYER,
+      status: "shipped",
+    },
+    ...overrides,
+  });
+}
+
+describe("verifyLotShipping", () => {
+  it("accepts a confirmed mark_shipped by the lot producer", () => {
+    expect(verifyLotShipping(shipBase())).toEqual({ ok: true });
+  });
+
+  it("rejects a shipping signed by the buyer", () => {
+    const r = verifyLotShipping(
+      shipBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects when the caller is not the on-chain producer", () => {
+    const r = verifyLotShipping(
+      shipBase({
+        lotAccount: {
+          programOwned: true,
+          producer: "OtherProducer11111111111111111111111",
+          buyer: BUYER,
+          status: "shipped",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects when the on-chain status is not shipped", () => {
+    const r = verifyLotShipping(
+      shipBase({
+        lotAccount: {
+          programOwned: true,
+          producer: PRODUCER,
+          buyer: BUYER,
+          status: "funded",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects non-funded index states", () => {
+    for (const indexedStatus of [
+      "listed",
+      "shipped",
+      "redeemed",
+      "refunded",
+    ] as const) {
+      const r = verifyLotShipping(shipBase({ indexedStatus }));
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.rejection.status).toBe(409);
+    }
+    expect(verifyLotShipping(shipBase({ indexedStatus: null })).ok).toBe(false);
+  });
+});
+
+function refundBase(
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
+  return fundBase({
+    indexedStatus: "funded",
+    lotAccount: {
+      programOwned: true,
+      producer: WALLET,
+      buyer: BUYER,
+      status: "refunded",
+    },
+    ...overrides,
+  });
+}
+
+describe("verifyLotRefund", () => {
+  it("accepts a confirmed refund_lot by the designated buyer", () => {
+    expect(verifyLotRefund(refundBase())).toEqual({ ok: true });
+  });
+
+  it("rejects a refund signed by the producer", () => {
+    const r = verifyLotRefund(
+      refundBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          lifecycleInstruction: { lot: LOT_PDA, signer: PRODUCER },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects when the caller is not the on-chain designated buyer", () => {
+    const r = verifyLotRefund(
+      refundBase({
+        lotAccount: {
+          programOwned: true,
+          producer: WALLET,
+          buyer: "DesignatedOther11111111111111111111111",
+          status: "refunded",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects a shipped index row — shipping evidence blocks refunds", () => {
+    const r = verifyLotRefund(refundBase({ indexedStatus: "shipped" }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(409);
+  });
+
+  it("rejects when the on-chain status is not refunded", () => {
+    const r = verifyLotRefund(
+      refundBase({
+        lotAccount: {
+          programOwned: true,
+          producer: WALLET,
+          buyer: BUYER,
+          status: "funded",
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+  });
+});
+
+function claimBase(
+  overrides: Partial<VerifyLotTransitionInput> = {}
+): VerifyLotTransitionInput {
+  return fundBase({
+    signerWallet: PRODUCER,
+    indexedStatus: "shipped",
+    transaction: {
+      signature: "sig",
+      slot: 100,
+      failed: false,
+      lifecycleInstruction: { lot: LOT_PDA, signer: PRODUCER },
+    },
+    lotAccount: {
+      programOwned: true,
+      producer: PRODUCER,
+      buyer: BUYER,
+      status: "claimed",
+    },
+    ...overrides,
+  });
+}
+
+describe("verifyLotClaim", () => {
+  it("accepts a confirmed claim_timeout by the lot producer", () => {
+    expect(verifyLotClaim(claimBase())).toEqual({ ok: true });
+  });
+
+  it("rejects a claim signed by the buyer", () => {
+    const r = verifyLotClaim(
+      claimBase({
+        transaction: {
+          signature: "sig",
+          slot: 100,
+          failed: false,
+          lifecycleInstruction: { lot: LOT_PDA, signer: BUYER },
+        },
+      })
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(403);
+  });
+
+  it("rejects a funded index row — the lot must be shipped first", () => {
+    const r = verifyLotClaim(claimBase({ indexedStatus: "funded" }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.rejection.status).toBe(409);
+  });
+
+  it("rejects when the on-chain status is not claimed", () => {
+    const r = verifyLotClaim(
+      claimBase({
+        lotAccount: {
+          programOwned: true,
+          producer: PRODUCER,
+          buyer: BUYER,
+          status: "shipped",
         },
       })
     );

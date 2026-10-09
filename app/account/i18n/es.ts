@@ -12,13 +12,17 @@ export const es = {
   roleDescriptions: {
     producer: "Extrae y declara lotes de carbonato de litio.",
     buyer: "Compra lotes reservados con liquidación en escrow.",
-    admin: "Gestiona la tesorería del protocolo, comisiones y supervisión de lotes.",
+    admin:
+      "Gestiona la tesorería del protocolo, comisiones y supervisión de lotes.",
   },
   lotStatus: {
     listed: "Publicado",
     funded: "Fondeado",
     redeemed: "Liquidado",
     cancelled: "Cancelado",
+    shipped: "Despachado",
+    refunded: "Reintegrado",
+    claimed: "Cobrado",
   },
   contractStatus: {
     pending: "Pendiente",
@@ -83,7 +87,7 @@ export const es = {
       escrowLabel: "En escrow",
       escrowHint: "a la espera de entrega",
       tonnesUnit: "t",
-      usdcUnit: "USDC",
+      usdcUnit: "dUSDC",
     },
     producerStats: {
       lotsLabel: "Lotes registrados",
@@ -95,7 +99,7 @@ export const es = {
       redeemedLabel: "Liquidados",
       redeemedHint: "liquidación confirmada",
       tonnesUnit: "t",
-      usdcUnit: "USDC",
+      usdcUnit: "dUSDC",
     },
     nav: {
       lots: {
@@ -135,12 +139,13 @@ export const es = {
     actions: {
       fund: "Comprar con escrow",
       redeem: "Confirmar recepción",
+      refund: "Reintegrar",
     },
     confirm: {
       fund: {
         title: "Comprar {lot} con escrow",
         amountLabel: "Precio del lote",
-        body: "Depositás el precio total en el escrow del lote. Se libera a la productora cuando confirmes la recepción.",
+        body: "Depositás el precio total en el escrow del lote. Se libera a la productora cuando confirmes la recepción — o te vuelve entero si no despacha antes de la fecha límite.",
         cta: "Firmar y depositar",
       },
       redeem: {
@@ -148,6 +153,12 @@ export const es = {
         amountLabel: "Monto en escrow",
         body: "Liberás el pago custodiado a la productora (menos la comisión del protocolo) y el Título Digital se da de baja. Es la confirmación de que recibiste el cargamento.",
         cta: "Firmar y liberar pago",
+      },
+      refund: {
+        title: "Reintegrar {lot}",
+        amountLabel: "Te vuelven",
+        body: "La productora no despachó el lote antes de la fecha límite: recuperás el precio completo, sin comisión, y el Título Digital se da de baja.",
+        cta: "Firmar y reintegrar",
       },
     },
     rows: {
@@ -157,6 +168,10 @@ export const es = {
       producerPayout: "Pago a la productora",
       balanceLoading: "Verificando…",
       balanceError: "No se pudo leer",
+      shipBy: "Despacho antes de",
+      shippedOn: "Despachado el",
+      blHash: "Conocimiento de embarque",
+      refund: "Reintegro",
     },
     walletBlocked:
       "Conectá la wallet verificada de tu empresa para operar este lote.",
@@ -181,6 +196,10 @@ export const es = {
       redeemedDesc:
         "El escrow se liberó a la productora y el Título Digital quedó dado de baja.",
       redeemError: "No se pudo confirmar la recepción.",
+      refunded: "Lote {lot} reintegrado",
+      refundedDesc:
+        "El precio completo volvió a tu wallet y el Título Digital quedó dado de baja.",
+      refundError: "No se pudo reintegrar el lote.",
     },
     gate: {
       action: "operar {lot}",
@@ -331,7 +350,7 @@ export const es = {
       volumeLabel: "Volumen (toneladas)",
       volumeHint: "Toneladas enteras de Li₂CO₃.",
       volumePlaceholder: "420",
-      priceLabel: "Precio del lote (USDC)",
+      priceLabel: "Precio del lote (dUSDC)",
       priceHint:
         "Cotización total del lote, hasta 6 decimales. El comprador la deposita entera en el escrow.",
       pricePlaceholder: "12000.123456",
@@ -344,6 +363,22 @@ export const es = {
       buyerHintAvailable: "Solo esta empresa podrá fondear el escrow del lote.",
       buyerHintEmpty: "No tenés compradores con contrato aceptado.",
       buyerPlaceholder: "Elegí un comprador…",
+      shipByLabel: "Fecha límite de despacho",
+      shipByHint:
+        "Si no despachás antes de esta fecha, la compradora puede reintegrarse. Máximo 180 días.",
+      confirmWindowLabel: "Ventana de confirmación",
+      confirmWindowHint:
+        "Tiempo que tiene la compradora para confirmar la recepción antes de que puedas cobrar el escrow.",
+      confirmWindowOptions: [
+        "1 hora",
+        "1 día",
+        "3 días",
+        "7 días",
+        "14 días",
+        "30 días",
+        "60 días",
+        "90 días",
+      ],
       specLabel: "Ficha técnica del lote (PDF)",
       specHint:
         "Se guarda direccionado por contenido; el SHA-256 queda declarado en el lote.",
@@ -371,15 +406,63 @@ export const es = {
       volumeMax: "El volumen supera el máximo representable.",
       specsInvalid:
         "Las especificaciones de producción de tu empresa no son válidas. Contactá al operador de la demo.",
-      priceInvalid: "Ingresá el precio total en USDC con hasta 6 decimales.",
+      priceInvalid: "Ingresá el precio total en dUSDC con hasta 6 decimales.",
       priceMin: "El precio debe ser mayor a cero.",
       priceMax: "El precio supera el máximo representable.",
       buyerRequired: "Elegí el comprador designado del lote.",
       buyerNotContracted:
         "El comprador debe tener un contrato aceptado con tu empresa.",
       buyerIsProducer: "El comprador no puede ser tu propia productora.",
+      shipByRequired: "Elegí la fecha límite de despacho.",
+      shipByPast: "La fecha límite de despacho debe ser futura.",
+      shipByTooFar: "La fecha límite no puede superar los 180 días.",
+      confirmWindowInvalid:
+        "Elegí una ventana de confirmación entre 60 segundos y 90 días.",
       specRequired:
         "Subí la ficha técnica del lote (PDF) para obtener su SHA-256.",
+    },
+  },
+  producerActions: {
+    actions: {
+      ship: "Marcar despacho",
+      claim: "Cobrar pago",
+    },
+    shipHint: "Despachá antes del {date} — quedan {left}.",
+    shipExpiredHint:
+      "Venció el plazo de despacho: la compradora puede reintegrarse.",
+    claimHint: "Cobro habilitado en {left}.",
+    walletBlocked:
+      "Conectá la wallet verificada de tu empresa para operar este lote.",
+    confirm: {
+      ship: {
+        title: "Despachar {lot}",
+        blLabel: "Conocimiento de embarque",
+        blEmpty: "Ningún archivo elegido",
+        pickFile: "Elegir archivo",
+        changeFile: "Cambiar archivo",
+        hashing: "Calculando SHA-256…",
+        body: "Se declara on-chain el SHA-256 del conocimiento de embarque como evidencia de despacho, antes de la fecha límite. Desde el despacho corre la ventana de confirmación de la compradora.",
+        cta: "Firmar y despachar",
+      },
+      claim: {
+        title: "Cobrar {lot}",
+        priceLabel: "Monto en escrow",
+        feeLabel: "Comisión del protocolo",
+        payoutLabel: "Recibís",
+        body: "La ventana de confirmación venció sin que la compradora confirme: cobrás el precio del lote menos la comisión del protocolo y el Título Digital se da de baja.",
+        cta: "Firmar y cobrar",
+      },
+    },
+    toasts: {
+      shipped: "Lote {lot} despachado",
+      shippedDesc:
+        "La evidencia de despacho quedó declarada on-chain e indexada.",
+      shipError: "No se pudo marcar el despacho.",
+      claimed: "Lote {lot} cobrado",
+      claimedDesc:
+        "El escrow se liberó a tu wallet y el Título Digital quedó dado de baja.",
+      claimError: "No se pudo cobrar el lote.",
+      blHashError: "No se pudo calcular el SHA-256 del archivo.",
     },
   },
   onboarding: {
@@ -436,9 +519,9 @@ export const es = {
       solLabel: "Saldo SOL (Gas & PDAs)",
       solQuerying: "Consultando Devnet…",
       solUnit: "SOL",
-      usdcLabel: "Saldo USDC (Fees)",
+      usdcLabel: "Saldo dUSDC (Fees)",
       usdcHint: "Cuenta de token asociada (ATA)",
-      usdcUnit: "USDC",
+      usdcUnit: "dUSDC",
       feeRateLabel: "Tasa de Comisión",
       feeRateHint: "Retención automática en escrow",
       adminAuthorityLabel: "Autoridad Admin",
@@ -446,7 +529,8 @@ export const es = {
       adminRegistered: "Admin Registrado",
       syncBtn: "Sincronizar tesorería on-chain",
       syncSuccess: "Tesorería on-chain sincronizada exitosamente.",
-      syncError: "No se pudo consultar la tesorería en Devnet. Reintentá en unos segundos.",
+      syncError:
+        "No se pudo consultar la tesorería en Devnet. Reintentá en unos segundos.",
     },
     taskCenter: {
       eyebrow: "Supervisión Operativa",
@@ -463,15 +547,17 @@ export const es = {
       originFilterAll: "Todos los orígenes",
       sortNewest: "Más recientes",
       sortVolume: "Mayor volumen (t)",
-      sortPrice: "Mayor valor (USDC)",
+      sortPrice: "Mayor valor (dUSDC)",
       emptyTitle: "No se encontraron lotes",
-      emptyDescFiltered: "Probá ajustando o limpiando los filtros para ver otros resultados.",
-      emptyDescInitial: "Todavía no se han indexado lotes con este estado en el protocolo.",
+      emptyDescFiltered:
+        "Probá ajustando o limpiando los filtros para ver otros resultados.",
+      emptyDescInitial:
+        "Todavía no se han indexado lotes con este estado en el protocolo.",
       resetFilters: "Restablecer filtros",
       inspect: "Inspeccionar",
       passportLink: "Pasaporte ↗",
       thVolumePurity: "Volumen & Pureza",
-      thPrice: "Precio USDC",
+      thPrice: "Precio dUSDC",
       thFee: "Comisión JuLit (1%)",
       thParties: "Partes Involucradas",
     },

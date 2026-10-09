@@ -20,6 +20,9 @@ export enum LotStatus {
   Funded,
   Redeemed,
   Cancelled,
+  Shipped,
+  Refunded,
+  Claimed,
 }
 
 export type LotStatusArgs = LotStatus;

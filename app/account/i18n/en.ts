@@ -17,6 +17,9 @@ export const en: AccountDict = {
     funded: "Funded",
     redeemed: "Settled",
     cancelled: "Cancelled",
+    shipped: "Shipped",
+    refunded: "Refunded",
+    claimed: "Claimed",
   },
   contractStatus: {
     pending: "Pending",
@@ -81,7 +84,7 @@ export const en: AccountDict = {
       escrowLabel: "In escrow",
       escrowHint: "awaiting delivery",
       tonnesUnit: "t",
-      usdcUnit: "USDC",
+      usdcUnit: "dUSDC",
     },
     producerStats: {
       lotsLabel: "Registered lots",
@@ -93,7 +96,7 @@ export const en: AccountDict = {
       redeemedLabel: "Settled",
       redeemedHint: "receipt confirmed",
       tonnesUnit: "t",
-      usdcUnit: "USDC",
+      usdcUnit: "dUSDC",
     },
     nav: {
       lots: {
@@ -133,12 +136,13 @@ export const en: AccountDict = {
     actions: {
       fund: "Buy with escrow",
       redeem: "Confirm receipt",
+      refund: "Refund",
     },
     confirm: {
       fund: {
         title: "Buy {lot} with escrow",
         amountLabel: "Lot price",
-        body: "You deposit the full price into the lot's escrow. It is released to the producer when you confirm receipt.",
+        body: "You deposit the full price into the lot's escrow. It is released to the producer when you confirm receipt — or returned to you in full if the producer never ships by the deadline.",
         cta: "Sign and deposit",
       },
       redeem: {
@@ -146,6 +150,12 @@ export const en: AccountDict = {
         amountLabel: "Escrow amount",
         body: "You release the custodied payment to the producer (minus the protocol fee) and the Digital Title is retired. This confirms you received the shipment.",
         cta: "Sign and release payment",
+      },
+      refund: {
+        title: "Refund {lot}",
+        amountLabel: "You get back",
+        body: "The producer did not ship the lot before the deadline: you recover the full price with no fee, and the Digital Title is retired.",
+        cta: "Sign and refund",
       },
     },
     rows: {
@@ -155,6 +165,10 @@ export const en: AccountDict = {
       producerPayout: "Payout to producer",
       balanceLoading: "Checking…",
       balanceError: "Could not read",
+      shipBy: "Ship by",
+      shippedOn: "Shipped on",
+      blHash: "Bill of lading",
+      refund: "Refund",
     },
     walletBlocked:
       "Connect your company's verified wallet to operate this lot.",
@@ -178,6 +192,10 @@ export const en: AccountDict = {
       redeemedDesc:
         "The escrow was released to the producer and the Digital Title was retired.",
       redeemError: "Could not confirm receipt.",
+      refunded: "Lot {lot} refunded",
+      refundedDesc:
+        "The full price was returned to your wallet and the Digital Title was retired.",
+      refundError: "Could not refund the lot.",
     },
     gate: {
       action: "operate {lot}",
@@ -326,7 +344,7 @@ export const en: AccountDict = {
       volumeLabel: "Volume (tonnes)",
       volumeHint: "Whole tonnes of Li₂CO₃.",
       volumePlaceholder: "420",
-      priceLabel: "Lot price (USDC)",
+      priceLabel: "Lot price (dUSDC)",
       priceHint:
         "Total lot quotation, up to 6 decimals. The buyer deposits it in full into the escrow.",
       pricePlaceholder: "12000.123456",
@@ -340,6 +358,22 @@ export const en: AccountDict = {
         "Only this company will be able to fund the lot's escrow.",
       buyerHintEmpty: "You have no buyers with an accepted contract.",
       buyerPlaceholder: "Choose a buyer…",
+      shipByLabel: "Ship-by deadline",
+      shipByHint:
+        "If you do not ship before this date, the buyer may refund. At most 180 days out.",
+      confirmWindowLabel: "Confirmation window",
+      confirmWindowHint:
+        "How long the buyer has to confirm receipt before you can claim the escrow.",
+      confirmWindowOptions: [
+        "1 hour",
+        "1 day",
+        "3 days",
+        "7 days",
+        "14 days",
+        "30 days",
+        "60 days",
+        "90 days",
+      ],
       specLabel: "Lot spec sheet (PDF)",
       specHint: "Stored content-addressed; its SHA-256 is declared on the lot.",
       specUploading: "Uploading and computing the SHA-256…",
@@ -365,14 +399,61 @@ export const en: AccountDict = {
       volumeMax: "The volume exceeds the maximum representable value.",
       specsInvalid:
         "Your company's production specifications are not valid. Contact the demo operator.",
-      priceInvalid: "Enter the total price in USDC with up to 6 decimals.",
+      priceInvalid: "Enter the total price in dUSDC with up to 6 decimals.",
       priceMin: "The price must be greater than zero.",
       priceMax: "The price exceeds the maximum representable value.",
       buyerRequired: "Choose the lot's designated buyer.",
       buyerNotContracted:
         "The buyer must hold an accepted contract with your company.",
       buyerIsProducer: "The buyer cannot be your own producer company.",
+      shipByRequired: "Choose the ship-by deadline.",
+      shipByPast: "The ship-by deadline must be in the future.",
+      shipByTooFar: "The ship-by deadline cannot exceed 180 days.",
+      confirmWindowInvalid:
+        "Choose a confirmation window between 60 seconds and 90 days.",
       specRequired: "Upload the lot spec sheet (PDF) to obtain its SHA-256.",
+    },
+  },
+  producerActions: {
+    actions: {
+      ship: "Mark as shipped",
+      claim: "Claim payment",
+    },
+    shipHint: "Ship before {date} — {left} left.",
+    shipExpiredHint:
+      "The ship-by deadline passed: the buyer may refund the escrow.",
+    claimHint: "Claim unlocks in {left}.",
+    walletBlocked:
+      "Connect your company's verified wallet to operate this lot.",
+    confirm: {
+      ship: {
+        title: "Ship {lot}",
+        blLabel: "Bill of lading",
+        blEmpty: "No file chosen",
+        pickFile: "Choose file",
+        changeFile: "Change file",
+        hashing: "Computing SHA-256…",
+        body: "The SHA-256 of the bill of lading is declared on-chain as shipping evidence before the deadline. The buyer confirmation window starts counting from shipment.",
+        cta: "Sign and ship",
+      },
+      claim: {
+        title: "Claim {lot}",
+        priceLabel: "Escrow amount",
+        feeLabel: "Protocol fee",
+        payoutLabel: "You receive",
+        body: "The confirmation window elapsed without a buyer confirmation: you collect the lot price minus the protocol fee and the Digital Title is retired.",
+        cta: "Sign and claim",
+      },
+    },
+    toasts: {
+      shipped: "Lot {lot} shipped",
+      shippedDesc: "The shipping evidence was declared on-chain and indexed.",
+      shipError: "Could not mark the lot as shipped.",
+      claimed: "Lot {lot} claimed",
+      claimedDesc:
+        "The escrow was released to your wallet and the Digital Title was retired.",
+      claimError: "Could not claim the lot.",
+      blHashError: "Could not compute the file's SHA-256.",
     },
   },
   onboarding: {
@@ -429,9 +510,9 @@ export const en: AccountDict = {
       solLabel: "SOL Balance (Gas & PDAs)",
       solQuerying: "Querying Devnet…",
       solUnit: "SOL",
-      usdcLabel: "USDC Balance (Fees)",
+      usdcLabel: "dUSDC Balance (Fees)",
       usdcHint: "Associated Token Account (ATA)",
-      usdcUnit: "USDC",
+      usdcUnit: "dUSDC",
       feeRateLabel: "Fee Rate",
       feeRateHint: "Automatic escrow deduction",
       adminAuthorityLabel: "Admin Authority",
@@ -456,15 +537,17 @@ export const en: AccountDict = {
       originFilterAll: "All origins",
       sortNewest: "Newest",
       sortVolume: "Highest volume (t)",
-      sortPrice: "Highest value (USDC)",
+      sortPrice: "Highest value (dUSDC)",
       emptyTitle: "No lots found",
-      emptyDescFiltered: "Try adjusting or clearing filters to see other results.",
-      emptyDescInitial: "No lots with this status have been indexed yet in the protocol.",
+      emptyDescFiltered:
+        "Try adjusting or clearing filters to see other results.",
+      emptyDescInitial:
+        "No lots with this status have been indexed yet in the protocol.",
       resetFilters: "Reset filters",
       inspect: "Inspect",
       passportLink: "Passport ↗",
       thVolumePurity: "Volume & Purity",
-      thPrice: "USDC Price",
+      thPrice: "dUSDC Price",
       thFee: "JuLit Fee (1%)",
       thParties: "Parties Involved",
     },

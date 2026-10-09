@@ -18,16 +18,22 @@ import {
 } from "@solana/kit";
 import {
   parseCancelLotInstruction,
+  parseClaimTimeoutInstruction,
   parseCreateLotInstruction,
   parseFundLotInstruction,
   parseInitializeInstruction,
+  parseMarkShippedInstruction,
   parseRedeemLotInstruction,
+  parseRefundLotInstruction,
   parseSetFeeBpsInstruction,
   type ParsedCancelLotInstruction,
+  type ParsedClaimTimeoutInstruction,
   type ParsedCreateLotInstruction,
   type ParsedFundLotInstruction,
   type ParsedInitializeInstruction,
+  type ParsedMarkShippedInstruction,
   type ParsedRedeemLotInstruction,
+  type ParsedRefundLotInstruction,
   type ParsedSetFeeBpsInstruction,
 } from "../instructions";
 
@@ -72,10 +78,13 @@ export function identifyJulitAccount(
 
 export enum JulitInstruction {
   CancelLot,
+  ClaimTimeout,
   CreateLot,
   FundLot,
   Initialize,
+  MarkShipped,
   RedeemLot,
+  RefundLot,
   SetFeeBps,
 }
 
@@ -93,6 +102,17 @@ export function identifyJulitInstruction(
     )
   ) {
     return JulitInstruction.CancelLot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([130, 234, 45, 53, 120, 90, 86, 178]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.ClaimTimeout;
   }
   if (
     containsBytes(
@@ -131,12 +151,34 @@ export function identifyJulitInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([239, 5, 66, 105, 238, 17, 89, 97]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.MarkShipped;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([123, 49, 49, 64, 118, 149, 146, 79]),
       ),
       0,
     )
   ) {
     return JulitInstruction.RedeemLot;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([109, 87, 121, 16, 125, 242, 102, 211]),
+      ),
+      0,
+    )
+  ) {
+    return JulitInstruction.RefundLot;
   }
   if (
     containsBytes(
@@ -161,6 +203,9 @@ export type ParsedJulitInstruction<
       instructionType: JulitInstruction.CancelLot;
     } & ParsedCancelLotInstruction<TProgram>)
   | ({
+      instructionType: JulitInstruction.ClaimTimeout;
+    } & ParsedClaimTimeoutInstruction<TProgram>)
+  | ({
       instructionType: JulitInstruction.CreateLot;
     } & ParsedCreateLotInstruction<TProgram>)
   | ({
@@ -170,8 +215,14 @@ export type ParsedJulitInstruction<
       instructionType: JulitInstruction.Initialize;
     } & ParsedInitializeInstruction<TProgram>)
   | ({
+      instructionType: JulitInstruction.MarkShipped;
+    } & ParsedMarkShippedInstruction<TProgram>)
+  | ({
       instructionType: JulitInstruction.RedeemLot;
     } & ParsedRedeemLotInstruction<TProgram>)
+  | ({
+      instructionType: JulitInstruction.RefundLot;
+    } & ParsedRefundLotInstruction<TProgram>)
   | ({
       instructionType: JulitInstruction.SetFeeBps;
     } & ParsedSetFeeBpsInstruction<TProgram>);
@@ -186,6 +237,13 @@ export function parseJulitInstruction<TProgram extends string>(
       return {
         instructionType: JulitInstruction.CancelLot,
         ...parseCancelLotInstruction(instruction),
+      };
+    }
+    case JulitInstruction.ClaimTimeout: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.ClaimTimeout,
+        ...parseClaimTimeoutInstruction(instruction),
       };
     }
     case JulitInstruction.CreateLot: {
@@ -209,11 +267,25 @@ export function parseJulitInstruction<TProgram extends string>(
         ...parseInitializeInstruction(instruction),
       };
     }
+    case JulitInstruction.MarkShipped: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.MarkShipped,
+        ...parseMarkShippedInstruction(instruction),
+      };
+    }
     case JulitInstruction.RedeemLot: {
       assertIsInstructionWithAccounts(instruction);
       return {
         instructionType: JulitInstruction.RedeemLot,
         ...parseRedeemLotInstruction(instruction),
+      };
+    }
+    case JulitInstruction.RefundLot: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: JulitInstruction.RefundLot,
+        ...parseRefundLotInstruction(instruction),
       };
     }
     case JulitInstruction.SetFeeBps: {

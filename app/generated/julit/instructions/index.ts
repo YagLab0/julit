@@ -7,8 +7,11 @@
  */
 
 export * from "./cancelLot";
+export * from "./claimTimeout";
 export * from "./createLot";
 export * from "./fundLot";
 export * from "./initialize";
+export * from "./markShipped";
 export * from "./redeemLot";
+export * from "./refundLot";
 export * from "./setFeeBps";

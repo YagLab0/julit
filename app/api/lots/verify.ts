@@ -16,11 +16,20 @@ export type TransactionFacts = {
   createLotInstruction: CreateLotInstructionFacts | null;
 };
 
+export type LotIndexStatus =
+  | "listed"
+  | "funded"
+  | "redeemed"
+  | "cancelled"
+  | "shipped"
+  | "refunded"
+  | "claimed";
+
 export type LotAccountFacts = {
   programOwned: boolean;
   producer: string;
   buyer: string;
-  status: "listed" | "funded" | "redeemed" | "cancelled";
+  status: LotIndexStatus;
 };
 
 export type VerifyLotCreationInput = {
@@ -97,7 +106,7 @@ export type VerifyLotTransitionInput = {
   /** Lot PDA the caller wants to transition. */
   lotPda: string;
   /** Current index row status — null when the lot is not indexed. */
-  indexedStatus: "listed" | "funded" | "redeemed" | "cancelled" | null;
+  indexedStatus: LotIndexStatus | null;
   /** Null when the transaction is missing or unconfirmed. */
   transaction: TransitionFacts | null;
   /** Null when the lot account does not exist. */
@@ -190,7 +199,7 @@ export function verifyLotRedemption(
 ): { ok: true } | { ok: false; rejection: LotRejection } {
   return verifyLifecycleTransition(input, {
     expectedStatus: "redeemed",
-    allowedIndex: ["funded"],
+    allowedIndex: ["funded", "shipped"],
     onChainParty: "buyer",
     missingIx:
       "La transacción no contiene una instrucción de confirmación JuLit.",
@@ -216,5 +225,53 @@ export function verifyLotCancellation(
     wrongOnChainParty: "Solo la productora del lote puede cancelarlo.",
     wrongOnChainStatus: "El lote no quedó cancelado en la cadena.",
     staleIndex: "El lote ya no está publicado.",
+  });
+}
+
+export function verifyLotShipping(
+  input: VerifyLotTransitionInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "shipped",
+    allowedIndex: ["funded"],
+    onChainParty: "producer",
+    missingIx: "La transacción no contiene un despacho JuLit.",
+    wrongLot: "La transacción no despacha este lote.",
+    wrongSigner: "El despacho no lo firmó tu wallet verificada.",
+    wrongOnChainParty: "Solo la productora del lote puede despacharlo.",
+    wrongOnChainStatus: "El lote no quedó despachado en la cadena.",
+    staleIndex: "El lote ya no está pendiente de despacho.",
+  });
+}
+
+export function verifyLotRefund(
+  input: VerifyLotTransitionInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "refunded",
+    allowedIndex: ["funded"],
+    onChainParty: "buyer",
+    missingIx: "La transacción no contiene un reintegro JuLit.",
+    wrongLot: "La transacción no reintegra este lote.",
+    wrongSigner: "El reintegro no lo firmó tu wallet verificada.",
+    wrongOnChainParty: "Solo la compradora designada puede reintegrar el lote.",
+    wrongOnChainStatus: "El lote no quedó reintegrado en la cadena.",
+    staleIndex: "El lote ya no es reintegrable.",
+  });
+}
+
+export function verifyLotClaim(
+  input: VerifyLotTransitionInput
+): { ok: true } | { ok: false; rejection: LotRejection } {
+  return verifyLifecycleTransition(input, {
+    expectedStatus: "claimed",
+    allowedIndex: ["shipped"],
+    onChainParty: "producer",
+    missingIx: "La transacción no contiene un cobro JuLit.",
+    wrongLot: "La transacción no cobra este lote.",
+    wrongSigner: "El cobro no lo firmó tu wallet verificada.",
+    wrongOnChainParty: "Solo la productora del lote puede cobrarlo.",
+    wrongOnChainStatus: "El lote no quedó cobrado en la cadena.",
+    staleIndex: "El lote ya no está pendiente de cobro.",
   });
 }

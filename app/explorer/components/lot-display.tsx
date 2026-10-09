@@ -49,6 +49,9 @@ const STATUS_LABELS: Record<LotStatus, string> = {
   funded: "Fondeado",
   redeemed: "Liquidado",
   cancelled: "Cancelado",
+  shipped: "Despachado",
+  refunded: "Reintegrado",
+  claimed: "Cobrado",
 };
 
 const STATUS_CLASSES: Record<LotStatus, { pill: string; dot: string }> = {
@@ -60,11 +63,23 @@ const STATUS_CLASSES: Record<LotStatus, { pill: string; dot: string }> = {
     pill: "bg-amber-50 text-amber-800 ring-amber-200",
     dot: "bg-amber-500",
   },
+  shipped: {
+    pill: "bg-sky-50 text-sky-800 ring-sky-200",
+    dot: "bg-sky-500",
+  },
   redeemed: {
     pill: "bg-secondary text-foreground/75 ring-border",
     dot: "bg-muted",
   },
   cancelled: {
+    pill: "bg-secondary text-foreground/75 ring-border",
+    dot: "bg-muted",
+  },
+  refunded: {
+    pill: "bg-secondary text-foreground/75 ring-border",
+    dot: "bg-muted",
+  },
+  claimed: {
     pill: "bg-secondary text-foreground/75 ring-border",
     dot: "bg-muted",
   },

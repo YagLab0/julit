@@ -10,12 +10,22 @@ const HEX_64_RE = /^[0-9a-f]{64}$/;
 const INTEGER_RE = /^[0-9]+$/;
 const DECIMAL_RE = /^([0-9]+)(?:\.([0-9]+))?$/;
 
+// On-chain bounds (anchor/programs/julit/src/lib.rs): create_lot rejects a
+// ship-by beyond 180 days and a confirm window outside 60 s – 90 days.
+const MAX_SHIP_WINDOW_SECS = 180 * 24 * 60 * 60;
+const MIN_CONFIRM_WINDOW_SECS = 60;
+const MAX_CONFIRM_WINDOW_SECS = 90 * 24 * 60 * 60;
+
 export type LotFormValues = {
   lotId: string;
   volumeTonnes: string;
   priceUsdc: string;
   /** Designated buyer wallet — mandatory, must hold an accepted contract. */
   buyerWallet: string;
+  /** Ship-by deadline as a datetime-local value. */
+  shipBy: string;
+  /** Buyer confirmation window in seconds, picked from a preset list. */
+  confirmWindowSecs: string;
   /** SHA-256 hex of the lot spec sheet uploaded to the API. */
   specSheetSha256: string;
 };
@@ -43,6 +53,8 @@ export type LotFormContext = {
   producerSpecs: ProducerSpecs;
   /** Wallets of buyers holding an accepted contract with the producer. */
   contractedBuyers: string[];
+  /** Current time as a unix timestamp in seconds (injected for testing). */
+  nowSecs: number;
 };
 
 /** Exact decimal-string payload for the create_lot instruction. */
@@ -61,6 +73,10 @@ export type CreateLotPayload = {
   priceUsdcScaled: string;
   producerWallet: string;
   buyerWallet: string;
+  /** Ship-by deadline, unix seconds (i64 decimal string). */
+  shipBy: string;
+  /** Buyer confirmation window, seconds (i64 decimal string). */
+  confirmWindowSecs: string;
   specSheetSha256: string;
 };
 
@@ -137,6 +153,29 @@ export function validateLotForm(
     errors.buyerWallet = messages.buyerIsProducer;
   }
 
+  const shipByMs = Date.parse(values.shipBy);
+  const shipBySecs = Number.isFinite(shipByMs)
+    ? Math.floor(shipByMs / 1000)
+    : null;
+  if (shipBySecs === null) {
+    errors.shipBy = messages.shipByRequired;
+  } else if (shipBySecs <= ctx.nowSecs) {
+    errors.shipBy = messages.shipByPast;
+  } else if (shipBySecs - ctx.nowSecs > MAX_SHIP_WINDOW_SECS) {
+    errors.shipBy = messages.shipByTooFar;
+  }
+
+  const confirmWindowSecs = INTEGER_RE.test(values.confirmWindowSecs.trim())
+    ? BigInt(values.confirmWindowSecs.trim())
+    : null;
+  if (
+    confirmWindowSecs === null ||
+    confirmWindowSecs < BigInt(MIN_CONFIRM_WINDOW_SECS) ||
+    confirmWindowSecs > BigInt(MAX_CONFIRM_WINDOW_SECS)
+  ) {
+    errors.confirmWindowSecs = messages.confirmWindowInvalid;
+  }
+
   const specHash = values.specSheetSha256.trim().toLowerCase();
   if (!HEX_64_RE.test(specHash)) {
     errors.specSheetSha256 = messages.specRequired;
@@ -154,6 +193,8 @@ export function validateLotForm(
           priceUsdcScaled: price!.toString(),
           producerWallet: ctx.producerWallet,
           buyerWallet,
+          shipBy: shipBySecs!.toString(),
+          confirmWindowSecs: confirmWindowSecs!.toString(),
           specSheetSha256: specHash,
         }
       : null;
