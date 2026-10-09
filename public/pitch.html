@@ -406,6 +406,10 @@
           size: A4 landscape;
           margin: 0;
         }
+        * {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         body {
           background: #f4f5ef;
         }
@@ -434,9 +438,10 @@
         <div>
           <h1>Pagos seguros para nuevas empresas de litio.</h1>
           <p class="lead">
-            Un directorio B2B y una caja de pago en Solana. El comprador paga
-            solo cuando llega el litio, y el productor sabe que el dinero ya
-            está depositado.
+            Un escrow en Solana para ventas de litio entre productores nuevos y
+            compradores que no conocen. Si no se despacha nada, el comprador
+            recupera su dinero. Una vez despachado, el productor sabe que el
+            dinero está ahí.
           </p>
         </div>
         <div class="cover-mark" aria-hidden="true">
@@ -454,7 +459,7 @@
       </div>
       <div class="foot">
         <span>Presentación para Colosseum</span>
-        <span>Escrow activo en Solana Devnet (dinero de prueba)</span>
+        <span>Escrow en Solana Devnet (dUSDC de prueba)</span>
         <span>Hecho en el Triángulo del Litio</span>
       </div>
     </section>
@@ -549,40 +554,49 @@
         <span class="eyebrow">03 / La solución</span>
         <span class="pagenum">4 / 9</span>
       </div>
-      <h2>Una caja de pago que solo se abre con la entrega.</h2>
+      <h2>Un escrow donde nadie queda trabado.</h2>
       <div class="flow" style="grid-template-columns: repeat(4, 1fr); gap: 6mm">
         <div class="step">
-          <span class="step-number">01 / ALTA</span>
-          <h3>Perfil del productor</h3>
-          <p>
-            Damos de alta a cada productor con sus datos de producción, como la
-            pureza del litio. Todos sus lotes usan esos datos.
-          </p>
-        </div>
-        <div class="step">
-          <span class="step-number">02 / CONTRATO</span>
+          <span class="step-number">01 / CREAR</span>
           <h3>Un lote por comprador</h3>
           <p>
-            Productor y comprador firman un contrato en JuLit. El productor crea
-            un lote para ese comprador.
+            El productor crea un lote para un comprador, con fecha límite de
+            despacho y una ventana para confirmar. Se rechazan los lotes que no
+            son grado batería.
           </p>
         </div>
         <div class="step">
-          <span class="step-number">03 / DEPÓSITO</span>
+          <span class="step-number">02 / DEPÓSITO</span>
           <h3>Dinero bloqueado</h3>
           <p>
-            El comprador pone el dinero, en USDC, en la caja. Nadie puede
-            tocarlo, ni siquiera nosotros.
+            El comprador deposita USDC en el escrow. La comisión queda congelada
+            en ese momento, y nunca puede superar el 2%.
           </p>
         </div>
         <div class="step">
-          <span class="step-number">04 / ENTREGA</span>
-          <h3>Cobro al confirmar</h3>
+          <span class="step-number">03 / DESPACHO</span>
+          <h3>Prueba de embarque</h3>
           <p>
-            Llega el litio, el comprador lo revisa y confirma. En ese momento,
-            el productor cobra.
+            El productor despacha y registra on-chain el hash del conocimiento
+            de embarque.
           </p>
         </div>
+        <div class="step">
+          <span class="step-number">04 / CONFIRMACIÓN</span>
+          <h3>Cobro al confirmar</h3>
+          <p>
+            El comprador revisa el litio y confirma. En ese momento, el
+            productor cobra.
+          </p>
+        </div>
+      </div>
+      <div class="strip">
+        <strong>SIN CALLEJONES</strong>
+        <span>
+          ¿No se despachó antes de la fecha límite? El comprador recupera el
+          100%. ¿El comprador no responde tras el despacho? El productor cobra
+          al vencer la ventana.
+        </span>
       </div>
     </section>
 
@@ -592,11 +606,33 @@
         <span class="eyebrow">04 / Por qué Solana</span>
         <span class="pagenum">5 / 9</span>
       </div>
-      <h2>Rápido, y menos de un centavo.</h2>
-      <p class="lead">
-        Usamos Solana porque es rápida, y cada transacción cuesta menos de un
-        centavo de dólar.<sup>7</sup>
-      </p>
+      <h2>Reglas en código, por menos de un centavo.</h2>
+      <div class="cards">
+        <div class="card">
+          <span class="kicker">Costo</span>
+          <span class="big">&lt; 1&cent;</span>
+          <p>
+            Cada paso es una transacción de Solana que cuesta menos de un
+            centavo de dólar.<sup>7</sup> Un lote chico puede pagarlo.
+          </p>
+        </div>
+        <div class="card">
+          <span class="kicker">Escrow</span>
+          <h3>En manos del programa</h3>
+          <p>
+            El dinero está en una cuenta del lote. Solo las reglas del programa
+            pueden moverlo: confirmación, reembolso o cobro por vencimiento.
+          </p>
+        </div>
+        <div class="card">
+          <span class="kicker">Título</span>
+          <h3>Un token por lote</h3>
+          <p>
+            Cada lote se emite como un token de Metaplex, con el hash de su
+            ficha técnica on-chain.
+          </p>
+        </div>
+      </div>
     </section>
 
     <!-- Slide 6 — Modelo de negocio -->
@@ -605,23 +641,24 @@
         <span class="eyebrow">05 / Modelo de negocio</span>
         <span class="pagenum">6 / 9</span>
       </div>
-      <h2>Ganamos solo cuando se libera el pago.</h2>
+      <h2>Ganamos solo cuando el productor cobra.</h2>
       <div class="cards two">
         <div class="card">
           <span class="kicker">Comisión</span>
           <span class="big">1%</span>
           <p>
-            Una comisión del 1%, que se cobra solo cuando la caja le libera el
-            dinero al productor. Crear el lote y depositar es gratis.
+            Una comisión del 1%, que se cobra solo cuando el dinero va al
+            productor. Crear el lote, depositar y los reembolsos son gratis. La
+            comisión se congela al depositar y tiene un tope del 2%.
           </p>
         </div>
         <div class="card">
           <span class="kicker">Por qué pagan</span>
           <span class="big">Seguridad</span>
           <p>
-            El productor envía sabiendo que el dinero ya está bloqueado. El
-            comprador paga primero, como ya hacen los compradores chicos sin
-            banco, pero ahora el dinero queda protegido hasta la entrega.
+            El comprador recupera su dinero si no se despacha nada. El productor
+            despacha sabiendo que el dinero está bloqueado, y puede cobrarlo si
+            el comprador no responde.
           </p>
         </div>
       </div>
@@ -643,8 +680,10 @@
           <span class="tag">Hoy</span>
           <h3>Activo en Devnet</h3>
           <p>
-            El flujo completo (contrato, lote, depósito, confirmación y pago)
-            funciona en Solana Devnet con dinero de prueba.
+            El flujo completo (lote, depósito, despacho, confirmación, reembolso
+            y cobro por vencimiento) funciona en Solana Devnet con dUSDC de
+            prueba. La app incluye además un directorio de productores y
+            orígenes, y un pasaporte público por lote.
           </p>
           <p style="margin-top: 3mm">
             <span class="chip">BntbtLZd…Xtky · devnet</span>
@@ -654,18 +693,25 @@
           <span class="tag">Testeado</span>
           <h3>Suite de tests del programa</h3>
           <p>
-            El programa Anchor está testeado con LiteSVM, y la app con Vitest.
+            36 tests con LiteSVM sobre el programa Anchor y 176 tests con Vitest
+            sobre la app, incluida la comisión congelada y cada salida del
+            escrow.
           </p>
         </div>
         <div class="card">
           <span class="tag no">Límite</span>
           <h3>La blockchain no ve el litio</h3>
           <p>
-            La blockchain prueba que los registros no cambiaron. No puede
-            revisar la carga. Hoy el comprador la revisa antes de confirmar.
+            Los datos del lote los declara el productor. Todavía no hay árbitro
+            para disputas por calidad, y la llave de upgrade es una sola.
           </p>
         </div>
       </div>
+      <p class="takeaway">
+        Próximo: un lote piloto con un productor del norte argentino; después,
+        la atestación de laboratorio on-chain y un multisig de Squads para
+        admin y upgrades.
+      </p>
     </section>
 
     <!-- Slide 8 — El equipo -->
@@ -681,23 +727,20 @@
       <div class="team-grid">
         <div class="member">
           <h3>Mauricio Rios</h3>
-          <p>Team Lead · Solana</p>
         </div>
         <div class="member">
           <h3>Mauro Benjamin Mamani</h3>
-          <p>Frontend</p>
         </div>
         <div class="member">
           <h3>Mayko Fernandez</h3>
-          <p>Protocolo · QA</p>
         </div>
         <div class="member">
           <h3>Samuel Paredes</h3>
-          <p>Full-Stack</p>
         </div>
       </div>
       <p class="closing-line">
-        Con JuLit, las empresas nuevas pueden comerciar seguras. Somos JuLit.
+        Con JuLit, el comprador está protegido si no se despacha nada, y el
+        productor despacha sabiendo que el dinero está ahí.
       </p>
       <div class="foot">
         <span>San Salvador de Jujuy, Argentina</span>

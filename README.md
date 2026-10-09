@@ -10,7 +10,7 @@
 
 The buyer pays only when the lithium arrives, and the producer knows the money is already there. JuLit locks the buyer's USDC in a Solana program and releases it to the producer when the buyer confirms delivery — or refunds the buyer if the lot never ships.
 
-Pitch deck: [`public/pitch-en.html`](public/pitch-en.html) ([PDF](public/pitch-en.pdf)) · Spanish: [`public/pitch.html`](public/pitch.html) · Script: [`public/pitch-script-en.pdf`](public/pitch-script-en.pdf)
+Pitch deck: [`public/pitch-en.html`](public/pitch-en.html) ([PDF](public/pitch-en.pdf)) · Spanish: [`public/pitch.html`](public/pitch.html) ([PDF](public/pitch.pdf)) · Script: [`public/pitch-script-en.pdf`](public/pitch-script-en.pdf)
 
 ---
 
@@ -214,7 +214,7 @@ Built in **San Salvador de Jujuy, Argentina**, inside the Lithium Triangle — c
 │   ├── adr/                         # Architectural Decision Records
 │   └── features/                    # Feature specifications
 ├── public/
-│   ├── pitch.html                   # Spanish pitch deck
+│   ├── pitch.html / .pdf            # Spanish pitch deck
 │   ├── pitch-en.html / .pdf         # English pitch deck
 │   └── pitch-script-en.html / .pdf  # English pitch script
 ├── scripts/                         # Devnet and local seeding

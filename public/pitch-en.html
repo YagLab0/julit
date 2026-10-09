@@ -406,6 +406,10 @@
           size: A4 landscape;
           margin: 0;
         }
+        * {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         body {
           background: #f4f5ef;
         }
@@ -434,8 +438,9 @@
         <div>
           <h1>Safe payments for new lithium companies.</h1>
           <p class="lead">
-            A B2B directory and payment box on Solana. The buyer pays only when
-            the lithium arrives, and the producer knows the money is there.
+            An escrow on Solana for lithium sales between new producers and
+            buyers they don&rsquo;t know. If nothing ships, the buyer gets the
+            money back. Once it ships, the producer knows the money is there.
           </p>
         </div>
         <div class="cover-mark" aria-hidden="true">
@@ -453,7 +458,7 @@
       </div>
       <div class="foot">
         <span>Colosseum Submission</span>
-        <span>Escrow live on Solana Devnet (test money)</span>
+        <span>Escrow on Solana Devnet (test dUSDC)</span>
         <span>Built in the Lithium Triangle</span>
       </div>
     </section>
@@ -547,40 +552,48 @@
         <span class="eyebrow">03 / The Solution</span>
         <span class="pagenum">4 / 9</span>
       </div>
-      <h2>A payment box that opens only on delivery.</h2>
+      <h2>An escrow where nobody gets stuck.</h2>
       <div class="flow" style="grid-template-columns: repeat(4, 1fr); gap: 6mm">
         <div class="step">
-          <span class="step-number">01 / REGISTER</span>
-          <h3>Producer profile</h3>
-          <p>
-            We register each producer with its production data, like lithium
-            purity. Every lot uses the same data.
-          </p>
-        </div>
-        <div class="step">
-          <span class="step-number">02 / CONTRACT</span>
+          <span class="step-number">01 / CREATE</span>
           <h3>Lot for one buyer</h3>
           <p>
-            Producer and buyer sign a contract in JuLit. The producer creates a
-            lot for that buyer.
+            The producer creates a lot for one buyer, with a ship-by date and a
+            window to confirm. Lots below battery grade are rejected.
           </p>
         </div>
         <div class="step">
-          <span class="step-number">03 / DEPOSIT</span>
+          <span class="step-number">02 / DEPOSIT</span>
           <h3>Money locked</h3>
           <p>
-            The buyer puts the money, in USDC, into the box. Nobody can take it
-            — not even us.
+            The buyer deposits USDC into the escrow. The fee is frozen at that
+            moment, and it can never be more than 2%.
           </p>
         </div>
         <div class="step">
-          <span class="step-number">04 / DELIVERY</span>
-          <h3>Paid on confirm</h3>
+          <span class="step-number">03 / SHIP</span>
+          <h3>Proof of shipment</h3>
           <p>
-            The lithium arrives, the buyer checks it and confirms. At that
-            moment, the producer gets paid.
+            The producer ships and records the hash of the bill of lading
+            on-chain.
           </p>
         </div>
+        <div class="step">
+          <span class="step-number">04 / CONFIRM</span>
+          <h3>Paid on confirm</h3>
+          <p>
+            The buyer checks the lithium and confirms. At that moment, the
+            producer gets paid.
+          </p>
+        </div>
+      </div>
+      <div class="strip">
+        <strong>NO DEAD ENDS</strong>
+        <span>
+          Never shipped by the ship-by date? The buyer gets a full refund.
+          Buyer silent after shipment? The producer claims the payment when the
+          window ends.
+        </span>
       </div>
     </section>
 
@@ -590,11 +603,33 @@
         <span class="eyebrow">04 / Why Solana</span>
         <span class="pagenum">5 / 9</span>
       </div>
-      <h2>Fast, and less than one cent.</h2>
-      <p class="lead">
-        We use Solana because it is fast, and each transaction costs less than
-        one cent.<sup>7</sup>
-      </p>
+      <h2>Rules in code, for less than one cent.</h2>
+      <div class="cards">
+        <div class="card">
+          <span class="kicker">Cost</span>
+          <span class="big">&lt; 1&cent;</span>
+          <p>
+            Each step is a Solana transaction that costs less than one
+            cent.<sup>7</sup> A small lot can pay for it.
+          </p>
+        </div>
+        <div class="card">
+          <span class="kicker">Escrow</span>
+          <h3>Held by the program</h3>
+          <p>
+            The money sits in an account owned by the lot. Only the program
+            rules can move it: confirm, refund or timeout claim.
+          </p>
+        </div>
+        <div class="card">
+          <span class="kicker">Title</span>
+          <h3>One token per lot</h3>
+          <p>
+            Each lot is minted as a Metaplex token, with the hash of its spec
+            sheet on-chain.
+          </p>
+        </div>
+      </div>
     </section>
 
     <!-- Slide 6 — Business Model -->
@@ -603,23 +638,24 @@
         <span class="eyebrow">05 / Business Model</span>
         <span class="pagenum">6 / 9</span>
       </div>
-      <h2>We earn only when the payment is released.</h2>
+      <h2>We earn only when the producer gets paid.</h2>
       <div class="cards two">
         <div class="card">
           <span class="kicker">Take rate</span>
           <span class="big">1%</span>
           <p>
-            A 1 percent fee, charged only when the box releases the money
-            to the producer. Creating a lot and depositing are free.
+            A 1 percent fee, charged only when the money goes to the producer.
+            Creating a lot, depositing and refunds are free. The fee is frozen
+            at deposit and capped at 2%.
           </p>
         </div>
         <div class="card">
           <span class="kicker">Why they pay</span>
           <span class="big">Safety</span>
           <p>
-            The producer ships knowing the money is already locked. The buyer
-            pays first — as small buyers already do without a bank — but now
-            the money is protected until delivery.
+            The buyer gets the money back if nothing ships. The producer ships
+            knowing the money is locked, and can claim it if the buyer goes
+            silent.
           </p>
         </div>
       </div>
@@ -641,8 +677,10 @@
           <span class="tag">Today</span>
           <h3>Live on Devnet</h3>
           <p>
-            The full flow — contract, lot, deposit, confirm, payment — runs on
-            Solana Devnet with test money.
+            The full flow — lot, deposit, shipment, confirm, refund and timeout
+            claim — runs on Solana Devnet with test dUSDC. The app also
+            includes a producer and origin directory, plus a public passport
+            page for every lot.
           </p>
           <p style="margin-top: 3mm">
             <span class="chip">BntbtLZd…Xtky · devnet</span>
@@ -652,18 +690,23 @@
           <span class="tag">Tested</span>
           <h3>Program test suite</h3>
           <p>
-            The Anchor program is tested with LiteSVM, and the app with Vitest.
+            36 LiteSVM tests on the Anchor program and 176 Vitest tests on the
+            app, including the frozen fee and every way out of the escrow.
           </p>
         </div>
         <div class="card">
           <span class="tag no">Limit</span>
           <h3>The chain can&rsquo;t see lithium</h3>
           <p>
-            The blockchain proves that records were not changed. It cannot
-            check the cargo. Today the buyer checks it before confirming.
+            The producer declares the lot data. There is no arbiter for quality
+            disputes yet, and the upgrade key is a single key.
           </p>
         </div>
       </div>
+      <p class="takeaway">
+        Next: a pilot lot with a producer from northern Argentina, then lab
+        attestation on-chain and a Squads multisig for admin and upgrades.
+      </p>
     </section>
 
     <!-- Slide 8 — The Team -->
@@ -679,23 +722,20 @@
       <div class="team-grid">
         <div class="member">
           <h3>Mauricio Rios</h3>
-          <p>Team Lead · Solana</p>
         </div>
         <div class="member">
           <h3>Mauro Benjamin Mamani</h3>
-          <p>Frontend</p>
         </div>
         <div class="member">
           <h3>Mayko Fernandez</h3>
-          <p>Protocol · QA</p>
         </div>
         <div class="member">
           <h3>Samuel Paredes</h3>
-          <p>Full-Stack</p>
         </div>
       </div>
       <p class="closing-line">
-        With JuLit, new companies can trade safely. We are JuLit.
+        With JuLit, the buyer is protected if nothing ships, and the producer
+        ships knowing the money is there.
       </p>
       <div class="foot">
         <span>San Salvador de Jujuy, Argentina</span>

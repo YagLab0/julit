@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#123b32" />
-    <title>JuLit — Video Pitch Script (2:00–2:30)</title>
+    <title>JuLit — Video Pitch Script (2:00 max)</title>
     <style>
       :root {
         color-scheme: light;
@@ -153,6 +153,10 @@
           size: A4 portrait;
           margin: 0;
         }
+        * {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         body {
           background: #fbfbf7;
         }
@@ -185,90 +189,91 @@
 
       <h1>Safe payments for new lithium companies</h1>
       <p class="subtitle">
-        A B2B directory and payment box on Solana. Built in Jujuy, Argentina.
+        An escrow on Solana for lithium sales between new producers and buyers
+        they don't know. Built in Jujuy, Argentina. Recorded on camera, with
+        short screen cuts taken from the devnet demo recording.
       </p>
 
       <section>
-        <h2>The problem</h2>
-        <p>Hi, we are JuLit, from Jujuy, Argentina.</p>
+        <h2>1 · The problem <span class="time">· 0:00–0:35</span></h2>
         <p>
-          Big lithium companies sell to their own partners.<sup>1</sup> They
-          don't need us.
-        </p>
-        <p>But new, small producers often sell to buyers they don't know.</p>
-        <p>
-          For example, Argosy Minerals, in Salta, sold 20 tonnes to a buyer in
-          Hong Kong. The buyer paid everything before the ship was
-          loaded.<sup>2</sup> All the risk was on the buyer.
+          We are JuLit — four builders from Jujuy, Argentina, inside the
+          Lithium Triangle.
         </p>
         <p>
-          Why not use a bank? A letter of credit is expensive and needs a lot
-          of paperwork.<sup>3</sup> And banks reject small companies more
-          often.<sup>4</sup> Many of them end up paying with their own money,
-          with no protection.<sup>5</sup>
-        </p>
-      </section>
-
-      <section>
-        <h2>Our solution — live demo</h2>
-        <p>JuLit makes these sales safe, with a payment box on Solana.</p>
-        <p class="cue">[Show screen: Explorer → producer profile]</p>
-        <p>
-          First, we register each producer with its production data, like
-          lithium purity. Every lot uses the same data.
-        </p>
-        <p class="cue">[Show screen: Producer creates a lot]</p>
-        <p>
-          Second, producer and buyer sign a contract in JuLit, and the producer
-          creates a lot for that buyer.
-        </p>
-        <p class="cue">[Show screen: Buyer deposits USDC]</p>
-        <p>
-          Third, the buyer puts the money, in USDC, into the box. Nobody can
-          take it — not even us.
+          Big lithium companies sell to their own partners.<sup>1</sup> But new,
+          small producers sell to buyers they don't know.
         </p>
         <p>
-          Yes, the buyer pays first. But without a bank, small buyers already
-          pay first. With JuLit, that money is protected.
+          Argosy Minerals, in Salta, sold 20 tonnes to a buyer in Hong Kong. The
+          buyer paid everything before the ship was loaded.<sup>2</sup> All the
+          risk was on the buyer.
         </p>
-        <p class="cue">[Show screen: Buyer confirms delivery → payment]</p>
         <p>
-          Finally, the lithium arrives. The buyer checks it and confirms. At
-          that moment, the producer gets paid.
+          A letter of credit is expensive and slow,<sup>3</sup> and banks reject
+          small companies more often.<sup>4</sup> So many of them pay with their
+          own money, with no protection.<sup>5</sup>
         </p>
       </section>
 
       <section>
-        <h2>Why Solana</h2>
+        <h2>2 · The solution <span class="time">· 0:35–1:05</span></h2>
         <p>
-          We use Solana because it is fast, and each transaction costs less
-          than one cent.<sup>6</sup>
+          JuLit is an escrow on Solana for these sales.
+        </p>
+        <p class="cue">[Cut 1 · Producer creates a lot · ~7 s]</p>
+        <p>
+          The producer creates a lot for one buyer, with a ship-by date and a
+          window to confirm.
+        </p>
+        <p class="cue">[Cut 2 · Buyer deposits dUSDC · ~7 s]</p>
+        <p>The buyer deposits USDC into the escrow.</p>
+        <p class="cue">[Cut 3 · Producer marks shipped · ~7 s]</p>
+        <p>
+          The producer ships, and records the hash of the bill of lading
+          on-chain.
+        </p>
+        <p class="cue">[Cut 4 · Buyer confirms → producer paid · ~7 s]</p>
+        <p>The buyer checks the lithium and confirms. The producer gets paid.</p>
+      </section>
+
+      <section>
+        <h2>3 · Why it is safe <span class="time">· 1:05–1:30</span></h2>
+        <p>
+          Nobody gets stuck. If the producer never ships, the buyer gets a full
+          refund. If the buyer never answers, the producer can claim the
+          payment.
+        </p>
+        <p>
+          The fee is frozen on-chain when the buyer deposits, and it can never
+          be more than 2 percent.
+        </p>
+        <p class="cue">
+          [Cut 5 · Solana Explorer, fund_lot and redeem_lot txs · label
+          "devnet · test dUSDC" · ~6 s]
+        </p>
+        <p>
+          Each step costs less than one cent.<sup>6</sup> It runs today on
+          Solana devnet. These are the real transactions.
         </p>
       </section>
 
       <section>
-        <h2>Business model, status and team</h2>
+        <h2>4 · Business &amp; validation <span class="time">· 1:30–1:45</span></h2>
         <p>
-          Our business model: we charge a 1 percent fee, only when the
-          payment is released.
-        </p>
-        <p>
-          Everything in the demo is real, on Solana Devnet, with test money.
-        </p>
-        <p>
-          And we live in Jujuy, in the Lithium Triangle, close to the new
-          producers.
+          We charge 1 percent, only when the payment is settled.
         </p>
       </section>
 
       <section>
-        <h2>Close</h2>
+        <h2>5 · Next &amp; close <span class="time">· 1:45–2:00</span></h2>
         <p>
-          With JuLit, new companies can trade safely. The buyer pays only when
-          the lithium arrives, and the producer knows the money is
-          there.
+          Next: our first pilot lot with a producer from northern Argentina.
         </p>
-        <p>We are JuLit. Thank you.</p>
+        <p>
+          With JuLit, the buyer is protected if nothing ships, and the producer
+          ships knowing the money is there. We are JuLit. Thank you.
+        </p>
       </section>
 
       <section class="sources">
