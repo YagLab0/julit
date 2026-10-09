@@ -54,3 +54,14 @@ test-ledger/
 /videos/
 
 .devnet-seed.json
+
+# internal docs & agent tooling (versioned on the docs-internal branch)
+/.agents/
+/.claude/
+/.scratch/
+/docs/
+/AGENTS.md
+/FRONTEND.md
+/GLOSSARY.md
+/skills-lock.json
+/pitch-script-en.pdf
