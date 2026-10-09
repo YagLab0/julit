@@ -182,6 +182,7 @@ describe("POST /api/admin/origins", () => {
           longitude: -66.7,
           latitude: -23.4,
           capacity_tpa: 20000,
+          company: { email: "minera@test.com" },
         }),
       })
     );
@@ -191,7 +192,80 @@ describe("POST /api/admin/origins", () => {
     expect(body.error).toContain("Ya existe un salar");
   });
 
-  it("creates origin successfully and returns 201", async () => {
+  it("returns 400 when the company account block is missing", async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: mockAdminUser } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>);
+
+    vi.mocked(createServiceClient).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { company_type: "admin" } }),
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<typeof createServiceClient>);
+
+    const res = await POST(
+      new Request("http://localhost/api/admin/origins", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Salar de Pozuelos",
+          code: "POZ",
+          producer: "Pozuelos Lithium S.A.",
+          longitude: -66.0,
+          latitude: -22.5,
+          capacity_tpa: 30000,
+        }),
+      })
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("bloque `company`");
+  });
+
+  it("returns 400 when production specs are incomplete", async () => {
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: mockAdminUser } }),
+      },
+    } as unknown as Awaited<ReturnType<typeof createClient>>);
+
+    vi.mocked(createServiceClient).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { company_type: "admin" } }),
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<typeof createServiceClient>);
+
+    const res = await POST(
+      new Request("http://localhost/api/admin/origins", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Salar de Pozuelos",
+          code: "POZ",
+          producer: "Pozuelos Lithium S.A.",
+          longitude: -66.0,
+          latitude: -22.5,
+          capacity_tpa: 30000,
+          company: { email: "minera@test.com", purity_pct: 99.6 },
+        }),
+      })
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain("deben enviarse juntas");
+  });
+
+  it("creates origin and producer company together, returning 201", async () => {
     vi.mocked(createClient).mockResolvedValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: mockAdminUser } }),
@@ -215,22 +289,60 @@ describe("POST /api/admin/origins", () => {
       source_url: "https://julit.dev",
     };
 
+    const insertedCompany = {
+      id: "new-producer-user",
+      name: "Pozuelos Lithium S.A.",
+      company_type: "producer",
+      wallet_address: null,
+      wallet_verified_at: null,
+      origin_id: "salar_de_pozuelos",
+      purity_pct: 99.6,
+      water_footprint_m3_per_tonne: 45.2,
+      carbon_footprint_kg_co2e_per_tonne: 8200,
+      created_at: "2026-10-08T00:00:00Z",
+    };
+
     vi.mocked(createServiceClient).mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: { company_type: "admin" } }),
-          }),
-          or: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-          }),
-        }),
-        insert: vi.fn().mockReturnValue({
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === "companies") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { company_type: "admin" } }),
+              }),
+            }),
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: insertedCompany, error: null }),
+              }),
+            }),
+          };
+        }
+        return {
           select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({ data: insertedOrigin, error: null }),
+            or: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+            }),
           }),
-        }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: insertedOrigin, error: null }),
+            }),
+          }),
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
       }),
+      auth: {
+        admin: {
+          createUser: vi.fn().mockResolvedValue({
+            data: { user: { id: "new-producer-user", email: "ops@pozuelos.com" } },
+            error: null,
+          }),
+          deleteUser: vi.fn().mockResolvedValue({ error: null }),
+        },
+      },
     } as unknown as ReturnType<typeof createServiceClient>);
 
     const res = await POST(
@@ -245,6 +357,12 @@ describe("POST /api/admin/origins", () => {
           capacity_tpa: 30000,
           altitude_m: 3750,
           water_m3_per_tonne: 45.2,
+          company: {
+            email: "ops@pozuelos.com",
+            purity_pct: 99.6,
+            water_footprint_m3_per_tonne: 45.2,
+            carbon_footprint_kg_co2e_per_tonne: 8200,
+          },
         }),
       })
     );
@@ -254,5 +372,8 @@ describe("POST /api/admin/origins", () => {
     expect(body.origin.id).toBe("salar_de_pozuelos");
     expect(body.origin.code).toBe("POZ");
     expect(body.origin.capacity_tpa).toBe(30000);
+    expect(body.company.company_type).toBe("producer");
+    expect(body.company.origin_id).toBe("salar_de_pozuelos");
+    expect(body.company.email).toBe("ops@pozuelos.com");
   });
 });

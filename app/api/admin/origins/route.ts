@@ -3,6 +3,8 @@ import { createClient } from "../../../lib/supabase/server";
 import { createServiceClient } from "../../../lib/supabase/service";
 import { ORIGIN_COLUMNS, type Origin } from "../../../explorer/data/origins";
 
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
 async function assertAdminUser() {
   const supabase = await createClient();
   const {
@@ -166,6 +168,65 @@ export async function POST(request: Request) {
       ? body.source_url.trim()
       : "https://julit.dev";
 
+  // --- Producer company account (one mining company = one account = one origin) ---
+  const companyBody =
+    body.company && typeof body.company === "object" ? (body.company as Record<string, unknown>) : null;
+  if (!companyBody) {
+    return jsonError(
+      "La carga de una minera requiere los datos de su cuenta (bloque `company`).",
+      400
+    );
+  }
+
+  const companyEmail =
+    typeof companyBody.email === "string" ? companyBody.email.trim().toLowerCase() : "";
+  if (!companyEmail || !companyEmail.includes("@")) {
+    return jsonError("Ingresá un correo electrónico válido para la cuenta de la minera.", 400);
+  }
+
+  const companyPassword =
+    typeof companyBody.password === "string" && companyBody.password.length >= 6
+      ? companyBody.password
+      : "julit-demo-2026";
+
+  const companyWallet =
+    typeof companyBody.wallet_address === "string" ? companyBody.wallet_address.trim() : "";
+  if (companyWallet && !SOLANA_ADDRESS_REGEX.test(companyWallet)) {
+    return jsonError("La dirección de wallet Solana ingresada no es válida.", 400);
+  }
+
+  // Production specs: all three together or none (ADR-0020)
+  const hasPurity = companyBody.purity_pct !== undefined && companyBody.purity_pct !== null && companyBody.purity_pct !== "";
+  const hasWater = companyBody.water_footprint_m3_per_tonne !== undefined && companyBody.water_footprint_m3_per_tonne !== null && companyBody.water_footprint_m3_per_tonne !== "";
+  const hasCarbon = companyBody.carbon_footprint_kg_co2e_per_tonne !== undefined && companyBody.carbon_footprint_kg_co2e_per_tonne !== null && companyBody.carbon_footprint_kg_co2e_per_tonne !== "";
+
+  let purityPct: number | null = null;
+  let companyWater: number | null = null;
+  let carbonFootprint: number | null = null;
+
+  if (hasPurity || hasWater || hasCarbon) {
+    if (!(hasPurity && hasWater && hasCarbon)) {
+      return jsonError(
+        "Las especificaciones de producción (pureza Li₂CO₃, huella hídrica y huella de carbono) deben enviarse juntas.",
+        400
+      );
+    }
+
+    purityPct = Number(companyBody.purity_pct);
+    companyWater = Number(companyBody.water_footprint_m3_per_tonne);
+    carbonFootprint = Number(companyBody.carbon_footprint_kg_co2e_per_tonne);
+
+    if (isNaN(purityPct) || purityPct < 99.5 || purityPct > 100) {
+      return jsonError("La pureza Li₂CO₃ debe estar entre 99.50% y 100.00% (grado batería).", 400);
+    }
+    if (isNaN(companyWater) || companyWater < 0) {
+      return jsonError("La huella hídrica debe ser un valor mayor o igual a 0 m³/t.", 400);
+    }
+    if (isNaN(carbonFootprint) || carbonFootprint < 0) {
+      return jsonError("La huella de carbono debe ser un valor mayor o igual a 0 kg CO₂e/t.", 400);
+    }
+  }
+
   const rawId =
     typeof body.id === "string" && body.id.trim()
       ? slugify(body.id.trim())
@@ -219,5 +280,82 @@ export async function POST(request: Request) {
     );
   }
 
-  return Response.json({ origin: inserted }, { status: 201 });
+  // Create or resolve the auth user for the producer account
+  let userId: string;
+  let createdUser = false;
+  const { data: newUser, error: createAuthErr } = await service.auth.admin.createUser({
+    email: companyEmail,
+    password: companyPassword,
+    email_confirm: true,
+  });
+
+  if (newUser?.user) {
+    userId = newUser.user.id;
+    createdUser = true;
+  } else if (createAuthErr && createAuthErr.message.toLowerCase().includes("already")) {
+    const { data: existingUsers } = await service.auth.admin.listUsers();
+    const match = existingUsers?.users.find(
+      (u) => u.email?.toLowerCase() === companyEmail
+    );
+    if (!match) {
+      await service.from("origins").delete().eq("id", id);
+      return jsonError("El usuario ya existe pero no pudo ser localizado.", 409);
+    }
+    userId = match.id;
+
+    const { data: existingComp } = await service
+      .from("companies")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (existingComp) {
+      await service.from("origins").delete().eq("id", id);
+      return jsonError(
+        "Este correo electrónico ya tiene una empresa asignada en el protocolo.",
+        409
+      );
+    }
+  } else {
+    await service.from("origins").delete().eq("id", id);
+    return jsonError(
+      createAuthErr?.message || "No se pudo crear el usuario en Auth.",
+      500
+    );
+  }
+
+  const { data: insertedCompany, error: companyErr } = await service
+    .from("companies")
+    .insert({
+      id: userId,
+      name: producer,
+      company_type: "producer",
+      wallet_address: companyWallet || null,
+      wallet_verified_at: companyWallet ? new Date().toISOString() : null,
+      origin_id: id,
+      purity_pct: purityPct,
+      water_footprint_m3_per_tonne: companyWater,
+      carbon_footprint_kg_co2e_per_tonne: carbonFootprint,
+    })
+    .select(
+      "id, name, company_type, wallet_address, wallet_verified_at, origin_id, purity_pct, water_footprint_m3_per_tonne, carbon_footprint_kg_co2e_per_tonne, created_at"
+    )
+    .single();
+
+  if (companyErr) {
+    await service.from("origins").delete().eq("id", id);
+    if (createdUser) await service.auth.admin.deleteUser(userId);
+    return jsonError(
+      `Error al registrar la empresa minera: ${companyErr.message}`,
+      500
+    );
+  }
+
+  return Response.json(
+    {
+      origin: inserted,
+      company: { ...insertedCompany, email: companyEmail },
+    },
+    { status: 201 }
+  );
 }
