@@ -8,7 +8,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)](https://nextjs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-The buyer pays only when the lithium arrives, and the producer knows the money is already there. JuLit locks the buyer's USDC in a Solana program and releases it to the producer when the buyer confirms delivery — or refunds the buyer if the lot never ships.
+The buyer pays only when the lithium arrives, and the producer knows the money is already there. JuLit locks the buyer's USDC in a Solana program and releases it to the producer when the buyer confirms delivery — or lets the buyer reclaim the full deposit if the lot never ships.
 
 Pitch deck: [`public/pitch-en.html`](public/pitch-en.html) ([PDF](public/pitch-en.pdf)) · Spanish: [`public/pitch.html`](public/pitch.html) ([PDF](public/pitch.pdf)) · Script: [`public/pitch-script-en.pdf`](public/pitch-script-en.pdf)
 
@@ -78,18 +78,27 @@ stateDiagram-v2
 
 ### On-chain proof (devnet)
 
-Program `BntbtLZdHcHTai65uyXpKZyHaqX9kV68ZcfyyLBtXtky`:
+Real transactions from lot `DEMO-1` (11 Oct 2026), on the currently deployed program:
 
-- **TODO:** link a `fund_lot` transaction on Solana Explorer.
-- **TODO:** link a `redeem_lot` transaction on Solana Explorer.
-- **TODO:** link the live app URL.
-- **TODO:** document how to get test dUSDC (see `scripts/seed-devnet.mjs`).
+- **`fund_lot`** — the buyer deposits the lot price into the lot's program-owned vault: [`31Pheb9F…ZoYN`](https://explorer.solana.com/tx/31Pheb9Fz4jfQqLj2NmrtAaT9tiWRg2zGTjYKhzk65cDacGrrwKQ7mGxRzHdq7KGPjvk1dosrsgGGLap9ZhZ4oYN?cluster=devnet)
+- **`redeem_lot`** — the buyer confirms delivery; in the same transaction the producer receives the price minus the 1% fee, the treasury receives the fee, and the Digital Title is burned: [`5K27ZsSL…fczU`](https://explorer.solana.com/tx/5K27ZsSLry3beSrCEzPyF63J1LFBugueDnsDg9MCQ3gt3rshvBbRTT8PPtRtrVSFGQSJ2RDwLY9cJ2GdVabjfczU?cluster=devnet)
+- **Live app:** [ju-lit.vercel.app](https://ju-lit.vercel.app/) (Solana Devnet, Phantom or Solflare set to Devnet).
+
+**Getting test dUSDC.** dUSDC is a project-owned test mint; only the JuLit admin can mint it. To try the buyer flow on the live app, ask the team for a demo account — we fund your Devnet wallet with test SOL and dUSDC by running:
+
+```bash
+node scripts/seed-devnet.mjs --wallet <your-devnet-wallet>
+```
+
+The script airdrops Devnet SOL, creates the wallet's dUSDC token account and mints a demo balance. It needs the admin keypair, so it only works for the team or for your own deployment of the program.
 
 ---
 
 ## 5. Why Solana
 
 We use Solana because it is fast, and each transaction costs less than one cent.<sup>[7]</sup>
+
+More important than cost: **the money is held by the program, not by us.** Each lot's USDC sits in a token account whose authority is the lot's PDA. The program has no admin instruction that moves deposited funds — the only exits are its rules (buyer confirmation, refund after `ship_by`, producer claim after the confirm window). The buyer trusts the published code, not JuLit. One caveat today: the program is upgradeable by a single key, so before mainnet we move the upgrade authority to a Squads multisig or freeze the program (see Known limits).
 
 ---
 
@@ -102,6 +111,18 @@ We earn only when the payment is released.
 - **Why they pay:** the producer ships knowing the money is already locked; the buyer's money is protected until delivery.
 
 We don't replace bank credit. We give a safe option to the companies that can't get it.
+
+### Unit economics (illustrative)
+
+| Option today                                    | What the buyer pays                                             | What protects the buyer                                               |
+| ----------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Prepayment** (current practice<sup>[2]</sup>) | 100% before loading, no fee                                     | Nothing — the money is already with the producer                      |
+| **Letter of credit**                            | Bank fees and paperwork<sup>[4]</sup>; needs a bank credit line | Payment against documents, if the bank approves the SME<sup>[3]</sup> |
+| **JuLit escrow**                                | 100% into escrow + 1% only on release                           | Funds locked until confirmation; refund if never shipped              |
+
+The fee scales linearly with lot value: for every US$100,000 settled, JuLit earns US$1,000. Lot prices are usually not public — the Argosy 20 t sale, for example, used a fixed price referenced from the SMM battery-grade lithium carbonate index without disclosing it<sup>[2]</sup> — so we do not quote a per-lot figure.
+
+We have not yet validated the 1% fee with producers or traders. Our next step is to show the Devnet flow to new producers and traders in Jujuy, Salta and Catamarca, record their feedback, and run a first pilot lot.
 
 ---
 
@@ -118,6 +139,18 @@ We don't replace bank credit. We give a safe option to the companies that can't 
 - **Test money only.** Settlement uses a project-owned test mint (dUSDC) on devnet; no real funds move. Mainnet would configure Circle USDC in `Config`.
 - **Single-key admin today.** Admin, treasury and program upgrade authority are single keys; moving them to a Squads multisig is planned before mainnet. `initialize` is not yet restricted to the upgrade authority (the devnet `Config` is already initialized).
 - **Regulatory review pending.** Settlement in USDC must be coordinated with Argentine export FX rules (Decreto 609/2019, BCRA); legal review pending.
+
+### Threat model: the off-spec lot
+
+**Scenario.** The producer records a `bl_hash` and ships, but the lithium arrives below the contracted grade — or the shipping document is not genuine.
+
+- **What the program does today.** Once `mark_shipped` is recorded, `refund_lot` is no longer available. The buyer can confirm (`redeem_lot`) or stay silent; after `confirm_window_secs` the producer can `claim_timeout`. The program cannot see the lithium.
+- **What protects the buyer today.** Quality is governed by the off-chain commercial contract between producer and buyer, not by JuLit. A long enough `confirm_window_secs` gives the buyer time to inspect before the producer can claim. The current JuLit contract template does not yet include an assay or arbitration clause.
+- **What we build next.**
+  1. An independent destination-assay and arbitration clause in the JuLit contract template.
+  2. A `Disputed` state the buyer can open inside the confirm window, freezing the escrow.
+  3. Resolution by a multisig arbiter (Squads) named in `Config`, with LiteSVM tests for out-of-window disputes, non-arbiter resolution and double resolution.
+  4. Two-stage settlement, the way lithium is priced: an advance against the bill of lading and the balance against a lab assay at destination, signed through Solana Attestation Service.
 
 ---
 
@@ -207,12 +240,9 @@ Built in **San Salvador de Jujuy, Argentina**, inside the Lithium Triangle — c
 │   ├── explorer/                    # B2B directory, origin map, and lot creation
 │   ├── batch/[pda]/                 # Public lot page
 │   ├── account/                     # Producer and buyer lot actions
-│   ├── api/lots/                    # Lot transitions (fund, redeem, cancel)
+│   ├── api/lots/                    # Lot index transitions (fund, ship, redeem, refund, claim, cancel)
 │   ├── generated/julit/             # Codama-generated TypeScript client from the Anchor IDL
 │   └── landing/                     # Landing page
-├── docs/
-│   ├── adr/                         # Architectural Decision Records
-│   └── features/                    # Feature specifications
 ├── public/
 │   ├── pitch.html / .pdf            # Spanish pitch deck
 │   ├── pitch-en.html / .pdf         # English pitch deck
@@ -227,7 +257,7 @@ Built in **San Salvador de Jujuy, Argentina**, inside the Lithium Triangle — c
 ## 12. Sources
 
 1. Lithium Argentina AG, Exhibit 99.1 filed with the SEC (2026) — Cauchari-Olaroz: 44.8% Lithium Argentina, 46.7% Ganfeng, 8.5% JEMSE; "Both parties are entitled to offtake in proportion to their ownership interests." [sec.gov](https://www.sec.gov/Archives/edgar/data/1440972/000106299326004563/exhibit99-1.htm)
-2. Argosy Minerals (ASX: AGY), _Lithium Carbonate Spot Sales Contract_, March 2025 — 20 t to a Hong Kong based chemical company, FOB Buenos Aires, "requiring a 30% deposit and the 70% balance required prior to ship loading". [argosyminerals.com.au](https://www.argosyminerals.com.au/wp-content/uploads/2025/03/2861224.pdf)
+2. Argosy Minerals (ASX: AGY), _Lithium Carbonate Spot Sales Contract_, March 2025 — 20 t to a Hong Kong based chemical company, FOB Buenos Aires, "requiring a 30% deposit and the 70% balance required prior to ship loading"; "fixed price was referenced from SMM battery grade lithium carbonate price" (price not disclosed). [argosyminerals.com.au](https://www.argosyminerals.com.au/wp-content/uploads/2025/03/2861224.pdf)
 3. Asian Development Bank, _2023 Trade Finance Gaps, Growth, and Jobs Survey_ (Brief 256) — in 2022, SMEs submitted 38% of applications and received 45% of rejections. [adb.org](https://www.adb.org/sites/default/files/publication/906596/adb-brief-256-2023-trade-finance-gaps-growth-jobs-survey.pdf)
 4. U.S. International Trade Administration, _Letter of Credit_ — "labor-intensive and relatively expensive due to bank fees"; documents "prone to errors and discrepancies". [trade.gov](https://www.trade.gov/letter-credit)
 5. Asian Development Bank, _2021 Trade Finance Gaps, Growth, and Jobs Survey_ (Brief 192) — "Among SMEs who were initially rejected and sought alternative financing, 40% used their own funds." [adb.org](https://www.adb.org/sites/default/files/publication/739286/adb-brief-192-trade-finance-gaps-jobs-survey.pdf)
