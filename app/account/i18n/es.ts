@@ -274,7 +274,7 @@ export const es = {
     verifiedAt: "Verificada el {date}",
     wrongWallet: "La wallet conectada ({connected}) no es la verificada.",
     linkBody:
-      "Firmá un mensaje con la wallet de tu empresa para probar que te pertenece. La verificación es única y no se puede cambiar.",
+      "Firmá un mensaje con la wallet de tu empresa para probar que te pertenece. Podés desvincularla después si necesitás cambiarla.",
     unsupportedWallet:
       "Esta wallet no permite firmar mensajes. Probá con Phantom o Solflare.",
     waiting: "Esperando la firma…",
@@ -292,6 +292,10 @@ export const es = {
     since: "Desde",
     localnet: "Localnet",
     clusterFallback: "Solana {cluster}",
+    unlink: "Desvincular wallet",
+    unlinking: "Desvinculando…",
+    unlinked: "Wallet desvinculada",
+    unlinkError: "No se pudo desvincular la wallet.",
   },
   lotesPage: {
     buyerEyebrow: "Lotes comprados",

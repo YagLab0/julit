@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useCluster } from "../components/cluster-context";
 import { getExplorerUrl } from "../lib/explorer";
 import { useAccountDict } from "./i18n/context";
@@ -16,6 +19,8 @@ export function WalletHero({
 }) {
   const { cluster } = useCluster();
   const dict = useAccountDict();
+  const router = useRouter();
+  const [unlinking, setUnlinking] = useState(false);
 
   const clusterLabel =
     cluster === "localnet"
@@ -23,6 +28,26 @@ export function WalletHero({
       : t(dict.walletHero.clusterFallback, {
           cluster: `${cluster[0].toUpperCase()}${cluster.slice(1)}`,
         });
+
+  async function unlinkWallet() {
+    setUnlinking(true);
+    try {
+      const res = await fetch("/api/companies/wallet", { method: "DELETE" });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        toast.error(payload?.error ?? dict.walletHero.unlinkError);
+        return;
+      }
+      toast.success(dict.walletHero.unlinked);
+      router.refresh();
+    } catch {
+      toast.error(dict.walletHero.unlinkError);
+    } finally {
+      setUnlinking(false);
+    }
+  }
 
   return (
     <section
@@ -71,6 +96,15 @@ export function WalletHero({
           </p>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => void unlinkWallet()}
+        disabled={unlinking}
+        className="mt-3 cursor-pointer self-end text-[11px] font-medium text-primary-foreground/60 underline-offset-2 transition hover:text-primary-foreground hover:underline disabled:pointer-events-none disabled:opacity-50"
+      >
+        {unlinking ? dict.walletHero.unlinking : dict.walletHero.unlink}
+      </button>
     </section>
   );
 }

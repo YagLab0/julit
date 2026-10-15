@@ -131,3 +131,37 @@ export async function POST(request: Request) {
     wallet_verified_at: linked?.wallet_verified_at ?? null,
   });
 }
+
+export async function DELETE() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return jsonError("Iniciá sesión para desvincular una wallet.", 401);
+  }
+
+  const service = createServiceClient();
+  const { error } = await service.rpc("unlink_company_wallet", {
+    p_auth_user_id: user.id,
+  });
+
+  if (error) {
+    if (error.code === "23503") {
+      return jsonError(
+        "Tu empresa tiene lotes registrados con esta wallet.",
+        409
+      );
+    }
+    if (error.code === "23514") {
+      return jsonError("Tu empresa no tiene una wallet vinculada.", 409);
+    }
+    return jsonError(
+      "No se pudo desvincular la wallet. Intentá de nuevo.",
+      500
+    );
+  }
+
+  return Response.json({ wallet_address: null, wallet_verified_at: null });
+}

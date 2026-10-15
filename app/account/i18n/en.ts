@@ -270,7 +270,7 @@ export const en: AccountDict = {
     verifiedAt: "Verified on {date}",
     wrongWallet: "The connected wallet ({connected}) is not the verified one.",
     linkBody:
-      "Sign a message with your company's wallet to prove ownership. Verification is one-time and cannot be changed.",
+      "Sign a message with your company's wallet to prove ownership. You can unlink it later if you need to change it.",
     unsupportedWallet:
       "This wallet cannot sign messages. Try Phantom or Solflare.",
     waiting: "Waiting for the signature…",
@@ -288,6 +288,10 @@ export const en: AccountDict = {
     since: "Since",
     localnet: "Localnet",
     clusterFallback: "Solana {cluster}",
+    unlink: "Unlink wallet",
+    unlinking: "Unlinking…",
+    unlinked: "Wallet unlinked",
+    unlinkError: "Could not unlink the wallet.",
   },
   lotesPage: {
     buyerEyebrow: "Purchased lots",
