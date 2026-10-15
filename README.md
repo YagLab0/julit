@@ -228,6 +228,19 @@ Built in **San Salvador de Jujuy, Argentina**, inside the Lithium Triangle — c
      pnpm anchor-test
      ```
 
+### Demo accounts
+
+[`supabase/seed.sql`](supabase/seed.sql) creates these demo accounts — same password for all: `julit-demo-2026`.
+
+| Email                                 | Password          | Role     | Company                  |
+| ------------------------------------- | ----------------- | -------- | ------------------------ |
+| `productor.olaroz@julit.dev`          | `julit-demo-2026` | Producer | Sales del Altiplano S.A. |
+| `productor.cauchari-olaroz@julit.dev` | `julit-demo-2026` | Producer | Minera Cóndor S.A.       |
+| `admin@julit.dev`                     | `julit-demo-2026` | Admin    | JuLit Protocol Admin     |
+| `comprador@julit.dev`                 | `julit-demo-2026` | Buyer    | Comprador Demo           |
+
+They are applied locally by `supabase db reset` (or `node scripts/seed-local.mjs`) and to the linked project by `supabase db push --include-seed`.
+
 ---
 
 ## 11. Repository Structure
